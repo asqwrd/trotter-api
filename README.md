@@ -4,3 +4,5 @@ This repo will act as the backend for trotter. All api will be maintained here
 <br/>
 
 Right now node is being used but this can be changed to a better technology to manage the api on the backend
+Requires latest version of node
+To run node server.js

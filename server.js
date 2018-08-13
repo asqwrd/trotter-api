@@ -78,6 +78,7 @@ const generateCodes = (num) => {
 */
 
 const PROD_MODE = process.argv[2];
+const API_KEY="6SdxevLXN2aviv5g67sac2aySsawGYvJ6UcTmvWE"
 let server = http.createServer(app);
 if (PROD_MODE) {
   const hskey = fs.readFileSync("/etc/letsencrypt/live/ajibade.me/privkey.pem");
@@ -101,27 +102,27 @@ app.get("/api/explore/continent/:continent_id", (req, res) => {
         method: "GET",
         uri: `https://api.sygictravelapi.com/1.1/en/places/list?rating=.0005:&level=country&parents=continent:${
         req.params.continent_id
-        }&limit=5`,
+        }&limit=10`,
         json: true,
-        headers: { "x-api-key": "FncICCs1xe5u0DSDQCiYT3nDi8k8gaXH32xw0xjG" }
+        headers: { "x-api-key": API_KEY }
     });
 
     const whatToSee = request({
         method: "GET",
         uri: `https://api.sygictravelapi.com/1.1/en/places/list?&level=poi&parents=continent:${
         req.params.continent_id
-        }&limit=5`,
+        }&limit=10`,
         json: true,
-        headers: { "x-api-key": "FncICCs1xe5u0DSDQCiYT3nDi8k8gaXH32xw0xjG" }
+        headers: { "x-api-key": API_KEY }
     });
 
     const getPopularCities = request({
         method: "GET",
         uri: `https://api.sygictravelapi.com/1.1/en/places/list?rating=.0005:&level=city&parents=continent:${
             req.params.continent_id
-            }&limit=5`,
+            }&limit=10`,
         json: true,
-        headers: { "x-api-key": "FncICCs1xe5u0DSDQCiYT3nDi8k8gaXH32xw0xjG" }
+        headers: { "x-api-key":API_KEY }
     });
   
 
@@ -131,7 +132,7 @@ app.get("/api/explore/continent/:continent_id", (req, res) => {
         req.params.continent_id
         }&limit=60`,
         json: true,
-        headers: { "x-api-key": "FncICCs1xe5u0DSDQCiYT3nDi8k8gaXH32xw0xjG" }
+        headers: { "x-api-key":API_KEY }
     });
 
     Promise.all([
@@ -145,108 +146,112 @@ app.get("/api/explore/continent/:continent_id", (req, res) => {
           (acc, curr) => {
             return [
               ...acc,
-              `${curr.id}`
-             /* {
+              {
                 sygic_id: curr.id,
-                thumbnail_url: curr.thumbnail_url,
+                image: curr.thumbnail_url,
                 name:curr.name,
                 name_suffix:curr.name_suffix,
                 parent_ids: curr.parent_ids,
-              }*/
+                description: curr.perex
+              }
             ];
+
           },
           []
         );
 
-        let pop_countries_id = popular_countries.join('|');
+        /*let pop_countries_id = popular_countries.join('|');
 
-        let popular_countries_media = request({
+        /*let popular_countries_media = request({
             method: "GET",
             uri: encodeURI(`https://api.sygictravelapi.com/1.1/en/places?ids=${pop_countries_id}`),
             json: true,
-            headers: { "x-api-key": "FncICCs1xe5u0DSDQCiYT3nDi8k8gaXH32xw0xjG" }
-        });
+            headers: { "x-api-key":API_KEY }
+        });*/
         
 
         let points_of_interest = responses[1].data.places.reduce(
           (acc, curr) => {
-            return [
+            return  [
               ...acc,
-              `${curr.id}`
-              /*{
+              {
                 sygic_id: curr.id,
-                thumbnail_url: curr.thumbnail_url,
+                image: curr.thumbnail_url,
                 name:curr.name,
                 name_suffix:curr.name_suffix,
-                parent_ids: curr.parent_ids
-              }*/
+                parent_ids: curr.parent_ids,
+                description: curr.perex
+              }
             ];
           },
           []
         );
 
-        let points_of_interest_id = points_of_interest.join('|');
+       /* let points_of_interest_id = points_of_interest.join('|');
 
-        let points_of_interest_media = request({
+        /*let points_of_interest_media = request({
             method: "GET",
             uri: encodeURI(`https://api.sygictravelapi.com/1.1/en/places?ids=${points_of_interest_id}`),
             json: true,
-            headers: { "x-api-key": "FncICCs1xe5u0DSDQCiYT3nDi8k8gaXH32xw0xjG" }
-        });
+            headers: { "x-api-key":API_KEY }
+        });*/
 
         let popular_cities = responses[2].data.places.reduce(
           (acc, curr) => {
             return [
               ...acc,
-              `${curr.id}`
-              /*{
+              {
                 sygic_id: curr.id,
-                thumbnail_url: curr.thumbnail_url,
+                image: curr.thumbnail_url,
                 name:curr.name,
                 name_suffix:curr.name_suffix,
-                parent_ids: curr.parent_ids
-              }*/
+                parent_ids: curr.parent_ids,
+                description: curr.perex
+              }
             ];
           },
           []
         );
 
-        let popular_cities_id = popular_cities.join('|');
+       /* let popular_cities_id = popular_cities.join('|');
 
-        let popular_cities_media = request({
+       /* let popular_cities_media = request({
             method: "GET",
             uri: encodeURI(`https://api.sygictravelapi.com/1.1/en/places?ids=${popular_cities_id}`),
             json: true,
-            headers: { "x-api-key": "FncICCs1xe5u0DSDQCiYT3nDi8k8gaXH32xw0xjG" }
-        });
+            headers: { "x-api-key":API_KEY }
+        });*/
 
         let all_countries = responses[3].data.places.reduce((acc, curr) => {
-          return [
-              ...acc,
-              `${curr.id}`,
-             /* {
-                sygic_id: curr.id,
-                thumbnail_url: curr.thumbnail_url,
-                name:curr.name,
-                name_suffix:curr.name_suffix,
-                parent_ids: curr.parent_ids
-              }*/
-            ];
+          return  [
+            ...acc,
+            {
+              sygic_id: curr.id,
+              image: curr.thumbnail_url,
+              name:curr.name,
+              name_suffix:curr.name_suffix,
+              parent_ids: curr.parent_ids,
+              description: curr.perex
+            }
+          ];
         },[]);
 
-        let all_countries_id = all_countries.join('|');
+        res.send({ popular_countries, popular_cities, points_of_interest, all_countries });
 
-        let all_countries_media = request({
+
+        /*let all_countries_id = all_countries.join('|');
+
+        /*let all_countries_media = request({
             method: "GET",
             uri: encodeURI(`https://api.sygictravelapi.com/1.1/en/places?ids=${all_countries_id}`),
             json: true,
-            headers: { "x-api-key": "FncICCs1xe5u0DSDQCiYT3nDi8k8gaXH32xw0xjG" }
-        });
+            headers: { "x-api-key":API_KEY }
+        });*/
 
 
-        return Promise.all([popular_countries_media, points_of_interest_media, popular_cities_media, all_countries_media]) 
+        //return Promise.all([popular_countries_media, points_of_interest_media, popular_cities_media, all_countries_media]) 
       })
-      .then(([popular_countries_res, points_of_interest_res, popular_cities_res, all_countries_res])=>{
+     /* .then(([popular_countries_res, points_of_interest_res, popular_cities_res, all_countries_res])=>{
         const popular_countries = popular_countries_res.data.places.reduce(
           (acc, curr) => {
             return [
@@ -324,6 +329,13 @@ app.get("/api/explore/continent/:continent_id", (req, res) => {
         console.log(err);
         res.send(err);
       });
+
+      /*const fs = require('fs');
+      fs.readFile('./africa.json', 'utf8', function (err, data) {
+        if (err) throw err;
+        res.send(JSON.parse(data));
+      });*/
+     
 });
 
 

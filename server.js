@@ -98,15 +98,7 @@ app.get("/api/countries/:continent_id", (req, res) => {});
 
 //Explore continent
 app.get("/api/explore/continent/:continent_id", (req, res) => {
-    const getPopularCountries = request({
-        method: "GET",
-        uri: `https://api.sygictravelapi.com/1.1/en/places/list?rating=.0005:&level=country&parents=continent:${
-        req.params.continent_id
-        }&limit=10`,
-        json: true,
-        headers: { "x-api-key": API_KEY }
-    });
-
+    
     const whatToSee = request({
         method: "GET",
         uri: `https://api.sygictravelapi.com/1.1/en/places/list?&level=poi&parents=continent:${
@@ -136,30 +128,12 @@ app.get("/api/explore/continent/:continent_id", (req, res) => {
     });
 
     Promise.all([
-        getPopularCountries,
         whatToSee,
         getPopularCities,
         getAllCountries
     ])
       .then(responses => {
-        let popular_countries = responses[0].data.places.reduce(
-          (acc, curr) => {
-            return [
-              ...acc,
-              {
-                sygic_id: curr.id,
-                image: curr.thumbnail_url,
-                name:curr.name,
-                name_suffix:curr.name_suffix,
-                parent_ids: curr.parent_ids,
-                description: curr.perex
-              }
-            ];
-
-          },
-          []
-        );
-
+        
         /*let pop_countries_id = popular_countries.join('|');
 
         /*let popular_countries_media = request({
@@ -236,7 +210,7 @@ app.get("/api/explore/continent/:continent_id", (req, res) => {
           ];
         },[]);
 
-        res.send({ popular_countries, popular_cities, points_of_interest, all_countries });
+        res.send({ popular_cities, points_of_interest, all_countries });
 
 
         /*let all_countries_id = all_countries.join('|');

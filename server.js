@@ -13,12 +13,14 @@ const Vibrant = require("node-vibrant");
 const admin = require("firebase-admin");
 
 const serviceAccount = require("./serviceAccountKey.json");
+const settings = { /* your settings... */ timestampsInSnapshots: true };
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
 var db = admin.firestore();
+db.settings(settings);
 const country_codes = db.collection("countries_code");
 const SHERPA_URL = "https://api.joinsherpa.com/v2/entry-requirements/",
   username = "VDLQLCbMmugvsOEtihQ9kfc6nQoeGd",
@@ -281,15 +283,12 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
       }
       let country_code = country_codes.doc(country_name).get();
 
-      const data = new Promise((resolve, reject) => {
-        resolve({
-          country,
-          popular_destinations,
-          points_of_interest,
-          popular_tours
-        });
-      });
-
+      const data = {
+        country,
+        popular_destinations,
+        points_of_interest,
+        popular_tours
+      };
       return Promise.all([data, country_color, country_code]);
 
       //res.send({popular_destinations, points_of_interest, popular_tours});
@@ -316,28 +315,17 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
 
       country.visa = null;
 
-      let newProm = new Promise(resolve => {
-        resolve({
-          country,
-          popular_destinations,
-          points_of_interest,
-          popular_tours
-        });
-      });
-
-      if (!country_code.exists) {
-        return newProm;
-      }
-      return Promise.all([newProm, visa]);
-
-      //country.color = color;
-
-      res.send({
+      let noVisaData = {
         country,
         popular_destinations,
         points_of_interest,
         popular_tours
-      });
+      };
+
+      if (!country_code.exists) {
+        return data;
+      }
+      return Promise.all([noVisaData, visa]);
     })
     .then(data => {
       if (data instanceof Array) {
@@ -354,9 +342,9 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           points_of_interest,
           popular_tours
         });
+      } else {
+        res.send(data);
       }
-
-      res.send(data);
     })
     .catch(err => {
       console.log(err);

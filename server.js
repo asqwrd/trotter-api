@@ -19,6 +19,39 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
+const passport_blankpages_map = {
+  NOT_REQUIRED: "You do not need to have any blank pages in your passport.",
+  ONE: "You need at least one blank page in your passport.",
+  ONE_PER_ENTRY: "You need one blank page per entry.",
+  SPACE_FOR_STAMP: "You need space for your passport to be stamped.",
+  TWO: "You need two blank pages in your passport.",
+  TWO_CONSECUTIVE_PER_ENTRY:
+    "You need two consecutive blank pages in your passport",
+  TWO_PER_ENTRY: "You need two blank pages per entry"
+};
+
+const passport_validity_map = {
+  DURATION_OF_STAY:
+    "Your passport must be valid for the duration of your stay in this country.",
+  ONE_MONTH_AFTER_ENTRY:
+    "Your passport must be valid for one month after entering this counrty.",
+  SIX_MONTHS_AFTER_DURATION_OF_STAY:
+    "Your passport must be valid on entry and for six months after the duration of your stay in this country.",
+  SIX_MONTHS_AFTER_ENTRY:
+    "Your passport must be valid on entry and six months after the date of enrty.",
+  SIX_MONTHS_AT_ENTRY:
+    "Your passport must be valid for at least six months before entering this country.",
+  THREE_MONTHS_AFTER_DURATION_OF_STAY:
+    "Your passport must be valid on entry and for three months after the duration of your stay in this country",
+  THREE_MONTHS_AFTER_ENTRY:
+    "Your passport must be valid on entry and for three months after entering this country",
+  VALID_AT_ENTRY: "Your passport must be valid on entry",
+  THREE_MONTHS_AFTER_DEPARTURE:
+    "Your passport must be valid on entry and three months after your departure date.",
+  SIX_MONTHS_AFTER_DEPARTURE:
+    "Your passport must be valid on entry and six months after your departure date."
+};
+
 var db = admin.firestore();
 db.settings(settings);
 const country_codes = db.collection("countries_code");
@@ -335,7 +368,30 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           points_of_interest,
           popular_tours
         } = data[0];
-        country.visa = data[1];
+        let visa = data[1];
+        visa.visa = data[1].visa ? data[1].visa[0] : null;
+        visa.passport = visa.passport
+          ? visa.passport
+          : { passport_validity: null, blank_pages: null };
+        let passport_valid = visa.passport.passport_validity
+          ? visa.passport.passport_validity
+          : null;
+        let blank_pages = visa.passport.blank_pages
+          ? visa.passport.blank_pages
+          : null;
+        visa.passport.passport_validity =
+          passport_valid && passport_validity_map[passport_valid]
+            ? passport_validity_map[passport_valid]
+            : `${
+                passport_validity_map["VALID_AT_ENTRY"]
+              } Make sure to check for additional requirements.`;
+
+        visa.passport.blank_pages =
+          blank_pages && passport_blankpages_map[blank_pages]
+            ? passport_blankpages_map[blank_pages]
+            : "To be safe make sure to have at least one blank page in your passport.";
+
+        country.visa = visa;
         res.send({
           country,
           popular_destinations,

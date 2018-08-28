@@ -14,6 +14,7 @@ const admin = require("firebase-admin");
 
 const serviceAccount = require("./serviceAccountKey.json");
 const settings = { /* your settings... */ timestampsInSnapshots: true };
+const citizenCode = "US";
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -50,6 +51,36 @@ const passport_validity_map = {
     "Your passport must be valid on entry and three months after your departure date.",
   SIX_MONTHS_AFTER_DEPARTURE:
     "Your passport must be valid on entry and six months after your departure date."
+};
+
+const countries_with_states = {
+  Argentina: true,
+  Australia: true,
+  Austria: true,
+  Belgium: true,
+  "Bosnia and Herzegovina": true,
+  Brazil: true,
+  Canada: true,
+  Comoros: true,
+  Ethiopia: true,
+  Germany: true,
+  India: true,
+  Iraq: true,
+  Malaysia: true,
+  Mexico: true,
+  Micronesia: true,
+  Nepal: true,
+  Nigeria: true,
+  Pakistan: true,
+  Russia: true,
+  "Saint Kitts": true,
+  Somalia: true,
+  "South Sudan": true,
+  Sudan: true,
+  Switzerland: true,
+  "United Arab Emirates": true,
+  "United States of America": true,
+  Venezuela: true
 };
 
 var db = admin.firestore();
@@ -315,18 +346,37 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
         country_name = "United States";
       }
       let country_code = country_codes.doc(country_name).get();
-
       const data = {
         country,
         popular_destinations,
         points_of_interest,
         popular_tours
       };
+
+      if (countries_with_states[country.name]) {
+        console.log(
+          `https://api.sygictravelapi.com/1.1/en/places/list?parents=${
+            req.params.country_id
+          }&level=state&limit=100`
+        );
+        const states = request({
+          method: "GET",
+          uri: encodeURI(
+            `https://api.sygictravelapi.com/1.1/en/places/list?parents=${
+              req.params.country_id
+            }&level=state&limit=100`
+          ),
+          json: true,
+          headers: { "x-api-key": API_KEY }
+        });
+        return Promise.all([data, country_color, country_code, states]);
+      }
+
       return Promise.all([data, country_color, country_code]);
 
       //res.send({popular_destinations, points_of_interest, popular_tours});
     })
-    .then(([data, color, country_code]) => {
+    .then(([data, color, country_code, states]) => {
       let popular_destinations = data.popular_destinations;
       let points_of_interest = data.points_of_interest;
       let popular_tours = data.popular_tours;
@@ -335,12 +385,12 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
         color.Vibrant._rgb[2]
       })`;
       let visaData = country_code.data();
+      let visaCode = visaData.abbreviation;
 
-      if (visaData) {
-        let visaCode = visaData.abbreviation;
+      if (visaData && visaCode !== citizenCode) {
         var visa = request({
           method: "GET",
-          uri: `${SHERPA_URL}US-${visaCode}`,
+          uri: `${SHERPA_URL}${citizenCode}-${visaCode}`,
           json: true,
           headers: { Authorization: SHERPA_AUTH }
         });
@@ -354,10 +404,29 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
         points_of_interest,
         popular_tours
       };
+      noVisaData.states = [];
 
-      if (!country_code.exists) {
-        return data;
+      if (states) {
+        let top_states = states["data"].places.reduce((acc, curr) => {
+          return [
+            ...acc,
+            {
+              sygic_id: curr.id,
+              image: curr.thumbnail_url,
+              name: curr.name,
+              name_suffix: curr.name_suffix,
+              parent_ids: curr.parent_ids,
+              description: curr.perex
+            }
+          ];
+        }, []);
+        noVisaData.states = top_states;
       }
+
+      if (!country_code.exists || visaCode == citizenCode) {
+        return noVisaData;
+      }
+
       return Promise.all([noVisaData, visa]);
     })
     .then(data => {
@@ -366,7 +435,8 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           country,
           popular_destinations,
           points_of_interest,
-          popular_tours
+          popular_tours,
+          states
         } = data[0];
         let visa = data[1];
         visa.visa = data[1].visa ? data[1].visa[0] : null;
@@ -396,7 +466,8 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           country,
           popular_destinations,
           points_of_interest,
-          popular_tours
+          popular_tours,
+          states
         });
       } else {
         res.send(data);

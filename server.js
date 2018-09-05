@@ -230,20 +230,38 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
     headers: { "x-api-key": API_KEY }
   });
 
-  const whatToSee = request({
+  const sightseeing = request({
     method: "GET",
     uri: `https://api.sygictravelapi.com/1.1/en/places/list?level=poi&categories=sightseeing&parents=${
       req.params.country_id
-    }&limit=10`,
+    }&limit=20`,
     json: true,
     headers: { "x-api-key": API_KEY }
   });
 
-  const tours = request({
+  const discovering = request({
     method: "GET",
-    uri: `https://api.sygictravelapi.com/1.1/en/tours/get-your-guide?sort_by=rating&parent_place_id=${
+    uri: `https://api.sygictravelapi.com/1.1/en/places/list?level=poi&categories=discovering&parents=${
       req.params.country_id
-    }&count=20`,
+    }&limit=20`,
+    json: true,
+    headers: { "x-api-key": API_KEY }
+  });
+
+  const playing = request({
+    method: "GET",
+    uri: `https://api.sygictravelapi.com/1.1/en/places/list?level=poi&categories=playing&parents=${
+      req.params.country_id
+    }&limit=20`,
+    json: true,
+    headers: { "x-api-key": API_KEY }
+  });
+
+  const relaxing = request({
+    method: "GET",
+    uri: `https://api.sygictravelapi.com/1.1/en/places/list?level=poi&categories=relaxing&parents=${
+      req.params.country_id
+    }&limit=20`,
     json: true,
     headers: { "x-api-key": API_KEY }
   });
@@ -257,8 +275,15 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
     headers: { "x-api-key": API_KEY }
   });
 
-  Promise.all([country, popular_destinations, whatToSee, tours])
-    .then(([parent, destinations, poi, tours]) => {
+  Promise.all([
+    country,
+    popular_destinations,
+    sightseeing,
+    discovering,
+    playing,
+    relaxing
+  ])
+    .then(([parent, destinations, sights, discover, play, relax]) => {
       const country_images = parent.data.place.main_media.media.reduce(
         (acc, curr) => {
           return [
@@ -290,7 +315,49 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
         description: parent.data.place.perex
       };
 
-      let points_of_interest = poi["data"].places.reduce((acc, curr) => {
+      let sightseeing = sights["data"].places.reduce((acc, curr) => {
+        return [
+          ...acc,
+          {
+            sygic_id: curr.id,
+            image: curr.thumbnail_url,
+            name: curr.name,
+            name_suffix: curr.name_suffix,
+            parent_ids: curr.parent_ids,
+            description: curr.perex
+          }
+        ];
+      }, []);
+
+      let discovering = discover["data"].places.reduce((acc, curr) => {
+        return [
+          ...acc,
+          {
+            sygic_id: curr.id,
+            image: curr.thumbnail_url,
+            name: curr.name,
+            name_suffix: curr.name_suffix,
+            parent_ids: curr.parent_ids,
+            description: curr.perex
+          }
+        ];
+      }, []);
+
+      let playing = play["data"].places.reduce((acc, curr) => {
+        return [
+          ...acc,
+          {
+            sygic_id: curr.id,
+            image: curr.thumbnail_url,
+            name: curr.name,
+            name_suffix: curr.name_suffix,
+            parent_ids: curr.parent_ids,
+            description: curr.perex
+          }
+        ];
+      }, []);
+
+      let relaxing = relax["data"].places.reduce((acc, curr) => {
         return [
           ...acc,
           {
@@ -321,25 +388,6 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
         []
       );
 
-      let popular_tours = tours["data"].tours.reduce((acc, curr) => {
-        return [
-          ...acc,
-          {
-            sygic_id: curr.id,
-            image: curr.photo_url.replace(/\[[^\]]*?\]/g, "21"),
-            supplier: curr.supplier,
-            url: curr.url,
-            duration: curr.duration,
-            rating: curr.rating,
-            name: curr.title,
-            name_suffix: curr.name_suffix,
-            parent_ids: curr.parent_ids,
-            description: curr.perex,
-            price: curr.price
-          }
-        ];
-      }, []);
-
       let country_color = Vibrant.from(country.image).getPalette();
       let country_name = country.name;
       if (country_name == "United States of America") {
@@ -349,8 +397,10 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
       const data = {
         country,
         popular_destinations,
-        points_of_interest,
-        popular_tours
+        sightseeing,
+        discovering,
+        playing,
+        relaxing
       };
 
       if (countries_with_states[country.name]) {
@@ -378,8 +428,10 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
     })
     .then(([data, color, country_code, states]) => {
       let popular_destinations = data.popular_destinations;
-      let points_of_interest = data.points_of_interest;
-      let popular_tours = data.popular_tours;
+      let sightseeing = data.sightseeing;
+      let discover = data.discovering;
+      let play = data.playing;
+      let relax = data.relaxing;
       let country = data.country;
       country.color = `rgb(${color.Vibrant._rgb[0]},${color.Vibrant._rgb[1]},${
         color.Vibrant._rgb[2]
@@ -401,8 +453,10 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
       let noVisaData = {
         country,
         popular_destinations,
-        points_of_interest,
-        popular_tours
+        sightseeing,
+        discover,
+        play,
+        relax
       };
       noVisaData.states = [];
 
@@ -434,8 +488,10 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
         let {
           country,
           popular_destinations,
-          points_of_interest,
-          popular_tours,
+          sightseeing,
+          discover,
+          play,
+          relax,
           states
         } = data[0];
         let visa = data[1];
@@ -465,8 +521,10 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
         res.send({
           country,
           popular_destinations,
-          points_of_interest,
-          popular_tours,
+          sightseeing,
+          discover,
+          play,
+          relax,
           states
         });
       } else {

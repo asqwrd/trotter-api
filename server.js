@@ -199,7 +199,7 @@ app.get("/api/explore/continent/:continent_id", (req, res) => {
       let popular_countries = all_countries.filter((country, index) => {
         return index < 10;
       });
-
+      console.log('sending');
       res.send({
         popular_countries,
         popular_cities,
@@ -438,13 +438,22 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
       })`;
       let visaData = country_code.data();
       let visaCode = visaData.abbreviation;
+      let visa,safety;
 
       if (visaData && visaCode !== citizenCode) {
-        var visa = request({
+        visa = request({
           method: "GET",
           uri: `${SHERPA_URL}${citizenCode}-${visaCode}`,
           json: true,
           headers: { Authorization: SHERPA_AUTH }
+        });
+      }
+
+      if(visaCode) {
+        safety = request({
+          method: "GET",
+          uri: `https://www.reisewarnung.net/api?country=${visaCode}`,
+          json: true,
         });
       }
 
@@ -478,13 +487,13 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
       }
 
       if (!country_code.exists || visaCode == citizenCode) {
-        return noVisaData;
+        return Promise.all([noVisaData, safety])
       }
 
-      return Promise.all([noVisaData, visa]);
+      return Promise.all([noVisaData, visa, safety]);
     })
     .then(data => {
-      if (data instanceof Array) {
+      if (data.length == 3) {
         let {
           country,
           popular_destinations,
@@ -494,6 +503,7 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           relax,
           states
         } = data[0];
+
         let visa = data[1];
         visa.visa = data[1].visa ? data[1].visa[0] : null;
         visa.passport = visa.passport
@@ -518,6 +528,29 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
             : "To be safe make sure to have at least one blank page in your passport.";
 
         country.visa = visa;
+        
+        let advice = "No safety information is available for this country."
+        let {
+          rating
+        } = data[2].data.situation;
+
+        if(rating >= 0 && rating < 1) {
+          advice = "Travelling in this country is relatively safe.";
+        }else if(rating >= 1 && rating < 2.5) {
+          advice = "Travelling in this country is relatively safe. Higher attention is advised when traveling here due to some areas being unsafe.";
+        }else if(rating >= 2.5 && rating < 3.5) {
+          advice = "This country can be unsafe.  Warnings often relate to specific regions within this country. However, high attention is still advised when moving around. Trotter also recommends traveling to this country with someone who is familiar with the culture and area.";
+        }else if(rating >= 3.5 && rating < 4.5) {
+          advice = "Travel to this country should be reduced to a necessary minimum and be conducted with good preparation and high attention. If you are not familiar with the area it is recommended you travel with someone who knows the area well.";
+        }else if(rating >= 4.5) {
+          advice = "It is unsafe to travel to this country.  Trotter advises against traveling here.  You risk high chance of danger to you health and life.";
+        }
+
+        let safety ={
+          rating,
+          advice
+        }
+
         res.send({
           country,
           popular_destinations,
@@ -525,10 +558,32 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           discover,
           play,
           relax,
-          states
+          states,
+          safety
         });
       } else {
-        res.send(data);
+        let advice = "No safety information is available for this country."
+        let {
+          rating
+        } = data[1].data.situation;
+
+        if(rating >= 0 && rating < 1) {
+          advice = "Travelling in this country is relatively safe.";
+        }else if(rating >= 1 && rating < 2.5) {
+          advice = "Travelling in this country is relatively safe. Higher attention is advised when traveling here due to some areas being unsafe.";
+        }else if(rating >= 2.5 && rating < 3.5) {
+          advice = "This country can be unsafe.  Warnings often relate to specific regions within this country. However, high attention is still advised when moving around. Trotter also recommends traveling to this country with someone who is familiar with the culture and area.";
+        }else if(rating >= 3.5 && rating < 4.5) {
+          advice = "Travel to this country should be reduced to a necessary minimum and be conducted with good preparation and high attention. If you are not familiar with the area it is recommended you travel with someone who knows the area well.";
+        }else if(rating >= 4.5) {
+          advice = "It is unsafe to travel to this country.  Trotter advises against traveling here.  You risk high chance of danger to you health and life.";
+        }
+
+        let safety ={
+          rating,
+          advice
+        }
+        res.send({...data[0],safety});
       }
     })
     .catch(err => {

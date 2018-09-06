@@ -86,6 +86,8 @@ const countries_with_states = {
 var db = admin.firestore();
 db.settings(settings);
 const country_codes = db.collection("countries_code");
+const emergency_numbers_db = db.collection("emergency_numbers");
+const plugs_db = db.collection("plugs");
 const SHERPA_URL = "https://api.joinsherpa.com/v2/entry-requirements/",
   username = "VDLQLCbMmugvsOEtihQ9kfc6nQoeGd",
   password = "nIXaxALFPV0IiwNOvBEBrDCNSw3SCv67R4UEvD9r",
@@ -403,6 +405,8 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
         relaxing
       };
 
+      let plugs = plugs_db.where('country', '==', country_name).get()
+
       if (countries_with_states[country.name]) {
         console.log(
           `https://api.sygictravelapi.com/1.1/en/places/list?parents=${
@@ -419,14 +423,14 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           json: true,
           headers: { "x-api-key": API_KEY }
         });
-        return Promise.all([data, country_color, country_code, states]);
+        return Promise.all([data, country_color, country_code, plugs, states]);
       }
 
-      return Promise.all([data, country_color, country_code]);
+      return Promise.all([data, country_color, country_code, plugs]);
 
       //res.send({popular_destinations, points_of_interest, popular_tours});
     })
-    .then(([data, color, country_code, states]) => {
+    .then(([data, color, country_code, plugsRes, states]) => {
       let popular_destinations = data.popular_destinations;
       let sightseeing = data.sightseeing;
       let discover = data.discovering;
@@ -449,15 +453,24 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
         });
       }
 
+
+      let plugs = [],
+        emergency_numbers
+      plugsRes.forEach((plug) => {
+        plugs =  [...plugs, plug.data()]
+      },[]);
+
       if(visaCode) {
         safety = request({
           method: "GET",
           uri: `https://www.reisewarnung.net/api?country=${visaCode}`,
           json: true,
         });
+        emergency_numbers = emergency_numbers_db.doc(visaCode).get();
       }
 
       country.visa = null;
+      country.plugs = plugs;
 
       let noVisaData = {
         country,
@@ -487,13 +500,13 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
       }
 
       if (!country_code.exists || visaCode == citizenCode) {
-        return Promise.all([noVisaData, safety])
+        return Promise.all([noVisaData, safety,emergency_numbers])
       }
 
-      return Promise.all([noVisaData, visa, safety]);
+      return Promise.all([noVisaData, visa, safety,emergency_numbers]);
     })
     .then(data => {
-      if (data.length == 3) {
+      if (data.length == 4) {
         let {
           country,
           popular_destinations,
@@ -550,6 +563,7 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           rating,
           advice
         }
+        country.emergency_numbers = data[3].data();
 
         res.send({
           country,
@@ -583,7 +597,27 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           rating,
           advice
         }
-        res.send({...data[0],safety});
+        let {
+          country,
+          popular_destinations,
+          sightseeing,
+          discover,
+          play,
+          relax,
+          states
+        } = data[0];
+        country.emergency_numbers = data[2].data();
+
+        res.send({
+          country,
+          popular_destinations,
+          sightseeing,
+          discover,
+          play,
+          relax,
+          states,
+          safety
+        });
       }
     })
     .catch(err => {

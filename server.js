@@ -564,6 +564,31 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           advice
         }
         country.emergency_numbers = data[3].data();
+        let {
+          ambulance,
+          police,
+          dispatch,
+          fire
+        } = country.emergency_numbers;
+
+        ambulance = ambulance.all.filter((item)=>{
+          return item != null && item != undefined && item != ''
+        })
+        police = police.all.filter((item)=>{
+          return item != null && item != undefined && item != ''
+        })
+        dispatch = dispatch.all.filter((item)=>{
+          return item != null && item != undefined && item != ''
+        })
+        fire = fire.all.filter((item)=>{
+          return item != null && item != undefined && item != ''
+        })
+
+        country.emergency_numbers.ambulance = ambulance;
+        country.emergency_numbers.police = police;
+        country.emergency_numbers.fire = fire;
+        country.emergency_numbers.dispatch = dispatch;
+        
 
         res.send({
           country,
@@ -607,6 +632,31 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           states
         } = data[0];
         country.emergency_numbers = data[2].data();
+        let {
+          ambulance,
+          police,
+          dispatch,
+          fire
+        } = country.emergency_numbers;
+
+        ambulance = ambulance.all.filter((item)=>{
+          return item != null && item != undefined && item != ''
+        })
+        police = police.all.filter((item)=>{
+          return item != null && item != undefined && item != ''
+        })
+        dispatch = dispatch.all.filter((item)=>{
+          return item != null && item != undefined && item != ''
+        })
+        fire = fire.all.filter((item)=>{
+          return item != null && item != undefined && item != ''
+        })
+
+        country.emergency_numbers.ambulance = ambulance;
+        country.emergency_numbers.police = police;
+        country.emergency_numbers.fire = fire;
+        country.emergency_numbers.dispatch = dispatch;
+        
 
         res.send({
           country,

@@ -11,10 +11,24 @@ const format = require("util").format;
 const request = require("request-promise");
 const Vibrant = require("node-vibrant");
 const admin = require("firebase-admin");
+const NodeGeocoder = require('node-geocoder');
+const options = {
+  provider: 'google',
+
+  // Optional depending on the providers
+  httpAdapter: 'https', // Default
+  apiKey: 'AIzaSyBEb1lr2C8pLBcP20y2j77h4C89RuQE1v8', // for Mapquest, OpenCage, Google Premier
+  formatter: null         // 'gpx', 'string', ...
+};
+
+
+
+const geocoder = NodeGeocoder(options);
 
 const serviceAccount = require("./serviceAccountKey.json");
 const settings = { /* your settings... */ timestampsInSnapshots: true };
 const citizenCode = "US";
+const citizenCountry = "United States";
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -94,7 +108,7 @@ const SHERPA_URL = "https://api.joinsherpa.com/v2/entry-requirements/",
   SHERPA_AUTH =
     "Basic " + new Buffer(username + ":" + password).toString("base64");
 
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Methods",
@@ -132,7 +146,7 @@ app.get("/api/explore/continent/:continent_id", (req, res) => {
     method: "GET",
     uri: `https://api.sygictravelapi.com/1.1/en/places/list?&level=poi&categories=sightseeing&parents=continent:${
       req.params.continent_id
-    }&limit=10`,
+      }&limit=10`,
     json: true,
     headers: { "x-api-key": API_KEY }
   });
@@ -141,7 +155,7 @@ app.get("/api/explore/continent/:continent_id", (req, res) => {
     method: "GET",
     uri: `https://api.sygictravelapi.com/1.1/en/places/list?rating=.0005:&level=city&parents=continent:${
       req.params.continent_id
-    }&limit=10`,
+      }&limit=10`,
     json: true,
     headers: { "x-api-key": API_KEY }
   });
@@ -150,7 +164,7 @@ app.get("/api/explore/continent/:continent_id", (req, res) => {
     method: "GET",
     uri: `https://api.sygictravelapi.com/1.1/en/places/list?level=country&parents=continent:${
       req.params.continent_id
-    }&limit=60`,
+      }&limit=60`,
     json: true,
     headers: { "x-api-key": API_KEY }
   });
@@ -216,16 +230,18 @@ app.get("/api/explore/continent/:continent_id", (req, res) => {
 });
 
 //Explore country
+
 app.get("/api/explore/countries/:country_id", (req, res) => {
   /*fs.readFile('./country_23.json', 'utf8', function (err, data) {
     if (err) throw err;
     res.send(JSON.parse(data));
   });*/
+  let embassy_count = 0;
   const popular_destinations = request({
     method: "GET",
     uri: encodeURI(
       `https://api.sygictravelapi.com/1.1/en/places/list?&level=region|city|town|island|&parents=${
-        req.params.country_id
+      req.params.country_id
       }&limit=20`
     ),
     json: true,
@@ -236,7 +252,7 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
     method: "GET",
     uri: `https://api.sygictravelapi.com/1.1/en/places/list?level=poi&categories=sightseeing&parents=${
       req.params.country_id
-    }&limit=20`,
+      }&limit=20`,
     json: true,
     headers: { "x-api-key": API_KEY }
   });
@@ -245,7 +261,7 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
     method: "GET",
     uri: `https://api.sygictravelapi.com/1.1/en/places/list?level=poi&categories=discovering&parents=${
       req.params.country_id
-    }&limit=20`,
+      }&limit=20`,
     json: true,
     headers: { "x-api-key": API_KEY }
   });
@@ -254,7 +270,7 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
     method: "GET",
     uri: `https://api.sygictravelapi.com/1.1/en/places/list?level=poi&categories=playing&parents=${
       req.params.country_id
-    }&limit=20`,
+      }&limit=20`,
     json: true,
     headers: { "x-api-key": API_KEY }
   });
@@ -263,7 +279,7 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
     method: "GET",
     uri: `https://api.sygictravelapi.com/1.1/en/places/list?level=poi&categories=relaxing&parents=${
       req.params.country_id
-    }&limit=20`,
+      }&limit=20`,
     json: true,
     headers: { "x-api-key": API_KEY }
   });
@@ -276,6 +292,7 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
     json: true,
     headers: { "x-api-key": API_KEY }
   });
+
 
   Promise.all([
     country,
@@ -303,6 +320,8 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
         },
         []
       );
+
+
 
       let country = {
         sygic_id: parent.data.place.id,
@@ -410,14 +429,14 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
       if (countries_with_states[country.name]) {
         console.log(
           `https://api.sygictravelapi.com/1.1/en/places/list?parents=${
-            req.params.country_id
+          req.params.country_id
           }&level=state&limit=100`
         );
         const states = request({
           method: "GET",
           uri: encodeURI(
             `https://api.sygictravelapi.com/1.1/en/places/list?parents=${
-              req.params.country_id
+            req.params.country_id
             }&level=state&limit=100`
           ),
           json: true,
@@ -439,10 +458,10 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
       let country = data.country;
       country.color = `rgb(${color.Vibrant._rgb[0]},${color.Vibrant._rgb[1]},${
         color.Vibrant._rgb[2]
-      })`;
+        })`;
       let visaData = country_code.data();
       let visaCode = visaData.abbreviation;
-      let visa,safety;
+      let visa, safety;
 
       if (visaData && visaCode !== citizenCode) {
         visa = request({
@@ -457,10 +476,10 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
       let plugs = [],
         emergency_numbers
       plugsRes.forEach((plug) => {
-        plugs =  [...plugs, plug.data()]
-      },[]);
+        plugs = [...plugs, plug.data()]
+      }, []);
 
-      if(visaCode) {
+      if (visaCode) {
         safety = request({
           method: "GET",
           uri: `https://www.reisewarnung.net/api?country=${visaCode}`,
@@ -500,10 +519,10 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
       }
 
       if (!country_code.exists || visaCode == citizenCode) {
-        return Promise.all([noVisaData, safety,emergency_numbers])
+        return Promise.all([noVisaData, safety, emergency_numbers])
       }
 
-      return Promise.all([noVisaData, visa, safety,emergency_numbers]);
+      return Promise.all([noVisaData, visa, safety, emergency_numbers]);
     })
     .then(data => {
       if (data.length == 4) {
@@ -532,8 +551,8 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           passport_valid && passport_validity_map[passport_valid]
             ? passport_validity_map[passport_valid]
             : `${
-                passport_validity_map["VALID_AT_ENTRY"]
-              } Make sure to check for additional requirements.`;
+            passport_validity_map["VALID_AT_ENTRY"]
+            } Make sure to check for additional requirements.`;
 
         visa.passport.blank_pages =
           blank_pages && passport_blankpages_map[blank_pages]
@@ -541,25 +560,25 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
             : "To be safe make sure to have at least one blank page in your passport.";
 
         country.visa = visa;
-        
+
         let advice = "No safety information is available for this country."
         let {
           rating
         } = data[2].data.situation;
 
-        if(rating >= 0 && rating < 1) {
+        if (rating >= 0 && rating < 1) {
           advice = "Travelling in this country is relatively safe.";
-        }else if(rating >= 1 && rating < 2.5) {
+        } else if (rating >= 1 && rating < 2.5) {
           advice = "Travelling in this country is relatively safe. Higher attention is advised when traveling here due to some areas being unsafe.";
-        }else if(rating >= 2.5 && rating < 3.5) {
+        } else if (rating >= 2.5 && rating < 3.5) {
           advice = "This country can be unsafe.  Warnings often relate to specific regions within this country. However, high attention is still advised when moving around. Trotter also recommends traveling to this country with someone who is familiar with the culture and area.";
-        }else if(rating >= 3.5 && rating < 4.5) {
+        } else if (rating >= 3.5 && rating < 4.5) {
           advice = "Travel to this country should be reduced to a necessary minimum and be conducted with good preparation and high attention. If you are not familiar with the area it is recommended you travel with someone who knows the area well.";
-        }else if(rating >= 4.5) {
+        } else if (rating >= 4.5) {
           advice = "It is unsafe to travel to this country.  Trotter advises against traveling here.  You risk high chance of danger to you health and life.";
         }
 
-        let safety ={
+        let safety = {
           rating,
           advice
         }
@@ -571,16 +590,16 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           fire
         } = country.emergency_numbers;
 
-        ambulance = ambulance.all.filter((item)=>{
+        ambulance = ambulance.all.filter((item) => {
           return item != null && item != undefined && item != ''
         })
-        police = police.all.filter((item)=>{
+        police = police.all.filter((item) => {
           return item != null && item != undefined && item != ''
         })
-        dispatch = dispatch.all.filter((item)=>{
+        dispatch = dispatch.all.filter((item) => {
           return item != null && item != undefined && item != ''
         })
-        fire = fire.all.filter((item)=>{
+        fire = fire.all.filter((item) => {
           return item != null && item != undefined && item != ''
         })
 
@@ -588,9 +607,9 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
         country.emergency_numbers.police = police;
         country.emergency_numbers.fire = fire;
         country.emergency_numbers.dispatch = dispatch;
-        
 
-        res.send({
+
+        return ({
           country,
           popular_destinations,
           sightseeing,
@@ -606,19 +625,19 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           rating
         } = data[1].data.situation;
 
-        if(rating >= 0 && rating < 1) {
+        if (rating >= 0 && rating < 1) {
           advice = "Travelling in this country is relatively safe.";
-        }else if(rating >= 1 && rating < 2.5) {
+        } else if (rating >= 1 && rating < 2.5) {
           advice = "Travelling in this country is relatively safe. Higher attention is advised when traveling here due to some areas being unsafe.";
-        }else if(rating >= 2.5 && rating < 3.5) {
+        } else if (rating >= 2.5 && rating < 3.5) {
           advice = "This country can be unsafe.  Warnings often relate to specific regions within this country. However, high attention is still advised when moving around. Trotter also recommends traveling to this country with someone who is familiar with the culture and area.";
-        }else if(rating >= 3.5 && rating < 4.5) {
+        } else if (rating >= 3.5 && rating < 4.5) {
           advice = "Travel to this country should be reduced to a necessary minimum and be conducted with good preparation and high attention. If you are not familiar with the area it is recommended you travel with someone who knows the area well.";
-        }else if(rating >= 4.5) {
+        } else if (rating >= 4.5) {
           advice = "It is unsafe to travel to this country.  Trotter advises against traveling here.  You risk high chance of danger to you health and life.";
         }
 
-        let safety ={
+        let safety = {
           rating,
           advice
         }
@@ -639,16 +658,16 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           fire
         } = country.emergency_numbers;
 
-        ambulance = ambulance.all.filter((item)=>{
+        ambulance = ambulance.all.filter((item) => {
           return item != null && item != undefined && item != ''
         })
-        police = police.all.filter((item)=>{
+        police = police.all.filter((item) => {
           return item != null && item != undefined && item != ''
         })
-        dispatch = dispatch.all.filter((item)=>{
+        dispatch = dispatch.all.filter((item) => {
           return item != null && item != undefined && item != ''
         })
-        fire = fire.all.filter((item)=>{
+        fire = fire.all.filter((item) => {
           return item != null && item != undefined && item != ''
         })
 
@@ -656,9 +675,9 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
         country.emergency_numbers.police = police;
         country.emergency_numbers.fire = fire;
         country.emergency_numbers.dispatch = dispatch;
-        
 
-        res.send({
+
+        return ({
           country,
           popular_destinations,
           sightseeing,
@@ -669,6 +688,48 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
           safety
         });
       }
+    }).then((data) => {
+      const embassy = request({
+        method: "GET",
+        uri: encodeURI(
+          `https://api.sygictravelapi.com/1.1/en/places/list?tags=Embassy&parents=${req.params.country_id}&level=poi&query=${citizenCountry}`
+        ),
+        json: true,
+        headers: { "x-api-key": API_KEY }
+      });
+
+      return Promise.all([data, embassy])
+    }).then(([data, embassy]) => {
+      let addresses;
+      embassy_count = embassy.data.places.length;
+      if (embassy) {
+        addresses = embassy.data.places.reduce((acc, curr) => {
+          return [...acc, geocoder.reverse({ lat: curr.location.lat, lon: curr.location.lng })]
+        }, [])
+        embassy_names = embassy.data.places.reduce((acc, curr) => {
+          return [...acc, curr.name ]
+        }, []);
+        return embassy_count > 0 ? Promise.all([data, embassy_names, ...addresses]) : data
+      }
+
+      return data;
+
+    }).then((response) => {
+      let data = response;
+      if (response instanceof Array) {
+        data = response.splice(0, 1)[0];
+        let embassy_names = response.splice(0, 1)[0];
+        console.log(embassy_names);
+        data.country.embassies = response.reduce((acc, curr, index) => {
+          return [...acc, { address: curr[0].formattedAddress, lat: curr[0].latitude, lng: curr[0].longitude, name: embassy_names[index] }]
+        }, []);
+      }
+
+      embassy_count = 0;
+
+      res.send({
+        ...data
+      })
     })
     .catch(err => {
       console.log(err);
@@ -677,8 +738,8 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
 });
 
 //City
-app.get("/api/explore/cities/:city_id", (req, res) => {});
-app.get("/api/explore/cities/:city_id/sightseeing", (req, res) => {});
+app.get("/api/explore/cities/:city_id", (req, res) => { });
+app.get("/api/explore/cities/:city_id/sightseeing", (req, res) => { });
 
 const uploadImageToStorage = file => {
   let prom = new Promise((resolve, reject) => {
@@ -703,7 +764,7 @@ const uploadImageToStorage = file => {
       // The public URL can be used to directly access the file via HTTP.
       const url = format(
         `https://firebasestorage.googleapis.com/v0/b/${
-          bucket.name
+        bucket.name
         }/o/${encodeURIComponent(fileUpload.name)}?alt=media`
       );
       resolve({ url, newFileName });
@@ -714,7 +775,7 @@ const uploadImageToStorage = file => {
   return prom;
 };
 
-const listen = server.listen(3002, function() {
+const listen = server.listen(3002, function () {
   var host = server.address().address;
   var port = server.address().port;
   console.log("app listening at //%s:%s", host, port);

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "tsc": "tsc",
-    "build": "cp serviceAccountKey.json dist/serviceAccountKey.json && tsc"
+    "build": "tsc && cp serviceAccountKey.json dist/serviceAccountKey.json"
   },
   "dependencies": {
     "@google-cloud/storage": "^1.5.1",

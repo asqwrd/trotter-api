@@ -2,20 +2,21 @@ import { Request, Response, NextFunction } from "express";
 
 import { getContinent } from "./controllers/continent";
 
-const fs = require("fs");
-const app = require("express")();
-const express = require("express");
-const path = require("path");
-const https = require("https");
-const http = require("http");
-const googleStorage = require("@google-cloud/storage");
-const multer = require("multer");
-const bodyParser = require("body-parser");
-const format = require("util").format;
-const request = require("request-promise");
-const Vibrant = require("node-vibrant");
-const admin = require("firebase-admin");
-const NodeGeocoder = require("node-geocoder");
+import fs from "fs";
+import express from "express";
+import path = require("path");
+import https from "https";
+import http from "http";
+import googleStorage from "@google-cloud/storage";
+import multer from "multer";
+import bodyParser = require("body-parser");
+import util from "util";
+import request from "request-promise";
+import Vibrant from "node-vibrant";
+import admin from "firebase-admin";
+import NodeGeocoder from "node-geocoder";
+const app = express();
+
 const options = {
   provider: "google",
 
@@ -25,6 +26,7 @@ const options = {
   formatter: null // 'gpx', 'string', ...
 };
 
+const format = util.format;
 const geocoder = NodeGeocoder(options);
 
 const serviceAccount = require("./serviceAccountKey.json");
@@ -120,7 +122,7 @@ app.use(bodyParser.json());
 
 const PROD_MODE = process.argv[2];
 export const API_KEY = "6SdxevLXN2aviv5g67sac2aySsawGYvJ6UcTmvWE";
-let server = http.createServer(app);
+let server;
 if (PROD_MODE) {
   const hskey = fs.readFileSync("/etc/letsencrypt/live/ajibade.me/privkey.pem");
   const hscert = fs.readFileSync("/etc/letsencrypt/live/ajibade.me/fullchain.pem");
@@ -131,6 +133,8 @@ if (PROD_MODE) {
     ca: hschain
   };
   server = https.createServer(options, app);
+} else {
+  server = http.createServer(app);
 }
 
 //Explore continent
@@ -628,6 +632,7 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
 app.get("/api/explore/cities/:city_id", (req, res) => {});
 app.get("/api/explore/cities/:city_id/sightseeing", (req, res) => {});
 
+//This could is snippets for uploading image. I will eventually add profile images once we flesh out user management
 // const uploadImageToStorage = file => {
 //   let prom = new Promise((resolve, reject) => {
 //     if (!file) {

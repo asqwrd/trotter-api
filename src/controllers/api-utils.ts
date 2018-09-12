@@ -27,17 +27,17 @@ export function sygicPlacesToInternal(sygicPlaces: SygicPlace[]): Place[] {
   }, []);
 }
 
-export function constructPlacesRequest(id: string, queryParams: string, parents_level: string = 'continent', limit: number = 10) {
+export function constructPlacesRequest(id: string, queryParams: string, limit: number = 10) {
   return request.get({
-    uri: `${BASE_SYGIC_API}/places/list?${queryParams}&parents=${parents_level}:${id}&limit=${limit}`,
+    uri: `${BASE_SYGIC_API}/places/list?${queryParams}&parents=${id}&limit=${limit}`,
     json: true,
     headers: { "x-api-key": API_KEY }
   });
 }
 
-export function constructPlaceRequest(id: string, level: string = 'continent') {
+export function constructPlaceRequest(id: string) {
   return request.get({
-    uri: `${BASE_SYGIC_API}/places/${level}:${id}`,
+    uri: `${BASE_SYGIC_API}/places/${id}`,
     json: true,
     headers: { "x-api-key": API_KEY }
   });

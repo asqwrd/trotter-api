@@ -97,34 +97,30 @@ async function getCountryResearch(req) {
   const popular_destinations_request = constructPlacesRequest(
     id,
     "level=region|city|town|island",
-    "country",
     20
   );
 
   const sightseeing_request = constructPlacesRequest(
     id,
     "level=poi&categories=sightseeing",
-    "country",
     20
   );
 
   const discovering_request = constructPlacesRequest(
     id,
     "level=poi&categories=discovering",
-    "country",
     20
   );
 
-  const playing_request = constructPlacesRequest(id, "level=poi&categories=playing", "country", 20);
+  const playing_request = constructPlacesRequest(id, "level=poi&categories=playing", 20);
 
   const relaxing_request = constructPlacesRequest(
     id,
     "level=poi&categories=relaxing",
-    "country",
     20
   );
 
-  const country_request = constructPlaceRequest(id, "country");
+  const country_request = constructPlaceRequest(id);
 
   return Promise.all([
     country_request,
@@ -201,7 +197,7 @@ async function countryUICalls(data, req) {
   let plugs = plugs_db.where("country", "==", country_name).get();
 
   if (countries_with_states[data.country.name]) {
-    const states = constructPlacesRequest(id, "level=state", "country", 100);
+    const states = constructPlacesRequest(id, "level=state", 100);
 
     return Promise.all([country_color, country_code, plugs, states]).catch((error)=>{console.log(error)}) as Promise<any[]>;
   }
@@ -295,7 +291,7 @@ function addEmergencyNumber(emergency_numbers) {
 
 async function getEmbassy(req) {
   const id = req.params.country_id;
-  const embassy = constructPlacesRequest(id, `tags=Embassy&query=${citizenCountry}&level=poi`, "country", 20) ;
+  const embassy = constructPlacesRequest(id, `tags=Embassy&query=${citizenCountry}&level=poi`, 20) ;
   return embassy;
 }
 

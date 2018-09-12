@@ -1,46 +1,9 @@
 import { Response, Request } from "express";
-import * as request from "request-promise";
 
-import { API_KEY } from "../server";
-import { SygicPlace } from "./sygic-api.models";
-import { BASE_SYGIC_API } from "./sygic-api.constants";
+import {PlacesData} from "./sygic-api.models";
+import {sygicPlacesToInternal, constructPlacesRequest} from "./api-utils";
 
-interface PlacesData {
-  data: { places: SygicPlace[] };
-}
 
-interface Place {
-  sygic_id: string;
-  image: string;
-  name: string;
-  name_suffix: string;
-  parent_ids: string[];
-  description: string;
-}
-
-function sygicPlacesToInternal(sygicPlaces: SygicPlace[]): Place[] {
-  return sygicPlaces.reduce((acc, curr) => {
-    return [
-      ...acc,
-      {
-        sygic_id: curr.id,
-        image: curr.thumbnail_url,
-        name: curr.name,
-        name_suffix: curr.name_suffix,
-        parent_ids: curr.parent_ids,
-        description: curr.perex
-      }
-    ];
-  }, []);
-}
-
-function constructPlacesRequest(continentID: string, queryParams: string) {
-  return request.get({
-    uri: `${BASE_SYGIC_API}/places/list?${queryParams}&parents=continent:${continentID}&limit=10`,
-    json: true,
-    headers: { "x-api-key": API_KEY }
-  });
-}
 
 export const getContinent = (req: Request, res: Response) => {
   const continentID = req.params.continent_id;

@@ -34,6 +34,12 @@ const settings = { /* your settings... */ timestampsInSnapshots: true };
 const citizenCode = "US";
 const citizenCountry = "United States";
 
+function removeDuplicates(myArr, prop) {
+  return myArr.filter((obj, pos, arr) => {
+      return arr.map(mapObj => mapObj[prop]).indexOf(obj[prop]) === pos;
+  });
+}
+
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
@@ -614,6 +620,8 @@ app.get("/api/explore/countries/:country_id", (req, res) => {
             }
           ];
         }, []);
+
+        data.country.embassies = removeDuplicates(data.country.embassies,'address')
       }
 
       embassy_count = 0;

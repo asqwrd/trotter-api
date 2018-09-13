@@ -9,6 +9,7 @@ export interface SygicPlace {
   perex: string; // 'Old Havana is the city-center and one of the 15 municipalities forming Havana, Cuba.',
   thumbnail_url: string; // 'https://media-cdn.sygictraveldata.com/media/poi:24922' }
   color: string;
+  level: string;
 }
 
 export interface PlacesData {

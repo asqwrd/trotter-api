@@ -19,7 +19,8 @@ export function sygicPlacesToInternal(sygicPlaces: SygicPlace[]): Place[] {
         name: curr.name,
         name_suffix: curr.name_suffix,
         parent_ids: curr.parent_ids,
-        description: curr.perex
+        description: curr.perex,
+        level:curr.level
       }
     ];
   }, []);

@@ -265,7 +265,7 @@ function formatSafety(rating) {
 }
 
 function addEmergencyNumber(emergency_numbers) {
-  let { ambulance, police, dispatch, fire } = emergency_numbers;
+  let { ambulance, police, dispatch, fire, member_112  } = emergency_numbers;
 
   ambulance = ambulance.all.filter(item => {
     return item != null && item != undefined && item != "";
@@ -279,12 +279,17 @@ function addEmergencyNumber(emergency_numbers) {
   fire = fire.all.filter(item => {
     return item != null && item != undefined && item != "";
   });
+  let european_emergency_number = [];
+  if(member_112){
+    european_emergency_number = [112]
+  }
 
   return {
     ambulance,
     police,
     dispatch,
-    fire
+    fire,
+    european_emergency_number
   };
 }
 

@@ -7,8 +7,6 @@ const SHERPA_URL = "https://api.joinsherpa.com/v2/entry-requirements/",
   password = "nIXaxALFPV0IiwNOvBEBrDCNSw3SCv67R4UEvD9r",
   SHERPA_AUTH = "Basic " + new Buffer(username + ":" + password).toString("base64");
 
-
-
 let countryCurrencies;
 
 export function sygicPlacesToInternal(sygicPlaces: SygicPlace[]): Place[] {
@@ -60,7 +58,7 @@ export function constructSafetyRequest(visaCode: string) {
   });
 }
 
-export function constructCurrencyConvertRequest(from: string, to:string) {
+export function constructCurrencyConvertRequest(from: string, to: string) {
   return request({
     method: "GET",
     uri: `https://free.currencyconverterapi.com/api/v6/convert?q=${from}_${to}&compact=ultra`,
@@ -76,17 +74,16 @@ export async function getCountriesCurrenciesApi() {
   });
 }
 
-export function setCountriesCurrencies(currencies){
+export function setCountriesCurrencies(currencies) {
   countryCurrencies = currencies;
 }
 
-export function getCountriesCurrencies(){
+export function getCountriesCurrencies() {
   return countryCurrencies;
 }
 
-
 export function removeDuplicates(myArr, prop) {
   return myArr.filter((obj, pos, arr) => {
-      return arr.map(mapObj => mapObj[prop]).indexOf(obj[prop]) === pos;
+    return arr.map(mapObj => mapObj[prop]).indexOf(obj[prop]) === pos;
   });
 }

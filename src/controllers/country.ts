@@ -24,12 +24,10 @@ const country_codes = db.collection("countries_code");
 const emergency_numbers_db = db.collection("emergency_numbers");
 const plugs_db = db.collection("plugs");
 
-(async function(){
+(async function() {
   const currencies = await getCountriesCurrenciesApi();
   setCountriesCurrencies(currencies.results);
-})()
-
-
+})();
 
 const passport_blankpages_map = {
   NOT_REQUIRED: "You do not need to have any blank pages in your passport.",
@@ -100,25 +98,13 @@ async function getCountryResearch(req) {
     20
   );
 
-  const sightseeing_request = constructPlacesRequest(
-    id,
-    "level=poi&categories=sightseeing",
-    20
-  );
+  const sightseeing_request = constructPlacesRequest(id, "level=poi&categories=sightseeing", 20);
 
-  const discovering_request = constructPlacesRequest(
-    id,
-    "level=poi&categories=discovering",
-    20
-  );
+  const discovering_request = constructPlacesRequest(id, "level=poi&categories=discovering", 20);
 
   const playing_request = constructPlacesRequest(id, "level=poi&categories=playing", 20);
 
-  const relaxing_request = constructPlacesRequest(
-    id,
-    "level=poi&categories=relaxing",
-    20
-  );
+  const relaxing_request = constructPlacesRequest(id, "level=poi&categories=relaxing", 20);
 
   const country_request = constructPlaceRequest(id);
 
@@ -129,7 +115,9 @@ async function getCountryResearch(req) {
     discovering_request,
     playing_request,
     relaxing_request
-  ]).catch((error)=>{console.log(error)});
+  ]).catch(error => {
+    console.log(error);
+  });
 }
 
 function formatCountryResearch(responses) {
@@ -199,14 +187,18 @@ async function countryUICalls(data, req) {
   if (countries_with_states[data.country.name]) {
     const states = constructPlacesRequest(id, "level=state", 100);
 
-    return Promise.all([country_color, country_code, plugs, states]).catch((error)=>{console.log(error)}) as Promise<any[]>;
+    return Promise.all([country_color, country_code, plugs, states]).catch(error => {
+      console.log(error);
+    }) as Promise<any[]>;
   }
 
-  return Promise.all([country_color, country_code, plugs]).catch((error)=>{console.log(error)}) as Promise<any[]>;
+  return Promise.all([country_color, country_code, plugs]).catch(error => {
+    console.log(error);
+  }) as Promise<any[]>;
 }
 
 async function visaInfo(visaData, visaCode, country_code, currency) {
-  let visa, safety, emergency_numbers,currency_convert;
+  let visa, safety, emergency_numbers, currency_convert;
 
   if (visaData && visaCode !== citizenCode) {
     visa = constructSherpaRequest(visaCode, citizenCode);
@@ -215,14 +207,21 @@ async function visaInfo(visaData, visaCode, country_code, currency) {
   if (visaCode) {
     safety = constructSafetyRequest(visaCode);
     emergency_numbers = emergency_numbers_db.doc(visaCode).get();
-    currency_convert = constructCurrencyConvertRequest(currency.from.currencyId,currency.to.currencyId);
+    currency_convert = constructCurrencyConvertRequest(
+      currency.from.currencyId,
+      currency.to.currencyId
+    );
   }
 
   if (!country_code.exists || visaCode == citizenCode) {
-    return Promise.all([safety, emergency_numbers,currency_convert]).catch((error)=>{console.log(error)}) as Promise<any>;
+    return Promise.all([safety, emergency_numbers, currency_convert]).catch(error => {
+      console.log(error);
+    }) as Promise<any>;
   }
 
-  return Promise.all([safety, emergency_numbers, currency_convert, visa]).catch((error)=>{console.log(error)});
+  return Promise.all([safety, emergency_numbers, currency_convert, visa]).catch(error => {
+    console.log(error);
+  });
 }
 
 function formatVisa(visaData) {
@@ -291,7 +290,7 @@ function addEmergencyNumber(emergency_numbers) {
 
 async function getEmbassy(req) {
   const id = req.params.country_id;
-  const embassy = constructPlacesRequest(id, `tags=Embassy&query=${citizenCountry}&level=poi`, 20) ;
+  const embassy = constructPlacesRequest(id, `tags=Embassy&query=${citizenCountry}&level=poi`, 20);
   return embassy;
 }
 
@@ -320,7 +319,9 @@ async function getAddresses(embassies) {
     const embassy_names = embassies.data.places.reduce((acc, curr) => {
       return [...acc, curr.name];
     }, []);
-    return Promise.all([embassy_names, ...addresses]).catch((error)=>{console.log(error)});
+    return Promise.all([embassy_names, ...addresses]).catch(error => {
+      console.log(error);
+    });
   }
   return;
 }
@@ -348,25 +349,25 @@ export const getCountry = async (req: Request, res: Response) => {
   country.plugs = plugs;
   let visaData = country_code.data();
   let visaCode = visaData.abbreviation;
-  
+
   country.visa = null;
 
-  if (states) {
-    states = sygicPlacesToInternal(states["data"].places);
-  }
+  states = states ? sygicPlacesToInternal(states["data"].places) : [];
+
   let currencyObj = {
     from: citizenCurrency,
     to: currencies[visaCode]
-  }
+  };
   let helpfulInfo = await visaInfo(visaData, visaCode, country_code, currencyObj);
 
   let [safetyData, emergency_numbersData, converted_currency, visaStuff] = helpfulInfo;
 
   country.currency = {
-    converted_currency: converted_currency[`${currencyObj.from.currencyId}_${currencyObj.to.currencyId}`],
+    converted_currency:
+      converted_currency[`${currencyObj.from.currencyId}_${currencyObj.to.currencyId}`],
     converted_unit: currencyObj.to,
     unit: citizenCurrency
-  }
+  };
 
   let visa = visaStuff;
   if (visa) {

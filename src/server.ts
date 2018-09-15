@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 
 import { getContinent } from "./controllers/continent";
 import { getCountry } from "./controllers/country";
-import { getCountriesCurrenciesApi, setCountriesCurrencies } from "./controllers/api-utils";
+import { getCity } from "./controllers/city";
 
 import fs from "fs";
 import express from "express";
@@ -50,8 +50,7 @@ app.get("/api/explore/continent/:continent_id", getContinent);
 app.get("/api/explore/countries/:country_id", getCountry)
     
 //City
-app.get("/api/explore/cities/:city_id", (req, res) => {});
-app.get("/api/explore/cities/:city_id/sightseeing", (req, res) => {});
+app.get("/api/explore/cities/:city_id", getCity);
 
 //This could is snippets for uploading image. I will eventually add profile images once we flesh out user management
 // const uploadImageToStorage = file => {

@@ -20,7 +20,22 @@ export function sygicPlacesToInternal(sygicPlaces: SygicPlace[]): Place[] {
         name_suffix: curr.name_suffix,
         parent_ids: curr.parent_ids,
         description: curr.perex,
-        level:curr.level
+        level:curr.level,
+        location:curr.location,
+        address:curr.address,
+        phone:curr.phone,
+      }
+    ];
+  }, []);
+}
+
+export function sygicPlacesToLocations(sygicPlaces: SygicPlace[]) {
+  return sygicPlaces.reduce((acc, curr) => {
+    return [
+      ...acc,
+      {
+        location:curr.location,
+        name:curr.name
       }
     ];
   }, []);

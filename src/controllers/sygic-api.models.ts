@@ -10,6 +10,22 @@ export interface SygicPlace {
   thumbnail_url: string; // 'https://media-cdn.sygictraveldata.com/media/poi:24922' }
   color: string;
   level: string;
+  address: string|null;
+  admission: string|null;
+  email: string|null;
+  opening_hours: string|null;
+  phone: string|null;
+  area:number;
+  location: {
+    lat: number
+    lng: number
+    };    
+    bounding_box: {
+    south: number
+    west: number
+    north: number
+    east: number
+    }|null
 }
 
 export interface PlacesData {
@@ -27,6 +43,22 @@ export interface Place {
   visa: string;
   plugs: Object[];
   embassies: Object[];
+  address: string|null;
+  admission: string|null;
+  email: string|null;
+  opening_hours: string|null;
+  phone: string|null;
+  area:number;
+  location: {
+    lat: number
+    lng: number
+    };    
+    bounding_box: {
+    south: number
+    west: number
+    north: number
+    east: number
+    }|null
 
 }
 

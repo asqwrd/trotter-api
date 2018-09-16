@@ -34,8 +34,10 @@ export function sygicPlacesToLocations(sygicPlaces: SygicPlace[]) {
     return [
       ...acc,
       {
-        location:curr.location,
-        name:curr.name
+        lat:curr.location.lat,
+        lng:curr.location.lng,
+        title:curr.name,
+        selected: false
       }
     ];
   }, []);

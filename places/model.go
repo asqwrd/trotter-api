@@ -10,12 +10,13 @@ type Place struct {
 	Description string `json:"description"`
 
 	// These don't
-	Name        string   `json:"name"`
-	Name_suffix string   `json:"name_suffix"`
-	Parent_ids  []string `json:"parent_ids"`
-	Level       string   `json:"level"`
-	Address     string   `json:"address"`
-	Phone       string   `json:"phone"`
+	Name        string         `json:"name"`
+	Name_suffix string         `json:"name_suffix"`
+	Parent_ids  []string       `json:"parent_ids"`
+	Level       string         `json:"level"`
+	Address     string         `json:"address"`
+	Phone       string         `json:"phone"`
+	Location    sygic.Location `json:"location"`
 }
 
 func fromSygicPlace(sp *sygic.Place) (p *Place) {
@@ -32,6 +33,7 @@ func fromSygicPlace(sp *sygic.Place) (p *Place) {
 		Level:       sp.Level,
 		Address:     sp.Address,
 		Phone:       sp.Phone,
+		Location:    sp.Location,
 	}
 
 	return p

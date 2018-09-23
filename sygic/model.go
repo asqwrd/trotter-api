@@ -18,6 +18,11 @@ type placesData struct {
 	Places []Place
 }
 
+type Location struct {
+	Lat float32 `json:"lat"`
+	Lng float32 `json:"lng"`
+}
+
 type Place struct {
 	// These names get overridden
 	ID            string
@@ -31,8 +36,7 @@ type Place struct {
 	Level       string
 	Address     string
 	Phone       string
-
-	// TODO: location:curr.location,
+	Location    Location
 }
 
 const baseSygicAPI = "https://api.sygictravelapi.com/1.1/en/places/list"

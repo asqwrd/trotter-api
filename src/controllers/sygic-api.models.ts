@@ -10,22 +10,22 @@ export interface SygicPlace {
   thumbnail_url: string; // 'https://media-cdn.sygictraveldata.com/media/poi:24922' }
   color: string;
   level: string;
-  address: string|null;
-  admission: string|null;
-  email: string|null;
-  opening_hours: string|null;
-  phone: string|null;
-  area:number;
+  address: string | null;
+  admission: string | null;
+  email: string | null;
+  opening_hours: string | null;
+  phone: string | null;
+  area: number;
   location: {
     lat: number
     lng: number
-    };    
-    bounding_box: {
+  };
+  bounding_box: {
     south: number
     west: number
     north: number
     east: number
-    }|null
+  } | null
 }
 
 export interface PlacesData {
@@ -43,22 +43,22 @@ export interface Place {
   visa: string;
   plugs: Object[];
   embassies: Object[];
-  address: string|null;
-  admission: string|null;
-  email: string|null;
-  opening_hours: string|null;
-  phone: string|null;
-  area:number;
+  address: string | null;
+  admission: string | null;
+  email: string | null;
+  opening_hours: string | null;
+  phone: string | null;
+  area: number;
   location: {
     lat: number
     lng: number
-    };    
-    bounding_box: {
+  };
+  bounding_box: {
     south: number
     west: number
     north: number
     east: number
-    }|null
+  } | null
 
 }
 
@@ -74,7 +74,7 @@ export interface Country {
   visa: string;
   plugs: Object[];
   embassies: Object[];
-  emergency_numbers: {ambulance:String[],police:String[], fire:String[], dispatch:String[]};
-  currency: {converted_currency:number, converted_unit:string, unit:string};
+  emergency_numbers: { ambulance: String[], police: String[], fire: String[], dispatch: String[] };
+  currency: { converted_currency: number, converted_unit: string, unit: string };
 
 }

@@ -37,7 +37,8 @@ export function sygicPlacesToLocations(sygicPlaces: SygicPlace[]) {
         lat:curr.location.lat,
         lng:curr.location.lng,
         title:curr.name,
-        selected: false
+        selected: false,
+        bounding_box: curr.bounding_box
       }
     ];
   }, []);

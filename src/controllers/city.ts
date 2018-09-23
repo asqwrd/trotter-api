@@ -51,6 +51,7 @@ export const getCity = async (req: Request, res: Response) => {
     name: cityData.data.place.name,
     description: cityData.data.place.perex,
     location: cityData.data.place.location,
+    bounding_box: cityData.data.place.bounding_box,
   } as any;
 
 

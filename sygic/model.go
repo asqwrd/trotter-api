@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 )
@@ -36,6 +37,8 @@ type Place struct {
 
 const baseSygicAPI = "https://api.sygictravelapi.com/1.1/en/places/list"
 
+var sygicAPIKey = os.Getenv("SYGIC_API_KEY")
+
 func request(parentID string, level string, limit int, query *url.Values) (*http.Response, error) {
 	client := http.Client{Timeout: time.Second * 5}
 
@@ -57,7 +60,7 @@ func request(parentID string, level string, limit int, query *url.Values) (*http
 	q.Set("limit", strconv.Itoa(limit))
 	req.URL.RawQuery = q.Encode()
 
-	req.Header.Set("x-api-key", "6SdxevLXN2aviv5g67sac2aySsawGYvJ6UcTmvWE")
+	req.Header.Set("x-api-key", sygicAPIKey)
 
 	res, err := client.Do(req)
 	if err != nil {

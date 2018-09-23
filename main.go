@@ -15,6 +15,13 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		log.Fatal("$PORT must be set")
+	} else {
+		log.Println("Running on port: " + port)
+	}
+
+	sygicAPIKey := os.Getenv("SYGIC_API_KEY")
+	if sygicAPIKey == "" {
+		log.Fatal("$SYGIC_API_KEY not set")
 	}
 
 	router := places.NewRouter()

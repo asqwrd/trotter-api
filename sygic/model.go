@@ -2,6 +2,8 @@ package sygic
 
 import (
 	"encoding/json"
+	"errors"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -77,13 +79,15 @@ func request(parentID string, level string, limit int, query *url.Values) (*http
 func GetPlaces(parentID string, level string, limit int, query *url.Values) ([]Place, error) {
 	res, err := request(parentID, level, limit, query)
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		return nil, errors.New("Failed to access the Sygic API.")
 	}
 
 	resp := &placeResponse{}
 	err = json.NewDecoder(res.Body).Decode(resp)
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
 	}
 
 	return resp.Data.Places, nil

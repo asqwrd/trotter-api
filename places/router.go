@@ -7,8 +7,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var controller = Controller{}
-
 type Route struct {
 	Name        string
 	Method      string
@@ -23,7 +21,7 @@ var routes = Routes{
 		"GetContinent",
 		"GET",
 		"/api/explore/continent/{continentID}/",
-		controller.GetContinent,
+		GetContinent,
 	},
 }
 

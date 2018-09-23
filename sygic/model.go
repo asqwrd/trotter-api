@@ -2,7 +2,6 @@ package sygic
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -20,19 +19,19 @@ type placesData struct {
 
 type Place struct {
 	// These names get overridden
-	ID            string `json:"id"`
-	Thumbnail_url string `json:"Thumbnail_url"`
+	ID            string
+	Thumbnail_url string
 	Perex         string
 
 	// These don't
-	Name        string   `json:"name"`
-	Name_suffix string   `json:"name_suffix"`
-	Parent_ids  []string `json:"parent_ids"`
+	Name        string
+	Name_suffix string
+	Parent_ids  []string
 	Level       string
 	Address     string
 	Phone       string
 
-	// location:curr.location,
+	// TODO: location:curr.location,
 }
 
 const baseSygicAPI = "https://api.sygictravelapi.com/1.1/en/places/list"
@@ -58,8 +57,6 @@ func request(parentID string, level string, limit int, query *url.Values) (*http
 	q.Set("limit", strconv.Itoa(limit))
 	req.URL.RawQuery = q.Encode()
 
-	log.Print(req.URL.String())
-
 	req.Header.Set("x-api-key", "6SdxevLXN2aviv5g67sac2aySsawGYvJ6UcTmvWE")
 
 	res, err := client.Do(req)
@@ -81,9 +78,6 @@ func GetPlaces(parentID string, level string, limit int, query *url.Values) ([]P
 	if err != nil {
 		return nil, err
 	}
-
-	log.Println(res.Request)
-	log.Println(resp.Data.Places)
 
 	return resp.Data.Places, nil
 }

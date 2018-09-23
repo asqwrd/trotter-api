@@ -2,6 +2,7 @@ package places
 
 import "github.com/asqwrd/trotter-api/sygic"
 
+// Place represents the normalized + filtered data for a sygic.Place
 type Place struct {
 	// These are name overrides
 	Sygic_id    string `json:"sygic_id"`
@@ -17,7 +18,7 @@ type Place struct {
 	Phone       string   `json:"phone"`
 }
 
-func PlaceFromSygicPlace(sp *sygic.Place) (p *Place) {
+func fromSygicPlace(sp *sygic.Place) (p *Place) {
 	p = &Place{
 		// These have name overrides
 		Sygic_id:    sp.ID,
@@ -36,10 +37,11 @@ func PlaceFromSygicPlace(sp *sygic.Place) (p *Place) {
 	return p
 }
 
-func PlacesFromSygicPlaces(sourcePlaces []sygic.Place) (internalPlaces []Place) {
+// FromSygicPlaces converts a sygic.Place to an internal Place value
+func FromSygicPlaces(sourcePlaces []sygic.Place) (internalPlaces []Place) {
 	internalPlaces = []Place{}
 	for _, sourcePlace := range sourcePlaces {
-		internalPlaces = append(internalPlaces, *PlaceFromSygicPlace(&sourcePlace))
+		internalPlaces = append(internalPlaces, *fromSygicPlace(&sourcePlace))
 	}
 
 	return internalPlaces

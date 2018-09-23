@@ -6,24 +6,21 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/asqwrd/trotter-api/store"
-
+	"github.com/asqwrd/trotter-api/places"
 	"github.com/gorilla/handlers"
 )
 
 func main() {
 	// Get the "PORT" env variable
 	port := os.Getenv("PORT")
-
 	if port == "" {
 		log.Fatal("$PORT must be set")
 	}
 
-	router := store.NewRouter() // create routes
+	router := places.NewRouter()
 
-	// These two lines are important if you're designing a front-end to utilise this API methods
 	allowedOrigins := handlers.AllowedOrigins([]string{"*"})
-	allowedMethods := handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "PUT"})
+	allowedMethods := handlers.AllowedMethods([]string{"GET"})
 
 	// Launch server with CORS validations
 	log.Fatal(http.ListenAndServe(":"+port, handlers.CORS(allowedOrigins, allowedMethods)(router)))

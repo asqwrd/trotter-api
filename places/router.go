@@ -23,6 +23,15 @@ var routes = Routes{
 		"/api/explore/continent/{continentID}/",
 		GetContinent,
 	},
+	Route{
+		"GetCountry",
+		"GET",
+		"api/explore/country/{countryID}/",
+		GetCountry,
+	},
+	Route{
+		"GetCity", "GET", "/api/explore/cities/{cityID}/", GetCity,
+	},
 }
 
 // NewRouter configures a new router to the API

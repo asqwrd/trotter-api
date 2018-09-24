@@ -18,7 +18,7 @@ func WriteErrorResponse(w http.ResponseWriter, err error) {
 func Write(w http.ResponseWriter, data interface{}, statusCode int) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.WriteHeader(http.StatusBadRequest)
+	w.WriteHeader(statusCode)
 
 	// For now, we're assuming json.Marshal succeeds...
 	marshalledData, _ := json.Marshal(data)

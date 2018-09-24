@@ -1,7 +1,6 @@
 package places
 
 import (
-	"log"
 	"net/http"
 	"net/url"
 

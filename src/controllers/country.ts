@@ -13,7 +13,10 @@ import {
   getCountriesCurrencies,
   getCountriesCurrenciesApi,
   setCountriesCurrencies,
-  constructCurrencyConvertRequest
+  constructCurrencyConvertRequest,
+  getTriposoId,
+  getTriposoPOI,
+  getTriposoDestination
 } from "./api-utils";
 import util from "util";
 
@@ -92,29 +95,33 @@ const countries_with_states = {
 async function getCountryResearch(req) {
   const id = req.params.country_id;
 
+
   const popular_destinations_request = constructPlacesRequest(
     id,
     "level=region|city|town|island",
-    20
+    50
   );
 
-  const sightseeing_request = constructPlacesRequest(id, "level=poi&categories=sightseeing", 20);
+  //const sightseeing_request = constructPlacesRequest(id, "level=poi&categories=sightseeing", 20);
 
-  const discovering_request = constructPlacesRequest(id, "level=poi&categories=discovering", 20);
+  //const discovering_request = constructPlacesRequest(id, "level=poi&categories=discovering", 20);
 
-  const playing_request = constructPlacesRequest(id, "level=poi&categories=playing", 20);
+  //const playing_request = constructPlacesRequest(id, "level=poi&categories=playing", 20);
 
-  const relaxing_request = constructPlacesRequest(id, "level=poi&categories=relaxing", 20);
+  //const relaxing_request = constructPlacesRequest(id, "level=poi&categories=relaxing", 20);
 
-  const country_request = constructPlaceRequest(id);
+  const country_request =  constructPlaceRequest(id);
+  
+
+
 
   return Promise.all([
     country_request,
     popular_destinations_request,
-    sightseeing_request,
+    /*sightseeing_request,
     discovering_request,
     playing_request,
-    relaxing_request
+    relaxing_request*/
   ]).catch(error => {
     console.log(error);
   });
@@ -124,10 +131,10 @@ function formatCountryResearch(responses) {
   // const [parent, destinations, sights, discover, play, relax] = responses;
   const parent = responses[0] as any;
   const destinations = responses[1] as any;
-  const sights = responses[2] as any;
+  /*const sights = responses[2] as any;
   const discover = responses[3] as any;
   const play = responses[4] as any;
-  const relax = responses[5] as any;
+  const relax = responses[5] as any;*/
 
   const country_images = parent.data.place.main_media.media.reduce((acc, curr) => {
     return [
@@ -154,23 +161,24 @@ function formatCountryResearch(responses) {
     description: parent.data.place.perex
   } as Country;
 
-  let sightseeing = sygicPlacesToInternal(sights["data"].places);
+  /*let sightseeing = sygicPlacesToInternal(sights["data"].places);
 
   let discovering = sygicPlacesToInternal(discover["data"].places);
 
   let playing = sygicPlacesToInternal(play["data"].places);
 
-  let relaxing = sygicPlacesToInternal(relax["data"].places);
+  let relaxing = sygicPlacesToInternal(relax["data"].places);*/
 
   let popular_destinations = sygicPlacesToInternal(destinations["data"].places);
+
 
   return {
     country,
     popular_destinations,
-    sightseeing,
+    /*sightseeing,
     discovering,
     playing,
-    relaxing
+    relaxing*/
   };
 }
 
@@ -336,15 +344,18 @@ export const getCountry = async (req: Request, res: Response) => {
   const citizenCurrency = currencies[citizenCode];
   let responses = await getCountryResearch(req);
   let data = formatCountryResearch(responses);
+  //let triposoData = getCountryResearchTriposo(data.country.name);
+  //console.log(triposoData);
+  //addTriposo(data,triposoData);
   let extraCountry = await countryUICalls(data, req);
   let [color, country_code, plugsRes, ...args]: any[] = extraCountry;
 
   let states = args[0];
   let popular_destinations = data.popular_destinations;
-  let sightseeing = data.sightseeing;
+  /*let sightseeing = data.sightseeing;
   let discover = data.discovering;
   let play = data.playing;
-  let relax = data.relaxing;
+  let relax = data.relaxing;*/
   let country = data.country;
   country.color = `rgb(${color.Vibrant._rgb[0]},${color.Vibrant._rgb[1]},${color.Vibrant._rgb[2]})`;
   let plugs = [];
@@ -400,10 +411,10 @@ export const getCountry = async (req: Request, res: Response) => {
   res.send({
     country,
     popular_destinations,
-    sightseeing,
+    /*sightseeing,
     discover,
     play,
-    relax,
+    relax,*/
     states,
     safety
   });

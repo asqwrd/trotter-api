@@ -39,7 +39,7 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	allCountriesArgs := initializeQueryParams("country")
-	allCountries, err := sygic.GetPlaces(parentID, 50, allCountriesArgs)
+	allCountries, err := sygic.GetPlaces(parentID, 60, allCountriesArgs)
 	if err != nil {
 		response.WriteErrorResponse(w, err)
 		return

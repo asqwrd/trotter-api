@@ -11,7 +11,7 @@ export const getContinent = async (req: Request, res: Response) => {
   const whatToSee = constructPlacesRequest(continentID, "level=poi&categories=sightseeing");
   const getPopularCities = constructPlacesRequest(continentID, "rating=.0005:&level=city");
 
-  const getAllCountries = constructPlacesRequest(continentID, "level=country");
+  const getAllCountries = constructPlacesRequest(continentID, "level=country", 60);
 
   const responses = await Promise.all([whatToSee, getPopularCities, getAllCountries])
   const poiResponse = responses[0] as PlacesData;

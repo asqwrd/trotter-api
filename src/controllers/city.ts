@@ -3,7 +3,7 @@ import { Response, Request } from "express";
 import {PlacesData} from "./sygic-api.models";
 import {sygicPlacesToInternal, constructPlacesRequest, constructPlaceRequest, sygicPlacesToLocations,   getTriposoId,
   getTriposoPOI,
-  getTriposoDestination,triposoPlacesToInternal,triposoPlacesToLocations} from "./api-utils";
+  getTriposoDestination,triposoPlacesToInternal,triposoPlacesToLocations,getTriposoCity} from "./api-utils";
 
 
 async function getCityTriposo(location_id){
@@ -15,7 +15,10 @@ async function getCityTriposo(location_id){
   const shop_request_triposo = getTriposoPOI(location_id,'do|shopping');
   const nightlife_request_triposo = getTriposoPOI(location_id,'nightlife|comedy|drinks|dancing|pubcrawl|redlight|musicandshows|celebrations|foodexperiences|breweries|showstheatresandmusic');
 
+  const city_request = getTriposoCity(location_id);
+
   const pois = await Promise.all([
+    city_request,
     sightseeing_request_triposo,
     discovering_request_triposo,
     playing_request_triposo,
@@ -24,8 +27,9 @@ async function getCityTriposo(location_id){
     shop_request_triposo,
     nightlife_request_triposo,
   ]);
-  const [see, discover, playing, relax,eat,shop,nightlife] = pois;
+  const [city, see, discover, playing, relax,eat,shop,nightlife] = pois;
   return {
+    city: city.results,
     see : see.results,
     discover: discover.results,
     playing: playing.results, 
@@ -49,7 +53,7 @@ export const getCity = async (req: Request, res: Response) => {
 
   const eating_request = constructPlacesRequest(id, "level=poi&categories=eating", 20);
   const shopping_request = constructPlacesRequest(id, "level=poi&categories=shopping", 20);*/
-  const city_request = await constructPlaceRequest(id);
+  //const city_request = await constructPlaceRequest(id);
 
 
   //const responses = await Promise.all([see_request, discovering_request, playing_request, eating_request, shopping_request, city_request])
@@ -58,7 +62,7 @@ export const getCity = async (req: Request, res: Response) => {
   const playing = responses[2] as PlacesData;
   const eating = responses[3] as PlacesData;
   const shopping = responses[4] as PlacesData;*/
-  const cityData = city_request;
+ // const cityData = city_request;
 
   /*const see = sygicPlacesToInternal(seeing.data.places);
   const discover = sygicPlacesToInternal(discovering.data.places);
@@ -72,7 +76,29 @@ export const getCity = async (req: Request, res: Response) => {
   const eat_locations = sygicPlacesToLocations(eating.data.places);
   const shop_locations = sygicPlacesToLocations(shopping.data.places);*/
 
-  const city = {
+  
+
+  //const triposoId = await getTriposoId(city.name);
+
+  const triposoData = await getCityTriposo(id);
+  let see = triposoPlacesToInternal(triposoData.see);
+  let eat = triposoPlacesToInternal(triposoData.eat);
+  let relax = triposoPlacesToInternal(triposoData.relax);
+  let shop = triposoPlacesToInternal(triposoData.shop);
+  let play = triposoPlacesToInternal(triposoData.playing);
+  let nightlife = triposoPlacesToInternal(triposoData.nightlife);
+  let discover = triposoPlacesToInternal(triposoData.discover);
+  let city = triposoPlacesToInternal(triposoData.city)[0];
+
+  const see_locations = triposoPlacesToLocations(triposoData.see);
+  const discover_locations = triposoPlacesToLocations(triposoData.discover);
+  const play_locations = triposoPlacesToLocations(triposoData.playing);
+  const eat_locations = triposoPlacesToLocations(triposoData.eat);
+  const shop_locations = triposoPlacesToLocations(triposoData.shop);
+  const nightlife_locations = triposoPlacesToLocations(triposoData.nightlife);
+  const relax_locations = triposoPlacesToLocations(triposoData.relax);
+
+  /*const city = {
     sygic_id: cityData.data.place.id,
     image_usage: cityData.data.place.main_media.usage,
     image: cityData.data.place.main_media.media[0].url,
@@ -84,24 +110,7 @@ export const getCity = async (req: Request, res: Response) => {
     description: cityData.data.place.perex,
     location: cityData.data.place.location,
     bounding_box: cityData.data.place.bounding_box,
-  } as any;
-
-  const triposoData = await getCityTriposo(city.name);
-  let see = triposoPlacesToInternal(triposoData.see);
-  let eat = triposoPlacesToInternal(triposoData.eat);
-  let relax = triposoPlacesToInternal(triposoData.relax);
-  let shop = triposoPlacesToInternal(triposoData.shop);
-  let play = triposoPlacesToInternal(triposoData.playing);
-  let nightlife = triposoPlacesToInternal(triposoData.nightlife);
-  let discover = triposoPlacesToInternal(triposoData.discover);
-
-  const see_locations = triposoPlacesToLocations(triposoData.see);
-  const discover_locations = triposoPlacesToLocations(triposoData.discover);
-  const play_locations = triposoPlacesToLocations(triposoData.playing);
-  const eat_locations = triposoPlacesToLocations(triposoData.eat);
-  const shop_locations = triposoPlacesToLocations(triposoData.shop);
-  const nightlife_locations = triposoPlacesToLocations(triposoData.nightlife);
-  const relax_locations = triposoPlacesToLocations(triposoData.relax);
+  } as any;*/
 
   
 

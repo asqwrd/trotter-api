@@ -1,6 +1,7 @@
 import { SygicPlace, Place } from "./sygic-api.models";
 import { TriposoPlace, PlaceTriposo } from "./triposos-api-models";
 import request from "request-promise";
+import striptags from 'striptags';
 import { BASE_SYGIC_API } from "./sygic-api.constants";
 const API_KEY = "6SdxevLXN2aviv5g67sac2aySsawGYvJ6UcTmvWE";
 const SHERPA_URL = "https://api.joinsherpa.com/v2/entry-requirements/",
@@ -19,7 +20,7 @@ export function sygicPlacesToInternal(sygicPlaces: SygicPlace[]): Place[] {
     return [
       ...acc,
       {
-        sygic_id: curr.id,
+        id: curr.id,
         image: curr.thumbnail_url,
         name: curr.name,
         name_suffix: curr.name_suffix,
@@ -40,12 +41,12 @@ export function triposoPlacesToInternal(triposoPlaces: TriposoPlace[]): PlaceTri
     return [
       ...acc,
       {
-        triposo_id: curr.id,
+        id: curr.id,
         image: curr.images[0] ? curr.images[0].sizes.medium.url : null,
         name: curr.name,
         description_short: curr.snippet,
-        description: curr.content && curr.content.sections ? curr.content.sections[0].body : null,
-        level:'poi',
+        description: curr.content && curr.content.sections ? striptags(curr.content.sections[0].body) : null,
+        level:'triposo',
         location:{ lat: curr.coordinates.latitude, lng:curr.coordinates.longitude},
       }
     ];
@@ -103,9 +104,16 @@ export function getTriposoPOI(id:string,tag_labels:string, count:number = 20) {
   });
 }
 
-export function getTriposoDestination(id:string) {
+export function getTriposoCity(id:string, count:number = 20) {
   return request.get({
-    uri: `https://www.triposo.com/api/20180627/location.json?part_of=${id}&order_by=-score&fields=id,score,parent_id,country_id,structured_content,intro,name`,
+    uri: `https://www.triposo.com/api/20180627/location.json?id=${id}&order_by=-score&count=${count}&fields=coordinates,parent_id,images,content,name,id&account=${TRIPOSO_ACCOUNT}&token=${TRIPOSO_TOKEN}`,
+    json: true
+  });
+}
+
+export function getTriposoDestination(id:string, count:number = 20) {
+  return request.get({
+    uri: `https://www.triposo.com/api/20180627/location.json?part_of=${id}&order_by=-score&count=${count}&fields=id,score,parent_id,country_id,intro,name,images,content,coordinates&type=city&account=${TRIPOSO_ACCOUNT}&token=${TRIPOSO_TOKEN}`,
     json: true
   });
 }

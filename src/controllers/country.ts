@@ -16,7 +16,9 @@ import {
   constructCurrencyConvertRequest,
   getTriposoId,
   getTriposoPOI,
-  getTriposoDestination
+  getTriposoDestination,
+  triposoPlacesToInternal,
+  
 } from "./api-utils";
 import util from "util";
 
@@ -112,6 +114,7 @@ async function getCountryResearch(req) {
 
   const country_request =  constructPlaceRequest(id);
   
+  
 
 
 
@@ -127,7 +130,7 @@ async function getCountryResearch(req) {
   });
 }
 
-function formatCountryResearch(responses) {
+async function formatCountryResearch(responses) {
   // const [parent, destinations, sights, discover, play, relax] = responses;
   const parent = responses[0] as any;
   const destinations = responses[1] as any;
@@ -135,6 +138,8 @@ function formatCountryResearch(responses) {
   const discover = responses[3] as any;
   const play = responses[4] as any;
   const relax = responses[5] as any;*/
+
+  
 
   const country_images = parent.data.place.main_media.media.reduce((acc, curr) => {
     return [
@@ -169,7 +174,10 @@ function formatCountryResearch(responses) {
 
   let relaxing = sygicPlacesToInternal(relax["data"].places);*/
 
-  let popular_destinations = sygicPlacesToInternal(destinations["data"].places);
+  //let popular_destinations = sygicPlacesToInternal(destinations["data"].places);
+  const counrty_triposo = await getTriposoId(country.name);
+  const cities = await getTriposoDestination(counrty_triposo.results[0].id);
+  let popular_destinations = triposoPlacesToInternal(cities.results);
 
 
   return {
@@ -192,13 +200,13 @@ async function countryUICalls(data, req) {
   let country_color = Vibrant.from(data.country.image).getPalette();
   let plugs = plugs_db.where("country", "==", country_name).get();
 
-  if (countries_with_states[data.country.name]) {
+  /*if (countries_with_states[data.country.name]) {
     const states = constructPlacesRequest(id, "level=state", 100);
 
     return Promise.all([country_color, country_code, plugs, states]).catch(error => {
       console.log(error);
     }) as Promise<any[]>;
-  }
+  }*/
 
   return Promise.all([country_color, country_code, plugs]).catch(error => {
     console.log(error);
@@ -343,14 +351,14 @@ export const getCountry = async (req: Request, res: Response) => {
   const currencies = getCountriesCurrencies();
   const citizenCurrency = currencies[citizenCode];
   let responses = await getCountryResearch(req);
-  let data = formatCountryResearch(responses);
+  let data = await formatCountryResearch(responses);
   //let triposoData = getCountryResearchTriposo(data.country.name);
   //console.log(triposoData);
   //addTriposo(data,triposoData);
   let extraCountry = await countryUICalls(data, req);
   let [color, country_code, plugsRes, ...args]: any[] = extraCountry;
 
-  let states = args[0];
+  //let states = args[0];
   let popular_destinations = data.popular_destinations;
   /*let sightseeing = data.sightseeing;
   let discover = data.discovering;
@@ -368,12 +376,15 @@ export const getCountry = async (req: Request, res: Response) => {
 
   country.visa = null;
 
-  states = states ? sygicPlacesToInternal(states["data"].places) : [];
+  //states = states ? sygicPlacesToInternal(states["data"].places) : [];
 
   let currencyObj = {
     from: citizenCurrency,
     to: currencies[visaCode]
   };
+  if(visaCode == 'FO'){
+    currencyObj.to = 'DK'
+  }
   let helpfulInfo = await visaInfo(visaData, visaCode, country_code, currencyObj);
 
   let [safetyData, emergency_numbersData, converted_currency, visaStuff] = helpfulInfo;
@@ -414,8 +425,8 @@ export const getCountry = async (req: Request, res: Response) => {
     /*sightseeing,
     discover,
     play,
-    relax,*/
-    states,
+    relax,
+    states,*/
     safety
   });
 };

@@ -78,6 +78,6 @@ export interface Country {
   plugs: Object[];
   embassies: Object[];
   emergency_numbers: { ambulance: String[], police: String[], fire: String[], dispatch: String[] };
-  currency: { converted_currency: number, converted_unit: string, unit: string };
+  currency: { converted_currency: number, converted_unit: any, unit: any };
 
 }

@@ -25,6 +25,7 @@ export interface TriposoPlace {
   foursquare_id: string;
   google_place_id: string;
   snippet:string;
+  score:number;
 }
 
 export interface PlacesData {

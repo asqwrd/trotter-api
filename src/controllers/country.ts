@@ -4,7 +4,6 @@ import Vibrant from "node-vibrant";
 import { Country } from "./sygic-api.models";
 import { db, geocoder } from "./firestore";
 import {
-  sygicPlacesToInternal,
   constructPlacesRequest,
   removeDuplicates,
   constructPlaceRequest,
@@ -15,7 +14,6 @@ import {
   setCountriesCurrencies,
   constructCurrencyConvertRequest,
   getTriposoId,
-  getTriposoPOI,
   getTriposoDestination,
   triposoPlacesToInternal,
   
@@ -28,6 +26,7 @@ const citizenCountry = "United States";
 const country_codes = db.collection("countries_code");
 const emergency_numbers_db = db.collection("emergency_numbers");
 const plugs_db = db.collection("plugs");
+const currencies_db = db.collection("currencies");
 
 (async function() {
   const currencies = await getCountriesCurrenciesApi();
@@ -377,14 +376,16 @@ export const getCountry = async (req: Request, res: Response) => {
   country.visa = null;
 
   //states = states ? sygicPlacesToInternal(states["data"].places) : [];
+  let to_currency = currencies[visaCode];
+  if(!to_currency){
+    let to_data = await currencies_db.doc(visaCode).get();
+    to_currency = currencies[to_data.data().id];
+  }
 
   let currencyObj = {
     from: citizenCurrency,
-    to: currencies[visaCode]
+    to: to_currency
   };
-  if(visaCode == 'FO'){
-    currencyObj.to = 'DK'
-  }
   let helpfulInfo = await visaInfo(visaData, visaCode, country_code, currencyObj);
 
   let [safetyData, emergency_numbersData, converted_currency, visaStuff] = helpfulInfo;
@@ -393,7 +394,7 @@ export const getCountry = async (req: Request, res: Response) => {
     converted_currency:
       converted_currency[`${currencyObj.from.currencyId}_${currencyObj.to.currencyId}`],
     converted_unit: currencyObj.to,
-    unit: citizenCurrency
+    unit: currencyObj.from
   };
 
   let visa = visaStuff;

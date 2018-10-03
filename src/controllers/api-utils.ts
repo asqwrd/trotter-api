@@ -48,6 +48,7 @@ export function triposoPlacesToInternal(triposoPlaces: TriposoPlace[]): PlaceTri
         description: curr.content && curr.content.sections ? striptags(curr.content.sections[0].body) : null,
         level:'triposo',
         location:{ lat: curr.coordinates.latitude, lng:curr.coordinates.longitude},
+        score:curr.score
       }
     ];
   }, []);

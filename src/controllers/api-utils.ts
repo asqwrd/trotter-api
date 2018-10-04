@@ -107,7 +107,7 @@ export function getTriposoPOI(id:string,tag_labels:string, count:number = 20) {
 
 export function getTriposoCity(id:string, count:number = 20) {
   return request.get({
-    uri: `https://www.triposo.com/api/20180627/location.json?id=${id}&order_by=-score&count=${count}&fields=coordinates,parent_id,images,content,name,id&account=${TRIPOSO_ACCOUNT}&token=${TRIPOSO_TOKEN}`,
+    uri: `https://www.triposo.com/api/20180627/location.json?id=${id}&order_by=-score&count=${count}&fields=coordinates,parent_id,images,content,name,id,snippet&account=${TRIPOSO_ACCOUNT}&token=${TRIPOSO_TOKEN}`,
     json: true
   });
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/asqwrd/trotter-api/location"
 	"github.com/asqwrd/trotter-api/response"
 	"github.com/asqwrd/trotter-api/sygic"
+	"github.com/asqwrd/trotter-api/triposo"
 
 	"github.com/gorilla/mux"
 )
@@ -22,22 +23,6 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 	routeVars := mux.Vars(r)
 	parentID := routeVars["continentID"]
 
-	placesToSeeArgs := initializeQueryParams("poi")
-	placesToSeeArgs.Set("categories", "sightseeing")
-	placesToSee, err := sygic.GetPlaces(parentID, 10, placesToSeeArgs)
-	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
-	}
-
-	popularCitiesArgs := initializeQueryParams("city")
-	popularCitiesArgs.Set("rating", ".0005:")
-	popularCities, err := sygic.GetPlaces(parentID, 10, popularCitiesArgs)
-	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
-	}
-
 	allCountriesArgs := initializeQueryParams("country")
 	allCountries, err := sygic.GetPlaces(parentID, 60, allCountriesArgs)
 	if err != nil {
@@ -45,11 +30,39 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseData := map[string][]Place{
-		"points_of_interest": FromSygicPlaces(placesToSee),
-		"popular_cities":     FromSygicPlaces(popularCities),
+	popular_countries := FromSygicPlaces(allCountries[:5]);
+	popularCitiesInfo := []triposo.PoiInfo{}
+	for _, country := range popular_countries {
+		place, err := triposo.GetPlaceByName(country.Name)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		popularCitiesInfo = append(popularCitiesInfo, *place)
+	}
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+	popularCities := []triposo.PlaceDetail{}
+	for _, city := range popularCitiesInfo {
+		place, err := triposo.GetDestination(city.Id,"2")
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		popularCities = append(popularCities, *place...)
+	}
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+
+
+	responseData := map[string]interface{}{
+		"popular_cities":     popularCities,
 		"all_countries":      FromSygicPlaces(allCountries),
-		"popular_countries":  FromSygicPlaces(allCountries[:10]),
 	}
 
 	response.Write(w, responseData, http.StatusOK)

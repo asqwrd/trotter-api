@@ -8,6 +8,7 @@ type Place struct {
 	Sygic_id    string `json:"sygic_id"`
 	Image       string `json:"image"`
 	Description string `json:"description"`
+	Description_short string `json:"description_short"`
 
 	// These don't
 	Name        string         `json:"name"`
@@ -17,6 +18,11 @@ type Place struct {
 	Address     string         `json:"address"`
 	Phone       string         `json:"phone"`
 	Location    sygic.Location `json:"location"`
+  
+  Color					string						`json:"color"`
+  Visa	 				sygic.Object			`json:"visa"`
+  Plugs 				sygic.Object			`json:"plugs"`
+  Bounding_box 	sygic.BoundingBox	`json:"bounding_box"`
 }
 
 func fromSygicPlace(sp *sygic.Place) (p *Place) {
@@ -27,13 +33,17 @@ func fromSygicPlace(sp *sygic.Place) (p *Place) {
 		Description: sp.Perex,
 
 		// These don't
-		Name:        sp.Name,
-		Name_suffix: sp.Name_suffix,
-		Parent_ids:  sp.Parent_ids,
-		Level:       sp.Level,
-		Address:     sp.Address,
-		Phone:       sp.Phone,
-		Location:    sp.Location,
+		Name:        		sp.Name,
+		Name_suffix: 		sp.Name_suffix,
+		Parent_ids:  		sp.Parent_ids,
+		Level:       		sp.Level,
+		Address:     		sp.Address,
+		Phone:       		sp.Phone,
+		Location:    		sp.Location,
+		Bounding_box:   sp.Bounding_box,
+		Color:    			sp.Color,
+		Visa:    				sp.Visa,
+		Plugs:    			sp.Plugs,
 	}
 
 	return p

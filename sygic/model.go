@@ -32,6 +32,11 @@ type BoundingBox struct {
 	East  float32 `json:"east"`
 }
 
+type Object struct {
+	data interface{}
+}
+
+
 type Place struct {
 	// These names get overridden
 	ID            string
@@ -39,14 +44,17 @@ type Place struct {
 	Perex         string
 
 	// These don't
-	Name         string
-	Name_suffix  string
-	Parent_ids   []string
-	Level        string
-	Address      string
-	Phone        string
-	Location     Location
-	Bounding_box BoundingBox
+	Name         	string
+	Name_suffix  	string
+	Parent_ids   	[]string
+	Level        	string
+	Address      	string
+	Phone        	string
+	Location     	Location
+	Bounding_box 	BoundingBox
+	Color					string
+	Visa					Object
+	Plugs					Object
 }
 
 const baseSygicAPI = "https://api.sygictravelapi.com/1.1/en/places/"

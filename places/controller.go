@@ -31,28 +31,21 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	popular_countries := FromSygicPlaces(allCountries[:5]);
-	popularCitiesInfo := []triposo.PoiInfo{}
+	popularCities := []triposo.PlaceDetail{}
 	for _, country := range popular_countries {
 		place, err := triposo.GetPlaceByName(country.Name)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
 			return
 		}
-		popularCitiesInfo = append(popularCitiesInfo, *place)
-	}
-	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
-	}
-	popularCities := []triposo.PlaceDetail{}
-	for _, city := range popularCitiesInfo {
-		place, err := triposo.GetDestination(city.Id,"2")
+		city, err := triposo.GetDestination(place.Id,"2")
 		if err != nil {
 			response.WriteErrorResponse(w, err)
 			return
 		}
-		popularCities = append(popularCities, *place...)
+		popularCities = append(popularCities, *city...)
 	}
+	
 	if err != nil {
 		response.WriteErrorResponse(w, err)
 		return

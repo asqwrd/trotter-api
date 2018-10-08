@@ -1,6 +1,7 @@
 # dependencies
 node_modules
 vendor
+.history
 
 # testing
 coverage

@@ -42,6 +42,7 @@ export interface PlaceTriposo {
   location_id: string; // 'poi:24922'
   name: string; // 'Old Havana',
   opening_hours: string | null;
+  colors: Object[];
   intro: string;
   location: {
     lat: number

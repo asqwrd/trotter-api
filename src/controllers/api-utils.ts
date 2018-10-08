@@ -54,6 +54,28 @@ export function triposoPlacesToInternal(triposoPlaces: TriposoPlace[]): PlaceTri
   }, []);
 }
 
+export function triposoPOIToInternal(triposoPlace: TriposoPlace): PlaceTriposo {
+  return {
+    
+      id: triposoPlace.id,
+      images: triposoPlace.images,
+      name: triposoPlace.name,
+      content: triposoPlace.content,
+      description: triposoPlace.intro,
+      location:{ lat: triposoPlace.coordinates.latitude, lng:triposoPlace.coordinates.longitude},
+      score:triposoPlace.score,
+      facebook_id: triposoPlace.facebook_id,
+      foursquare_id: triposoPlace.foursquare_id,
+      google_place_id: triposoPlace.google_place_id,
+      tripadvisor_id: triposoPlace.tripadvisor_id,
+      best_for: triposoPlace.best_for,
+      booking_info: triposoPlace.booking_info,
+      opening_hours: triposoPlace.opening_hours,
+      price_tier: triposoPlace.price_tier,
+    
+  } as PlaceTriposo
+}
+
 export function triposoPlacesToLocations(triposoPlaces: TriposoPlace[]) {
   return triposoPlaces.reduce((acc, curr) => {
     return [
@@ -98,7 +120,7 @@ export function getTriposoId(place:string) {
   });
 }
 
-export function getTriposoPOI(id:string,tag_labels:string, count:number = 20) {
+export function getTriposoPOIFromLocation(id:string,tag_labels:string, count:number = 20) {
   return request.get({
     uri: encodeURI(`https://www.triposo.com/api/20180627/poi.json?location_id=${id}&tag_labels=${tag_labels}&count=${count}&fields=google_place_id,id,name,coordinates,tripadvisor_id,facebook_id,location_id,opening_hours,foursquare_id,snippet,content,images&account=${TRIPOSO_ACCOUNT}&token=${TRIPOSO_TOKEN}`),
     json: true
@@ -108,6 +130,13 @@ export function getTriposoPOI(id:string,tag_labels:string, count:number = 20) {
 export function getTriposoCity(id:string, count:number = 20) {
   return request.get({
     uri: `https://www.triposo.com/api/20180627/location.json?id=${id}&order_by=-score&count=${count}&fields=coordinates,parent_id,images,content,name,id,snippet&account=${TRIPOSO_ACCOUNT}&token=${TRIPOSO_TOKEN}`,
+    json: true
+  });
+}
+
+export function getTriposoPOI(id:string) {
+  return request.get({
+    uri: `https://www.triposo.com/api/20180627/poi.json?id=${id}&fields=google_place_id,images,id,name,booking_info,best_for,facebook_id,opening_hours,tripadvisor_id,content,foursquare_id,price_tier,intro,coordinates&account=${TRIPOSO_ACCOUNT}&token=${TRIPOSO_TOKEN}`,
     json: true
   });
 }

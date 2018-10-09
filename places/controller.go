@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/asqwrd/trotter-api/location"
+	//"github.com/asqwrd/trotter-api/location"
 	"github.com/asqwrd/trotter-api/response"
 	"github.com/asqwrd/trotter-api/sygic"
 	"github.com/asqwrd/trotter-api/triposo"
@@ -105,82 +105,91 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 func GetCity(w http.ResponseWriter, r *http.Request) {
 	cityID := mux.Vars(r)["cityID"]
+	var wg sync.WaitGroup
+	var wg2 sync.WaitGroup
+	urlparams := []string{"sightseeing|sight|topattractions","museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts","amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos","beaches|camping|wildlife|fishing|relaxinapark","eatingout|breakfast|coffeeandcake|lunch|dinner","do|shopping","nightlife|comedy|drinks|dancing|pubcrawl|redlight|musicandshows|celebrations|foodexperiences|breweries|showstheatresandmusic"}
 
-	placesToSeeArgs := initializeQueryParams("poi")
-	placesToSeeArgs.Set("categories", "sightseeing")
-	placesToSee, err := sygic.GetPlaces(cityID, 20, placesToSeeArgs)
-	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
+	wg.Add(len(urlparams))
+	wg2.Add(len(urlparams))
+	placeChannel := make(chan triposo.TriposoChannel)
+	//cityChannel := make(chan []triposo.Place)
+	var placeToSee []triposo.Place
+	var discoverPlaces []triposo.Place
+	var playPlaces []triposo.Place
+	var eatPlaces []triposo.Place
+	var nightlifePlaces []triposo.Place
+	var shopPlaces []triposo.Place
+	var relaxPlaces []triposo.Place
+
+	for i, param := range urlparams {
+		go func(param string, i int){
+			defer wg.Done()
+			place, index, err := triposo.GetPoiFromLocation(cityID,"20",param,i)
+			if err != nil {
+				response.WriteErrorResponse(w, err)
+				return
+			}
+			res := new(triposo.TriposoChannel)
+			res.Places = *place
+			res.Index = *index
+			placeChannel <- *res
+		}(param, i)
+		
 	}
 
-	discoverArgs := initializeQueryParams("poi")
-	discoverArgs.Set("categories", "discovering")
-	discoverPlaces, err := sygic.GetPlaces(cityID, 20, discoverArgs)
-	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
-	}
+	go func() {
+		for res := range placeChannel {
+			switch {
+			case res.Index == 1:
+				discoverPlaces = res.Places
+			case res.Index == 2:
+				playPlaces = res.Places
+			case res.Index == 3:
+				eatPlaces = res.Places
+			case res.Index == 4:
+				nightlifePlaces = res.Places
+			case res.Index == 5:
+				shopPlaces = res.Places
+			case res.Index == 6:
+				relaxPlaces = res.Places
+			default:
+				placeToSee = res.Places
+			}
+			
+		}
+	}()
+	var city []triposo.Place
+	go func(city []triposo.Place){
+		defer wg2.Done()
+		res, err := triposo.GetCity(cityID)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		city = *res
+	}(city)
 
-	playArgs := initializeQueryParams("poi")
-	playArgs.Set("categories", "playing")
-	playPlaces, err := sygic.GetPlaces(cityID, 20, playArgs)
-	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
-	}
+	wg.Wait()
+	wg2.Wait()
 
-	eatArgs := initializeQueryParams("poi")
-	eatArgs.Set("categories", "eating")
-	eatPlaces, err := sygic.GetPlaces(cityID, 20, eatArgs)
-	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
-	}
-
-	shopArgs := initializeQueryParams("poi")
-	shopArgs.Set("categories", "shopping")
-	shopPlaces, err := sygic.GetPlaces(cityID, 20, shopArgs)
-	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
-	}
-
-	sygicCity, err := sygic.GetPlace(cityID)
-	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
-	}
-
-	city := map[string]interface{}{
-		"sygic_id":    sygicCity.Id,
-		"name":        sygicCity.Name,
-		"image_usage": sygicCity.Main_media.Usage,
-		"image":       sygicCity.Main_media.Media[0].Url,
-		// TODO: bring over the replace done in TS
-		"image_template": sygicCity.Main_media.Media[0].Url_template,
-		"description":  sygicCity.Perex,
-		"location":     sygicCity.Location,
-		"bounding_box": sygicCity.Bounding_box,
-	}
 
 	cityData := map[string]interface{}{
 		"city": city,
 
-		"see":           FromSygicPlaces(placesToSee),
-		"see_locations": location.FromSygicPlaces(placesToSee),
+		"see":           placeToSee,
+		//"see_locations": location.FromSygicPlaces(placesToSee),
 
-		"discover":           FromSygicPlaces(discoverPlaces),
-		"discover_locations": location.FromSygicPlaces(discoverPlaces),
+		"discover":           discoverPlaces,
+	//	"discover_locations": location.FromSygicPlaces(discoverPlaces),
 
-		"play":           FromSygicPlaces(playPlaces),
-		"play_locations": location.FromSygicPlaces(playPlaces),
+		"play":           playPlaces,
+		//"play_locations": location.FromSygicPlaces(playPlaces),
 
-		"eat":           FromSygicPlaces(eatPlaces),
-		"eat_locations": location.FromSygicPlaces(eatPlaces),
+		"eat":           eatPlaces,
+		//"eat_locations": location.FromSygicPlaces(eatPlaces),
 
-		"shop":           FromSygicPlaces(shopPlaces),
-		"shop_locations": location.FromSygicPlaces(shopPlaces),
+		"shop":           shopPlaces,
+		//"shop_locations": location.FromSygicPlaces(shopPlaces),
 	}
 
 	response.Write(w, cityData, http.StatusOK)

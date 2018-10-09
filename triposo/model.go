@@ -9,11 +9,7 @@ import (
 )
 
 type placesResponse struct {
-	Results        placesData
-}
-
-type placesData struct {
-	Places []Place
+	Results        []Place
 }
 
 type Location struct {
@@ -46,7 +42,7 @@ type ImageSizes struct {
 	Medium		MediumSize	`json:"medium"`
 }
 
-type Images struct {
+type Image struct {
 	Owner_url		string			`json:"owner_url"`
 	Sizes				ImageSizes	`json:"sizes"`
 }
@@ -54,23 +50,17 @@ type Images struct {
 
 type Place struct {
 	// These names get overridden
-	ID            	string
+	Id            	string
 	Location_id			string
 
 	
 	// These don't
   Name								string				`json:"name"`
-	Opening_hours				string 				`json:"opening_hours"`
   Coordinates					Coordinates		`json:"coordinates"`
-  Intro								string				`json:"intro"`
   Content							Content				`json:"content"`
-  Images							[]Images			`json:"images"`
-  Facebook_id 				string				`json:"facebook_id"`
-  Foursquare_id				string				`json:"foursquare_id"`
-  Google_place_id			string				`json:"google_place_id"`
+  Image								Image					`json:"image"`
   Snippet							string				`json:"snippet"`
-  Score								float32				`json:"score"`
-
+	Score								float32				`json:"score"`
 }
 
 type placeResponse struct {
@@ -79,10 +69,6 @@ type placeResponse struct {
 
 type poiInfoResponse struct {
 	Results []PoiInfo
-}
-
-type placeData struct {
-	Place PlaceDetail
 }
 
 type PlaceDetail struct {
@@ -94,7 +80,7 @@ type PlaceDetail struct {
   Coordinates					Coordinates		`json:"coordinates"`
   Intro								string				`json:"intro"`
   Content							Content				`json:"content"`
-  Images							[]Images			`json:"images"`
+  Images							[]Image				`json:"images"`
   Facebook_id 				string				`json:"facebook_id"`
   Foursquare_id				string				`json:"foursquare_id"`
   Google_place_id			string				`json:"google_place_id"`
@@ -107,6 +93,12 @@ type PoiInfo struct {
 	Country_id								string				`json:"country_id"`
 	Id												string 				`json:"id"`
   Trigram										float32				`json:"trigram"`
+}
+
+
+type TriposoChannel struct {
+	Places []Place
+	Index  int		
 }
 
 
@@ -173,3 +165,63 @@ func GetDestination(id string, count string) (*[]PlaceDetail, error) {
 	return &resp.Results, nil
 }
 
+func GetPoiFromLocation(id string, count string, tag_labels string, index int) (*[]Place, *int, error) {
+
+	client := http.Client{Timeout: time.Second * 5}
+
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"poi.json?location_id="+id+"&tag_labels="+tag_labels+"&count="+count+"&fields=google_place_id,id,name,coordinates,tripadvisor_id,facebook_id,location_id,opening_hours,foursquare_id,snippet,content,images&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	if err != nil {
+		log.Println(err)
+		return nil, nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	q := req.URL.Query()
+	req.URL.RawQuery = q.Encode()
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil, nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	resp := &placesResponse{}
+	err = json.NewDecoder(res.Body).Decode(resp)
+	if err != nil {
+		log.Println(err)
+		log.Println(req.URL.String())
+		return nil, nil, errors.New("Server experienced an error while parsing Sygic API response.")
+	}
+
+	return &resp.Results, &index, nil
+	
+}
+
+func GetCity(id string) (*[]Place, error) {
+	client := http.Client{Timeout: time.Second * 5}
+
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?id="+id+"&order_by=-score&fields=coordinates,parent_id,images,content,name,id,snippet&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	q := req.URL.Query()
+	req.URL.RawQuery = q.Encode()
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	resp := &placesResponse{}
+	err = json.NewDecoder(res.Body).Decode(resp)
+	if err != nil {
+		log.Println(err)
+		log.Println(req.URL.String())
+		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
+	}
+
+	return &resp.Results, nil
+	
+}

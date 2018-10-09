@@ -3,6 +3,9 @@ package places
 import (
 	"net/http"
 	"net/url"
+	"sync"
+	"fmt"
+	"sort"
 
 	"github.com/asqwrd/trotter-api/location"
 	"github.com/asqwrd/trotter-api/response"
@@ -30,26 +33,50 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+
 	popular_countries := FromSygicPlaces(allCountries[:5]);
 	popularCities := []triposo.PlaceDetail{}
+	placeChannel := make(chan triposo.PoiInfo)
+	var wg sync.WaitGroup
+	var wg2 sync.WaitGroup
+
+	wg.Add(len(popular_countries))
+
 	for _, country := range popular_countries {
-		place, err := triposo.GetPlaceByName(country.Name)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		city, err := triposo.GetDestination(place.Id,"2")
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		popularCities = append(popularCities, *city...)
+		go func(country Place){
+			defer wg.Done()
+			place, err := triposo.GetPlaceByName(country.Name)
+			if err != nil {
+				response.WriteErrorResponse(w, err)
+				return
+			}
+			placeChannel <- *place
+		}(country)
+		
 	}
-	
-	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
-	}
+
+	wg2.Add(len(popular_countries))
+
+	go func() {
+		for place := range placeChannel {
+			go func(place triposo.PoiInfo){
+				defer wg2.Done()
+				city, err := triposo.GetDestination(place.Id,"2")
+				if err != nil {
+					response.WriteErrorResponse(w, err)
+					return
+				}
+				popularCities = append(popularCities, *city...)
+			}(place)
+		}
+	}()
+	wg.Wait()
+	wg2.Wait()
+
+	sort.Slice(popularCities[:], func(i, j int) bool {
+		return popularCities[i].Score > popularCities[j].Score
+	})
+
 
 
 
@@ -58,7 +85,12 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 		"all_countries":      FromSygicPlaces(allCountries),
 	}
 
+
+
 	response.Write(w, responseData, http.StatusOK)
+	fmt.Println("done")
+	fmt.Println(len(popular_countries))
+	
 	return
 }
 

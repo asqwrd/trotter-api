@@ -60,7 +60,7 @@ type Place struct {
 }
 
 type placeResponse struct {
-	Results []PlaceDetail
+	Results []Place
 }
 
 type poiInfoResponse struct {
@@ -129,7 +129,7 @@ func GetPlaceByName(name string) (*PoiInfo, error) {
 	return &resp.Results[0], nil
 }
 
-func GetDestination(id string, count string) (*[]PlaceDetail, error) {
+func GetDestination(id string, count string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 5}
 
 	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?part_of="+id+"&order_by=-score&count="+count+"&fields=id,score,parent_id,country_id,intro,name,images,content,coordinates&type=city&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)

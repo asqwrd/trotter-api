@@ -25,25 +25,34 @@ func initializeQueryParams(level string) *url.Values {
 func GetContinent(w http.ResponseWriter, r *http.Request) {
 	routeVars := mux.Vars(r)
 	parentID := routeVars["continentID"]
-
-	allCountriesArgs := initializeQueryParams("country")
-	allCountries, err := sygic.GetPlaces(parentID, 60, allCountriesArgs)
-	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
-	}
-
-	popular_countries := FromSygicPlaces(allCountries[:5])
-	popularCities := []triposo.PlaceDetail{}
+	popularCities := []triposo.Place{}
 	placeChannel := make(chan triposo.PoiInfo)
-	var wg sync.WaitGroup
-	var wg2 sync.WaitGroup
+	allCountryChannel := make(chan []sygic.Place)
+	citiesChannel := make(chan []triposo.Place,5)
+	var popularCountries []Place
+	var allCountries []Place
 
-	wg.Add(len(popular_countries))
 
-	for _, country := range popular_countries {
+	go func(){
+		allCountriesArgs := initializeQueryParams("country")
+		res, err := sygic.GetPlaces(parentID, 60, allCountriesArgs)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		allCountryChannel <- res
+	}()
+
+		select {
+		case res1 := <- allCountryChannel:
+			allCountries = FromSygicPlaces(res1)
+			popularCountries = allCountries[:5]
+		}
+	
+	
+
+	for _, country := range popularCountries {
 		go func(country Place) {
-			defer wg.Done()
 			place, err := triposo.GetPlaceByName(country.Name)
 			if err != nil {
 				response.WriteErrorResponse(w, err)
@@ -54,36 +63,42 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	wg2.Add(len(popular_countries))
+	
+		go func() {
+			for place := range placeChannel {
+				go func(place triposo.PoiInfo) {
+					city, err := triposo.GetDestination(place.Id, "2")
+					if err != nil {
+						response.WriteErrorResponse(w, err)
+						return
+					}
+					citiesChannel <- *city
+				}(place)
+			}
+		}()
 
-	go func() {
-		for place := range placeChannel {
-			go func(place triposo.PoiInfo) {
-				defer wg2.Done()
-				city, err := triposo.GetDestination(place.Id, "2")
-				if err != nil {
-					response.WriteErrorResponse(w, err)
-					return
-				}
-				popularCities = append(popularCities, *city...)
-			}(place)
+		for i := 0; i < 5; i++ {
+			select {
+			case city := <- citiesChannel:
+				popularCities = append(popularCities, city...)
+			}
 		}
-	}()
-	wg.Wait()
-	wg2.Wait()
+		
+	
+
+
 
 	sort.Slice(popularCities[:], func(i, j int) bool {
 		return popularCities[i].Score > popularCities[j].Score
 	})
 
 	responseData := map[string]interface{}{
-		"popular_cities": popularCities,
-		"all_countries":  FromSygicPlaces(allCountries),
+		"popular_cities": FromTriposoPlaces(popularCities),
+		"all_countries":  allCountries,
 	}
 
 	response.Write(w, responseData, http.StatusOK)
 	fmt.Println("done")
-	fmt.Println(len(popular_countries))
 
 	return
 }
@@ -99,16 +114,14 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 func GetCity(w http.ResponseWriter, r *http.Request) {
 	cityID := mux.Vars(r)["cityID"]
-	var wg sync.WaitGroup
 	var wg2 sync.WaitGroup
 	urlparams := []string{"sightseeing|sight|topattractions", "museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts", "amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos", "beaches|camping|wildlife|fishing|relaxinapark", "eatingout|breakfast|coffeeandcake|lunch|dinner", "do|shopping", "nightlife|comedy|drinks|dancing|pubcrawl|redlight|musicandshows|celebrations|foodexperiences|breweries|showstheatresandmusic"}
 
-	wg.Add(len(urlparams))
 	wg2.Add(1)
 
 	placeChannel := make(chan triposo.TriposoChannel)
 	cityChannel := make(chan []triposo.Place)
-	var city []triposo.Place
+	var city *TriposoPlace
 
 	var placeToSee []TriposoPlace
 	var discoverPlaces []TriposoPlace
@@ -118,9 +131,16 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	var shopPlaces []TriposoPlace
 	var relaxPlaces []TriposoPlace
 
+	seeChannel := make(chan []triposo.Place)
+	eatChannel := make(chan []triposo.Place)
+	discoverChannel := make(chan []triposo.Place)
+	playChannel := make(chan []triposo.Place)
+	nightlifeChannel := make(chan []triposo.Place)
+	shopChannel := make(chan []triposo.Place)
+	relaxChannel := make(chan []triposo.Place)
+
 	for i, param := range urlparams {
 		go func(param string, i int) {
-			defer wg.Done()
 			place, err := triposo.GetPoiFromLocation(cityID, "20", param, i)
 			if err != nil {
 				response.WriteErrorResponse(w, err)
@@ -138,25 +158,25 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		for res := range placeChannel {
 			switch {
 			case res.Index == 0:
-				placeToSee = FromTriposoPlaces(res.Places)
+				seeChannel <- res.Places
 			case res.Index == 1:
-				discoverPlaces = FromTriposoPlaces(res.Places)
+				discoverChannel <- res.Places
 			case res.Index == 2:
-				playPlaces = FromTriposoPlaces(res.Places)
+				playChannel <- res.Places
 			case res.Index == 3:
-				eatPlaces = FromTriposoPlaces(res.Places)
+				eatChannel <- res.Places
 			case res.Index == 4:
-				nightlifePlaces = FromTriposoPlaces(res.Places)
+				nightlifeChannel <- res.Places
 			case res.Index == 5:
-				shopPlaces = FromTriposoPlaces(res.Places)
+				shopChannel <- res.Places
 			case res.Index == 6:
-				relaxPlaces = FromTriposoPlaces(res.Places)
+				relaxChannel <- res.Places
 			}
 		}
 
 	}()
+
 	go func() {
-		defer wg2.Done()
 		city, err := triposo.GetCity(cityID)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
@@ -166,17 +186,30 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 
 	}()
 
-	go func() {
-		for res := range cityChannel {
-			city = res
+	for i := 0; i < 8; i++ {
+		select {
+			case see := <- seeChannel:
+				placeToSee = FromTriposoPlaces(see)
+			case eat := <- eatChannel:
+				eatPlaces = FromTriposoPlaces(eat)
+			case discover := <- discoverChannel:
+				discoverPlaces = FromTriposoPlaces(discover)
+			case shop := <- shopChannel:
+				shopPlaces = FromTriposoPlaces(shop)
+			case relax := <- relaxChannel:
+				relaxPlaces = FromTriposoPlaces(relax)
+			case play := <- playChannel:
+				playPlaces = FromTriposoPlaces(play)
+			case nightlife := <- nightlifeChannel:
+				nightlifePlaces = FromTriposoPlaces(nightlife)
+			case cityRes := <- cityChannel:
+				city = FromTriposoPlace(&cityRes[0])
 		}
-	}()
+	}
 
-	wg2.Wait()
-	wg.Wait()
 
 	cityData := map[string]interface{}{
-		"city": FromTriposoPlace(&city[0]),
+		"city": city,
 
 		"see": &placeToSee,
 		//"see_locations": location.FromSygicPlaces(placesToSee),

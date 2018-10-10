@@ -9,7 +9,7 @@ import (
 )
 
 type placesResponse struct {
-	Results        []Place
+	Results []Place
 }
 
 type Location struct {
@@ -18,49 +18,45 @@ type Location struct {
 }
 
 type Coordinates struct {
-	Latitude	float32	`json:"latitude"`
-	Longitude float32	`json:"longitude"`
-};
+	Latitude  float32 `json:"latitude"`
+	Longitude float32 `json:"longitude"`
+}
 
 type Object struct {
 	data interface{}
 }
 
 type Sections struct {
-	Body	string	`json:"body"`
+	Body string `json:"body"`
 }
 
 type Content struct {
-	Sections	[]Sections `json:"sections"`
+	Sections []Sections `json:"sections"`
 }
 
 type MediumSize struct {
-	Url			string	`json:"url"`
+	Url string `json:"url"`
 }
 
 type ImageSizes struct {
-	Medium		MediumSize	`json:"medium"`
+	Medium MediumSize `json:"medium"`
 }
 
 type Image struct {
-	Owner_url		string			`json:"owner_url"`
-	Sizes				ImageSizes	`json:"sizes"`
+	Owner_url string     `json:"owner_url"`
+	Sizes     ImageSizes `json:"sizes"`
 }
 
-
 type Place struct {
-	// These names get overridden
-	Id            	string
-	Location_id			string
-
-	
-	// These don't
-  Name								string				`json:"name"`
-  Coordinates					Coordinates		`json:"coordinates"`
-  Content							Content				`json:"content"`
-  Image								Image					`json:"image"`
-  Snippet							string				`json:"snippet"`
-	Score								float32				`json:"score"`
+	Name        string      `json:"name"`
+	Id          string      `json:"id"`
+	Coordinates Coordinates `json:"coordinates"`
+	Content     Content     `json:"content"`
+	Images      []Image     `json:"images"`
+	Snippet     string      `json:"snippet"`
+	Score       float32     `json:"score"`
+	Location_id string      `json:"location_id"`
+	Parent_id   string      `json:"parent_id"`
 }
 
 type placeResponse struct {
@@ -72,35 +68,32 @@ type poiInfoResponse struct {
 }
 
 type PlaceDetail struct {
-	
 
 	// These don't
-  Name								string				`json:"name"`
-	Opening_hours				string 				`json:"opening_hours"`
-  Coordinates					Coordinates		`json:"coordinates"`
-  Intro								string				`json:"intro"`
-  Content							Content				`json:"content"`
-  Images							[]Image				`json:"images"`
-  Facebook_id 				string				`json:"facebook_id"`
-  Foursquare_id				string				`json:"foursquare_id"`
-  Google_place_id			string				`json:"google_place_id"`
-  Score								float32				`json:"score"`
-	Id									string				`json:"id"`
-	Parent_id						string				`json:"parent_id"`
+	Name            string      `json:"name"`
+	Opening_hours   string      `json:"opening_hours"`
+	Coordinates     Coordinates `json:"coordinates"`
+	Intro           string      `json:"intro"`
+	Content         Content     `json:"content"`
+	Images          []Image     `json:"images"`
+	Facebook_id     string      `json:"facebook_id"`
+	Foursquare_id   string      `json:"foursquare_id"`
+	Google_place_id string      `json:"google_place_id"`
+	Score           float32     `json:"score"`
+	Id              string      `json:"id"`
+	Parent_id       string      `json:"parent_id"`
 }
 
 type PoiInfo struct {
-	Country_id								string				`json:"country_id"`
-	Id												string 				`json:"id"`
-  Trigram										float32				`json:"trigram"`
+	Country_id string  `json:"country_id"`
+	Id         string  `json:"id"`
+	Trigram    float32 `json:"trigram"`
 }
-
 
 type TriposoChannel struct {
 	Places []Place
-	Index  int		
+	Index  int
 }
-
 
 const baseTriposoAPI = "https://www.triposo.com/api/20180627/"
 
@@ -165,14 +158,14 @@ func GetDestination(id string, count string) (*[]PlaceDetail, error) {
 	return &resp.Results, nil
 }
 
-func GetPoiFromLocation(id string, count string, tag_labels string, index int) (*[]Place, *int, error) {
+func GetPoiFromLocation(id string, count string, tag_labels string, index int) (*[]Place, error) {
 
 	client := http.Client{Timeout: time.Second * 5}
 
 	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"poi.json?location_id="+id+"&tag_labels="+tag_labels+"&count="+count+"&fields=google_place_id,id,name,coordinates,tripadvisor_id,facebook_id,location_id,opening_hours,foursquare_id,snippet,content,images&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("Failed to access the Triposo API.")
 	}
 
 	q := req.URL.Query()
@@ -181,7 +174,7 @@ func GetPoiFromLocation(id string, count string, tag_labels string, index int) (
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("Failed to access the Triposo API.")
 	}
 
 	resp := &placesResponse{}
@@ -189,11 +182,11 @@ func GetPoiFromLocation(id string, count string, tag_labels string, index int) (
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, nil, errors.New("Server experienced an error while parsing Sygic API response.")
+		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
 	}
 
-	return &resp.Results, &index, nil
-	
+	return &resp.Results, nil
+
 }
 
 func GetCity(id string) (*[]Place, error) {
@@ -223,5 +216,5 @@ func GetCity(id string) (*[]Place, error) {
 	}
 
 	return &resp.Results, nil
-	
+
 }

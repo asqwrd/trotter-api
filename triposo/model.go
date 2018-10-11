@@ -67,21 +67,14 @@ type poiInfoResponse struct {
 	Results []PoiInfo
 }
 
-type PlaceDetail struct {
-
-	// These don't
-	Name            string      `json:"name"`
-	Opening_hours   string      `json:"opening_hours"`
-	Coordinates     Coordinates `json:"coordinates"`
-	Intro           string      `json:"intro"`
-	Content         Content     `json:"content"`
-	Images          []Image     `json:"images"`
-	Facebook_id     string      `json:"facebook_id"`
-	Foursquare_id   string      `json:"foursquare_id"`
-	Google_place_id string      `json:"google_place_id"`
-	Score           float32     `json:"score"`
-	Id              string      `json:"id"`
-	Parent_id       string      `json:"parent_id"`
+type InternalPlace struct {
+	Id                string   `json:"id"`
+	Image             string   `json:"image"`
+	Description       string   `json:"description"`
+	Description_short string   `json:"description_short"`
+	Name              string   `json:"name"`
+	Level             string   `json:"level"`
+	Location          Location `json:"location"`
 }
 
 type PoiInfo struct {

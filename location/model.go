@@ -2,6 +2,7 @@ package location
 
 import (
 	"github.com/asqwrd/trotter-api/sygic"
+	"github.com/asqwrd/trotter-api/triposo"
 )
 
 type Location struct {
@@ -28,11 +29,33 @@ func fromSygicPlace(p *sygic.Place) Location {
 	}
 }
 
+func fromTriposoPlace(p *triposo.InternalPlace) Location {
+	return Location{
+		// Overrides
+		Title:    p.Name,
+		Selected: false,
+
+		// Direct
+		Lat: p.Location.Lat,
+		Lng: p.Location.Lng,
+	}
+}
+
 func FromSygicPlaces(places []sygic.Place) []Location {
 	locations := []Location{}
 
 	for _, sygPlace := range places {
 		locations = append(locations, fromSygicPlace(&sygPlace))
+	}
+
+	return locations
+}
+
+func FromTriposoPlaces(places []triposo.InternalPlace) []Location {
+	locations := []Location{}
+
+	for _, tripPlace := range places {
+		locations = append(locations, fromTriposoPlace(&tripPlace))
 	}
 
 	return locations

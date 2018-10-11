@@ -8,7 +8,7 @@ import (
 
 	//"sync"
 
-	//"github.com/asqwrd/trotter-api/location"
+	"github.com/asqwrd/trotter-api/location"
 	"github.com/asqwrd/trotter-api/response"
 	"github.com/asqwrd/trotter-api/sygic"
 	"github.com/asqwrd/trotter-api/triposo"
@@ -111,15 +111,15 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 
 	placeChannel := make(chan triposo.TriposoChannel)
 	cityChannel := make(chan []triposo.Place)
-	var city *TriposoPlace
+	var city *triposo.InternalPlace
 
-	var placeToSee []TriposoPlace
-	var discoverPlaces []TriposoPlace
-	var playPlaces []TriposoPlace
-	var eatPlaces []TriposoPlace
-	var nightlifePlaces []TriposoPlace
-	var shopPlaces []TriposoPlace
-	var relaxPlaces []TriposoPlace
+	var placeToSee []triposo.InternalPlace
+	var discoverPlaces []triposo.InternalPlace
+	var playPlaces []triposo.InternalPlace
+	var eatPlaces []triposo.InternalPlace
+	var nightlifePlaces []triposo.InternalPlace
+	var shopPlaces []triposo.InternalPlace
+	var relaxPlaces []triposo.InternalPlace
 
 	seeChannel := make(chan []triposo.Place)
 	eatChannel := make(chan []triposo.Place)
@@ -200,26 +200,26 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	cityData := map[string]interface{}{
 		"city": city,
 
-		"see": &placeToSee,
-		//"see_locations": location.FromSygicPlaces(placesToSee),
+		"see":           &placeToSee,
+		"see_locations": location.FromTriposoPlaces(placeToSee),
 
-		"discover": &discoverPlaces,
-		//	"discover_locations": location.FromSygicPlaces(discoverPlaces),
+		"discover":           &discoverPlaces,
+		"discover_locations": location.FromTriposoPlaces(discoverPlaces),
 
-		"play": &playPlaces,
-		//"play_locations": location.FromSygicPlaces(playPlaces),
+		"play":           &playPlaces,
+		"play_locations": location.FromTriposoPlaces(playPlaces),
 
-		"eat": &eatPlaces,
-		//"eat_locations": location.FromSygicPlaces(eatPlaces),
+		"eat":           &eatPlaces,
+		"eat_locations": location.FromTriposoPlaces(eatPlaces),
 
-		"shop": &shopPlaces,
-		//"shop_locations": location.FromSygicPlaces(shopPlaces),
+		"shop":           &shopPlaces,
+		"shop_locations": location.FromTriposoPlaces(shopPlaces),
 
-		"nightlife": &nightlifePlaces,
-		//"shop_locations": location.FromSygicPlaces(shopPlaces),
+		"nightlife":      &nightlifePlaces,
+		"nightlife_locations": location.FromTriposoPlaces(nightlifePlaces),
 
-		"relax": &relaxPlaces,
-		//"shop_locations": location.FromSygicPlaces(shopPlaces),
+		"relax":           &relaxPlaces,
+		"relax_locations": location.FromTriposoPlaces(relaxPlaces),
 	}
 
 	response.Write(w, cityData, http.StatusOK)

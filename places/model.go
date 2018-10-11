@@ -25,16 +25,6 @@ type Place struct {
 	Bounding_box sygic.BoundingBox `json:"bounding_box"`
 }
 
-type TriposoPlace struct {
-	Id                string           `json:"id"`
-	Image             string           `json:"image"`
-	Description       string           `json:"description"`
-	Description_short string           `json:"description_short"`
-	Name              string           `json:"name"`
-	Level             string           `json:"level"`
-	Location          triposo.Location `json:"location"`
-}
-
 func fromSygicPlace(sp *sygic.Place) (p *Place) {
 	p = &Place{
 		// These have name overrides
@@ -56,14 +46,14 @@ func fromSygicPlace(sp *sygic.Place) (p *Place) {
 	return p
 }
 
-func FromTriposoPlace(sp *triposo.Place) (p *TriposoPlace) {
+func FromTriposoPlace(sp *triposo.Place) (p *triposo.InternalPlace) {
 	length := len(sp.Images)
 	var image = ""
 	if length > 0 {
 		image = sp.Images[0].Sizes.Medium.Url
 	}
 
-	p = &TriposoPlace{
+	p = &triposo.InternalPlace{
 		Id:                sp.Id,
 		Image:             image,
 		Description:       strip.StripTags(sp.Content.Sections[0].Body),
@@ -76,8 +66,8 @@ func FromTriposoPlace(sp *triposo.Place) (p *TriposoPlace) {
 	return p
 }
 
-func FromTriposoPlaces(sourcePlaces []triposo.Place) (internalPlaces []TriposoPlace) {
-	internalPlaces = []TriposoPlace{}
+func FromTriposoPlaces(sourcePlaces []triposo.Place) (internalPlaces []triposo.InternalPlace) {
+	internalPlaces = []triposo.InternalPlace{}
 	for _, sourcePlace := range sourcePlaces {
 		internalPlaces = append(internalPlaces, *FromTriposoPlace(&sourcePlace))
 	}

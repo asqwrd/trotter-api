@@ -3,6 +3,7 @@ package places
 import (
 	"github.com/asqwrd/trotter-api/sygic"
 	"github.com/asqwrd/trotter-api/triposo"
+	"github.com/grokify/html-strip-tags-go"
 )
 
 // Place represents the normalized + filtered data for a sygic.Place
@@ -65,7 +66,7 @@ func FromTriposoPlace(sp *triposo.Place) (p *TriposoPlace) {
 	p = &TriposoPlace{
 		Id:                sp.Id,
 		Image:             image,
-		Description:       sp.Content.Sections[0].Body,
+		Description:       strip.StripTags(sp.Content.Sections[0].Body),
 		Description_short: sp.Snippet,
 		Name:              sp.Name,
 		Level:             "triposo",

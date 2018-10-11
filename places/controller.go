@@ -5,7 +5,8 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
-	"sync"
+
+	//"sync"
 
 	//"github.com/asqwrd/trotter-api/location"
 	"github.com/asqwrd/trotter-api/response"
@@ -28,12 +29,11 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 	popularCities := []triposo.Place{}
 	placeChannel := make(chan triposo.PoiInfo)
 	allCountryChannel := make(chan []sygic.Place)
-	citiesChannel := make(chan []triposo.Place,5)
+	citiesChannel := make(chan []triposo.Place, 5)
 	var popularCountries []Place
 	var allCountries []Place
 
-
-	go func(){
+	go func() {
 		allCountriesArgs := initializeQueryParams("country")
 		res, err := sygic.GetPlaces(parentID, 60, allCountriesArgs)
 		if err != nil {
@@ -43,13 +43,11 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 		allCountryChannel <- res
 	}()
 
-		select {
-		case res1 := <- allCountryChannel:
-			allCountries = FromSygicPlaces(res1)
-			popularCountries = allCountries[:5]
-		}
-	
-	
+	select {
+	case res1 := <-allCountryChannel:
+		allCountries = FromSygicPlaces(res1)
+		popularCountries = allCountries[:5]
+	}
 
 	for _, country := range popularCountries {
 		go func(country Place) {
@@ -63,30 +61,25 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	
-		go func() {
-			for place := range placeChannel {
-				go func(place triposo.PoiInfo) {
-					city, err := triposo.GetDestination(place.Id, "2")
-					if err != nil {
-						response.WriteErrorResponse(w, err)
-						return
-					}
-					citiesChannel <- *city
-				}(place)
-			}
-		}()
-
-		for i := 0; i < 5; i++ {
-			select {
-			case city := <- citiesChannel:
-				popularCities = append(popularCities, city...)
-			}
+	go func() {
+		for place := range placeChannel {
+			go func(place triposo.PoiInfo) {
+				city, err := triposo.GetDestination(place.Id, "2")
+				if err != nil {
+					response.WriteErrorResponse(w, err)
+					return
+				}
+				citiesChannel <- *city
+			}(place)
 		}
-		
-	
+	}()
 
-
+	for i := 0; i < 5; i++ {
+		select {
+		case city := <-citiesChannel:
+			popularCities = append(popularCities, city...)
+		}
+	}
 
 	sort.Slice(popularCities[:], func(i, j int) bool {
 		return popularCities[i].Score > popularCities[j].Score
@@ -114,10 +107,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 func GetCity(w http.ResponseWriter, r *http.Request) {
 	cityID := mux.Vars(r)["cityID"]
-	var wg2 sync.WaitGroup
 	urlparams := []string{"sightseeing|sight|topattractions", "museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts", "amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos", "beaches|camping|wildlife|fishing|relaxinapark", "eatingout|breakfast|coffeeandcake|lunch|dinner", "do|shopping", "nightlife|comedy|drinks|dancing|pubcrawl|redlight|musicandshows|celebrations|foodexperiences|breweries|showstheatresandmusic"}
-
-	wg2.Add(1)
 
 	placeChannel := make(chan triposo.TriposoChannel)
 	cityChannel := make(chan []triposo.Place)
@@ -188,25 +178,24 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 
 	for i := 0; i < 8; i++ {
 		select {
-			case see := <- seeChannel:
-				placeToSee = FromTriposoPlaces(see)
-			case eat := <- eatChannel:
-				eatPlaces = FromTriposoPlaces(eat)
-			case discover := <- discoverChannel:
-				discoverPlaces = FromTriposoPlaces(discover)
-			case shop := <- shopChannel:
-				shopPlaces = FromTriposoPlaces(shop)
-			case relax := <- relaxChannel:
-				relaxPlaces = FromTriposoPlaces(relax)
-			case play := <- playChannel:
-				playPlaces = FromTriposoPlaces(play)
-			case nightlife := <- nightlifeChannel:
-				nightlifePlaces = FromTriposoPlaces(nightlife)
-			case cityRes := <- cityChannel:
-				city = FromTriposoPlace(&cityRes[0])
+		case see := <-seeChannel:
+			placeToSee = FromTriposoPlaces(see)
+		case eat := <-eatChannel:
+			eatPlaces = FromTriposoPlaces(eat)
+		case discover := <-discoverChannel:
+			discoverPlaces = FromTriposoPlaces(discover)
+		case shop := <-shopChannel:
+			shopPlaces = FromTriposoPlaces(shop)
+		case relax := <-relaxChannel:
+			relaxPlaces = FromTriposoPlaces(relax)
+		case play := <-playChannel:
+			playPlaces = FromTriposoPlaces(play)
+		case nightlife := <-nightlifeChannel:
+			nightlifePlaces = FromTriposoPlaces(nightlife)
+		case cityRes := <-cityChannel:
+			city = FromTriposoPlace(&cityRes[0])
 		}
 	}
-
 
 	cityData := map[string]interface{}{
 		"city": city,

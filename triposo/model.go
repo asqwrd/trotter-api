@@ -86,6 +86,7 @@ type PoiInfo struct {
 type TriposoChannel struct {
 	Places []Place
 	Index  int
+	Error error
 }
 
 const baseTriposoAPI = "https://www.triposo.com/api/20180627/"

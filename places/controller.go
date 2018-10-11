@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"time"
 
 	//"sync"
 
@@ -30,6 +31,8 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 	placeChannel := make(chan triposo.PoiInfo)
 	allCountryChannel := make(chan []sygic.Place)
 	citiesChannel := make(chan []triposo.Place, 5)
+	timeoutChannel := make(chan bool)
+	errorChannel := make(chan error)
 	var popularCountries []Place
 	var allCountries []Place
 
@@ -37,7 +40,7 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 		allCountriesArgs := initializeQueryParams("country")
 		res, err := sygic.GetPlaces(parentID, 60, allCountriesArgs)
 		if err != nil {
-			response.WriteErrorResponse(w, err)
+			errorChannel <- err
 			return
 		}
 		allCountryChannel <- res
@@ -53,7 +56,7 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 		go func(country Place) {
 			place, err := triposo.GetPlaceByName(country.Name)
 			if err != nil {
-				response.WriteErrorResponse(w, err)
+				errorChannel <- err
 				return
 			}
 			placeChannel <- *place
@@ -66,7 +69,7 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 			go func(place triposo.PoiInfo) {
 				city, err := triposo.GetDestination(place.Id, "2")
 				if err != nil {
-					response.WriteErrorResponse(w, err)
+					errorChannel <- err
 					return
 				}
 				citiesChannel <- *city
@@ -74,10 +77,24 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
+	go func() {
+    time.Sleep(10 * time.Second)
+    timeoutChannel <- true
+	}()
+
 	for i := 0; i < 5; i++ {
 		select {
 		case city := <-citiesChannel:
 			popularCities = append(popularCities, city...)
+		case err := <-errorChannel:
+			response.WriteErrorResponse(w, err)
+			return
+		case timeout := <-timeoutChannel:
+			if timeout == true {
+				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
+				return
+			}
+			
 		}
 	}
 
@@ -128,17 +145,16 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	nightlifeChannel := make(chan []triposo.Place)
 	shopChannel := make(chan []triposo.Place)
 	relaxChannel := make(chan []triposo.Place)
+	errorChannel := make(chan error)
+	timeoutChannel := make(chan bool)
 
 	for i, param := range urlparams {
 		go func(param string, i int) {
 			place, err := triposo.GetPoiFromLocation(cityID, "20", param, i)
-			if err != nil {
-				response.WriteErrorResponse(w, err)
-				return
-			}
 			res := new(triposo.TriposoChannel)
 			res.Places = *place
 			res.Index = i
+			res.Error = err
 			placeChannel <- *res
 		}(param, i)
 
@@ -146,6 +162,10 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		for res := range placeChannel {
+			if res.Error != nil {
+				errorChannel <- res.Error
+				return;
+			}
 			switch {
 			case res.Index == 0:
 				seeChannel <- res.Places
@@ -169,11 +189,16 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		city, err := triposo.GetCity(cityID)
 		if err != nil {
-			response.WriteErrorResponse(w, err)
+			errorChannel <- err
 			return
 		}
 		cityChannel <- *city
 
+	}()
+
+	go func() {
+    time.Sleep(10 * time.Second)
+    timeoutChannel <- true
 	}()
 
 	for i := 0; i < 8; i++ {
@@ -194,6 +219,14 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 			nightlifePlaces = FromTriposoPlaces(nightlife)
 		case cityRes := <-cityChannel:
 			city = FromTriposoPlace(&cityRes[0])
+		case err := <-errorChannel:
+			response.WriteErrorResponse(w, err)
+			return
+		case timeout := <-timeoutChannel:
+			if timeout == true {
+				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
+				return
+			}
 		}
 	}
 

@@ -25,6 +25,12 @@ type Place struct {
 	Bounding_box sygic.BoundingBox `json:"bounding_box"`
 }
 
+type PlaceChannel struct {
+	Places interface{}
+	Index  int
+	Error error
+}
+
 func fromSygicPlace(sp *sygic.Place) (p *Place) {
 	p = &Place{
 		// These have name overrides

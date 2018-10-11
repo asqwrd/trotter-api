@@ -113,6 +113,8 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+//Get Country
+
 func GetCountry(w http.ResponseWriter, r *http.Request) {
 	data := map[string]string{
 		"status": "coming soon",
@@ -121,6 +123,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	response.Write(w, data, http.StatusNotFound)
 	return
 }
+
+//Get City
 
 func GetCity(w http.ResponseWriter, r *http.Request) {
 	cityID := mux.Vars(r)["cityID"]
@@ -256,5 +260,109 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Write(w, cityData, http.StatusOK)
+	return
+}
+
+//Get Home
+
+func GetHome(w http.ResponseWriter, r *http.Request){
+	typeparams := []string{"island","city","country","national_park"}
+
+	placeChannel := make(chan PlaceChannel)
+
+	var islands []triposo.InternalPlace
+	var cities []triposo.InternalPlace
+	var countries []Place
+	var nationalParks []triposo.InternalPlace
+
+	islandChannel := make(chan []triposo.Place)
+	cityChannel := make(chan []triposo.Place)
+	countryChannel := make(chan []sygic.Place)
+	nationalParkChannel := make(chan []triposo.Place)
+	
+	errorChannel := make(chan error)
+	timeoutChannel := make(chan bool)
+
+	for i, typeParam := range typeparams {
+		go func(typeParam string, i int) {
+			if typeParam == "country" {
+				place, err := sygic.GetCountry("20")
+				res := new(PlaceChannel)
+				res.Places = *place
+				res.Index = i
+				res.Error = err
+				placeChannel <- *res
+			}else{
+				place, err := triposo.GetLocationType(typeParam, "20")
+				res := new(PlaceChannel)
+				res.Places = *place
+				res.Index = i
+				res.Error = err
+				placeChannel <- *res
+			}
+			
+			
+		}(typeParam, i)
+
+	}
+
+	go func() {
+		for res := range placeChannel {
+			if res.Error != nil {
+				errorChannel <- res.Error
+				return;
+			}
+			switch {
+			case res.Index == 0:
+				islandChannel <- res.Places.([]triposo.Place)
+			case res.Index == 1:
+				cityChannel <- res.Places.([]triposo.Place)
+			case res.Index == 2:
+				countryChannel <- res.Places.([]sygic.Place)
+			case res.Index == 3:
+				nationalParkChannel <- res.Places.([]triposo.Place)
+			}
+		}
+
+	}()
+
+	go func() {
+    time.Sleep(10 * time.Second)
+    timeoutChannel <- true
+	}()
+
+	for i := 0; i < 4; i++ {
+		select {
+		case res := <-islandChannel:
+			islands = FromTriposoPlaces(res)
+		case res := <-countryChannel:
+			countries = FromSygicPlaces(res)
+		case res := <-nationalParkChannel:
+			nationalParks = FromTriposoPlaces(res)
+		case res := <-cityChannel:
+			cities = FromTriposoPlaces(res)
+		case err := <-errorChannel:
+			response.WriteErrorResponse(w, err)
+			return
+		case timeout := <-timeoutChannel:
+			if timeout == true {
+				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
+				return
+			}
+		}
+	}
+
+	homeData := map[string]interface{}{
+		"popular_cities": 						cities,
+
+		"popular_islands":           	islands,
+
+		"popular_national_parks":    	nationalParks,
+
+		"popular_countries":           				countries,
+
+	}
+
+	response.Write(w, homeData, http.StatusOK)
 	return
 }

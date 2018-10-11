@@ -32,6 +32,9 @@ var routes = Routes{
 	Route{
 		"GetCity", "GET", "/api/explore/cities/{cityID}/", GetCity,
 	},
+	Route{
+		"GetHome", "GET", "/api/explore/home/", GetHome,
+	},
 }
 
 // NewRouter configures a new router to the API

@@ -141,7 +141,11 @@ type media struct {
 	Url          string
 	Url_template string
 }
-
+type SygicChannel struct {
+	Places []Place
+	Index  int
+	Error error
+}
 func GetPlace(placeID string) (*PlaceDetail, error) {
 	client := http.Client{Timeout: time.Second * 5}
 
@@ -167,4 +171,34 @@ func GetPlace(placeID string) (*PlaceDetail, error) {
 	}
 
 	return &resp.Data.Place, nil
+}
+
+func GetCountry(count string) (*[]Place, error){
+	client := http.Client{Timeout: time.Second * 5}
+
+	req, err := http.NewRequest(http.MethodGet, baseSygicAPI+"list?level=country&limit="+count, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	req.URL.RawQuery = q.Encode()
+
+	req.Header.Set("x-api-key", sygicAPIKey)
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	resp := &placesResponse{}
+	err = json.NewDecoder(res.Body).Decode(resp)
+	if err != nil {
+		log.Println(err)
+		log.Println(req.URL.String())
+		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
+	}
+
+	return &resp.Data.Places, nil
 }

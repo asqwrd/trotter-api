@@ -21,14 +21,15 @@ type Place struct {
 	Description_short string `json:"description_short"`
 
 	// These don't
-	Name         string            `json:"name"`
-	Name_suffix  string            `json:"name_suffix"`
-	Parent_ids   []string          `json:"parent_ids"`
-	Level        string            `json:"level"`
-	Address      string            `json:"address"`
-	Phone        string            `json:"phone"`
-	Location     sygic.Location    `json:"location"`
-	Bounding_box sygic.BoundingBox `json:"bounding_box"`
+	Name         		string            	`json:"name"`
+	Name_suffix  		string            	`json:"name_suffix"`
+	Parent_ids   		[]string          	`json:"parent_ids"`
+	Level        		string            	`json:"level"`
+	Address      		string            	`json:"address"`
+	Phone        		string            	`json:"phone"`
+	Location     		sygic.Location    	`json:"location"`
+	Bounding_box 		sygic.BoundingBox 	`json:"bounding_box"`
+	Colors					interface{}    			`json:"colors"`
 }
 
 type PlaceChannel struct {
@@ -37,7 +38,7 @@ type PlaceChannel struct {
 	Error error
 }
 
-func fromSygicPlace(sp *sygic.Place) (p *Place) {
+func fromSygicPlace(sp *sygic.Place, colors interface{}) (p *Place) {
 	p = &Place{
 		// These have name overrides
 		Sygic_id:    sp.ID,
@@ -53,6 +54,7 @@ func fromSygicPlace(sp *sygic.Place) (p *Place) {
 		Phone:        sp.Phone,
 		Location:     sp.Location,
 		Bounding_box: sp.Bounding_box,
+		Colors:				colors,
 	}
 
 	return p
@@ -91,7 +93,7 @@ func FromTriposoPlaces(sourcePlaces []triposo.Place) (internalPlaces []triposo.I
 func FromSygicPlaces(sourcePlaces []sygic.Place) (internalPlaces []Place) {
 	internalPlaces = []Place{}
 	for _, sourcePlace := range sourcePlaces {
-		internalPlaces = append(internalPlaces, *fromSygicPlace(&sourcePlace))
+		internalPlaces = append(internalPlaces, *fromSygicPlace(&sourcePlace, nil))
 	}
 
 	return internalPlaces

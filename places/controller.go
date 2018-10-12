@@ -222,6 +222,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 			nightlifePlaces = FromTriposoPlaces(nightlife)
 		case cityRes := <-cityChannel:
 			city = FromTriposoPlace(&cityRes[0])
+			city.Colors = GetColor(city.Image)
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
 			return

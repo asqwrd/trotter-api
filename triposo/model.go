@@ -68,13 +68,14 @@ type poiInfoResponse struct {
 }
 
 type InternalPlace struct {
-	Id                string   `json:"id"`
-	Image             string   `json:"image"`
-	Description       string   `json:"description"`
-	Description_short string   `json:"description_short"`
-	Name              string   `json:"name"`
-	Level             string   `json:"level"`
-	Location          Location `json:"location"`
+	Id                	string   		`json:"id"`
+	Image             	string   		`json:"image"`
+	Description       	string   		`json:"description"`
+	Description_short 	string   		`json:"description_short"`
+	Name              	string   		`json:"name"`
+	Level             	string   		`json:"level"`
+	Location          	Location 		`json:"location"`
+	Colors							interface{} `json:"colors"`
 }
 
 type PoiInfo struct {

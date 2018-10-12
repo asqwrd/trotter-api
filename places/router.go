@@ -26,7 +26,7 @@ var routes = Routes{
 	Route{
 		"GetCountry",
 		"GET",
-		"api/explore/country/{countryID}/",
+		"/api/explore/country/{countryID}/",
 		GetCountry,
 	},
 	Route{

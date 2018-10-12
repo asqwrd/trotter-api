@@ -4,6 +4,12 @@ import (
 	"github.com/asqwrd/trotter-api/sygic"
 	"github.com/asqwrd/trotter-api/triposo"
 	"github.com/grokify/html-strip-tags-go"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
+	"github.com/generaltso/vibrant"
+	"net/http"
 )
 
 // Place represents the normalized + filtered data for a sygic.Place
@@ -90,3 +96,22 @@ func FromSygicPlaces(sourcePlaces []sygic.Place) (internalPlaces []Place) {
 
 	return internalPlaces
 }
+
+func GetColor(url string) (data interface{}){
+	checkErr := func(err error) { if err != nil { panic(err) } }
+	res, err := http.Get(url)
+	checkErr(err)
+	defer res.Body.Close()
+
+	img, _, err := image.Decode(res.Body)
+	checkErr(err)
+	palette, err := vibrant.NewPaletteFromImage(img)
+	checkErr(err)
+	color := make(map[string]interface{})
+	 for name, swatch := range palette.ExtractAwesome() {
+		 color[name] = swatch.Color.String()
+	 }
+
+	return &color
+}
+

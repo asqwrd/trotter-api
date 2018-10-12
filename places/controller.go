@@ -6,14 +6,10 @@ import (
 	"net/url"
 	"sort"
 	"time"
-
-	//"sync"
-
 	"github.com/asqwrd/trotter-api/location"
 	"github.com/asqwrd/trotter-api/response"
 	"github.com/asqwrd/trotter-api/sygic"
 	"github.com/asqwrd/trotter-api/triposo"
-
 	"github.com/gorilla/mux"
 )
 
@@ -116,11 +112,14 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 //Get Country
 
 func GetCountry(w http.ResponseWriter, r *http.Request) {
-	data := map[string]string{
-		"status": "coming soon",
-	}
+	color := GetColor("http://api-images-www.triposo.com/20180627/gAAAAABbwMi0wMG8hb-t08NKGG0jxwI4IJf3gaxk6sZMLGsKDS1XIo_QYhREQWv4qdLFtasSKn8YGWdJyJm_vxWFopD_3xtS80Q9AFlsjtAGvmopEjVxbLeKIjrJ6f9mTQfPRkzPxOXak9G2JBUjYOY9WrNNKrvHwJ70CwMNH9kOTqv7C0Dr5DbowBaF65IC-T_qZyXYqZJ7wzKRIlZHVFmzaQvyHmOyHrFYO4ocYIrh-deK2_3ZZFZupBYhy_gl4cFwZL4F78e45-4kU3W8q2xWw3SEACDKuBfmWH-PR1IkQMaElSX40u4=")
 
-	response.Write(w, data, http.StatusNotFound)
+	data := map[string]interface{}{
+		"color": color,
+	}
+	
+	
+	response.Write(w, data, http.StatusOK)
 	return
 }
 
@@ -359,7 +358,7 @@ func GetHome(w http.ResponseWriter, r *http.Request){
 
 		"popular_national_parks":    	nationalParks,
 
-		"popular_countries":           				countries,
+		"popular_countries":          countries,
 
 	}
 

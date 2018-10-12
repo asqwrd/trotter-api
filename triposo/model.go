@@ -48,15 +48,24 @@ type Image struct {
 }
 
 type Place struct {
-	Name        string      `json:"name"`
-	Id          string      `json:"id"`
-	Coordinates Coordinates `json:"coordinates"`
-	Content     Content     `json:"content"`
-	Images      []Image     `json:"images"`
-	Snippet     string      `json:"snippet"`
-	Score       float32     `json:"score"`
-	Location_id string      `json:"location_id"`
-	Parent_id   string      `json:"parent_id"`
+	Name            string        `json:"name"`
+	Id              string        `json:"id"`
+	Coordinates     Coordinates   `json:"coordinates"`
+	Content         Content       `json:"content"`
+	Images          []Image       `json:"images"`
+	Snippet         string        `json:"snippet"`
+	Score           float32       `json:"score"`
+	Location_id     string        `json:"location_id"`
+	Parent_id       string        `json:"parent_id"`
+	Facebook_id     string        `json:"facebook_id"`
+	Foursquare_id   string        `json:"foursquare_id"`
+	Google_place_id string        `json:"google_place_id"`
+	Tripadvisor_id  string        `json:"tripadvisor_id"`
+	Price_tier      int           `json:"price_tier"`
+	Booking_info    string        `json:"booking_info"`
+	Best_for        []interface{} `json:"best_for"`
+	Intro           string        `json:"intro"`
+	Opening_hours   interface{}   `json:"opening_hours"`
 }
 
 type placeResponse struct {
@@ -68,14 +77,24 @@ type poiInfoResponse struct {
 }
 
 type InternalPlace struct {
-	Id                	string   		`json:"id"`
-	Image             	string   		`json:"image"`
-	Description       	string   		`json:"description"`
-	Description_short 	string   		`json:"description_short"`
-	Name              	string   		`json:"name"`
-	Level             	string   		`json:"level"`
-	Location          	Location 		`json:"location"`
-	Colors							interface{} `json:"colors"`
+	Id                string        `json:"id"`
+	Image             string        `json:"image,omitempty"`
+	Description       string        `json:"description" json:"intro"`
+	Description_short string        `json:"description_short,omitempty"`
+	Name              string        `json:"name"`
+	Level             string        `json:"level"`
+	Location          Location      `json:"location"`
+	Colors            interface{}   `json:"colors"`
+	Facebook_id       string        `json:"facebook_id,omitempty"`
+	Foursquare_id     string        `json:"foursquare_id,omitempty"`
+	Google_place_id   string        `json:"google_place_id,omitempty"`
+	Tripadvisor_id    string        `json:"tripadvisor_id,omitempty"`
+	Price_tier        int           `json:"price_tier,omitempty"`
+	Booking_info      string        `json:"booking_info,omitempty"`
+	Best_for          []interface{} `json:"best_for,omitempty"`
+	Images            []Image       `json:"images"`
+	Score             float32       `json:"score"`
+	Opening_hours     interface{}   `json:"opening_hours,omitempty"`
 }
 
 type PoiInfo struct {
@@ -87,7 +106,7 @@ type PoiInfo struct {
 type TriposoChannel struct {
 	Places []Place
 	Index  int
-	Error error
+	Error  error
 }
 
 const baseTriposoAPI = "https://www.triposo.com/api/20180627/"
@@ -153,6 +172,35 @@ func GetDestination(id string, count string) (*[]Place, error) {
 	return &resp.Results, nil
 }
 
+func GetPoi(id string) (*[]Place, error) {
+	client := http.Client{Timeout: time.Second * 5}
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"poi.json?id="+id+"&fields=google_place_id,images,id,name,booking_info,best_for,facebook_id,opening_hours,score,tripadvisor_id,content,foursquare_id,price_tier,intro,coordinates&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	q := req.URL.Query()
+	req.URL.RawQuery = q.Encode()
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	resp := &placeResponse{}
+	err = json.NewDecoder(res.Body).Decode(resp)
+	if err != nil {
+		log.Println(err)
+		log.Println(req.URL.String())
+		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
+	}
+
+	return &resp.Results, nil
+
+}
+
 func GetPoiFromLocation(id string, count string, tag_labels string, index int) (*[]Place, error) {
 
 	client := http.Client{Timeout: time.Second * 5}
@@ -214,10 +262,10 @@ func GetCity(id string) (*[]Place, error) {
 
 }
 
-func GetLocationType(type_id string, count string) (*[]Place, error){
+func GetLocationType(type_id string, count string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 5}
 
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?type="+type_id+"&count="+count+"&order_by=-score&fields=coordinates,parent_id,images,content,name,id,snippet&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?type="+type_id+"&count="+count+"&order_by=-score&fields=coordinates,parent_id,images,content,name,id,score,snippet&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("Failed to access the Triposo API.")

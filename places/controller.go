@@ -366,3 +366,49 @@ func GetHome(w http.ResponseWriter, r *http.Request){
 	response.Write(w, homeData, http.StatusOK)
 	return
 }
+
+
+//POI
+
+func GetPoi(w http.ResponseWriter, r *http.Request) {
+	poiID := mux.Vars(r)["poiID"]
+	poiChannel := make(chan []triposo.Place)
+	errorChannel := make(chan error)
+	timeoutChannel := make(chan bool)
+	var poi *triposo.InternalPlace
+
+
+	go func() {
+		poi, err := triposo.GetPoi(poiID)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		poiChannel <- *poi
+
+	}()
+
+	go func() {
+    time.Sleep(10 * time.Second)
+    timeoutChannel <- true
+	}()
+
+	for i := 0; i < 1; i++ {
+		select {
+		case poiRes := <-poiChannel:
+			poi = FromTriposoPlace(&poiRes[0])
+			poi.Colors = GetColor(poi.Image)
+		case err := <-errorChannel:
+			response.WriteErrorResponse(w, err)
+			return
+		case timeout := <-timeoutChannel:
+			if timeout == true {
+				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
+				return
+			}
+		}
+	}
+
+	response.Write(w, poi, http.StatusOK)
+	return
+}

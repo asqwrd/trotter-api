@@ -68,13 +68,23 @@ func FromTriposoPlace(sp *triposo.Place) (p *triposo.InternalPlace) {
 	}
 
 	p = &triposo.InternalPlace{
-		Id:                sp.Id,
-		Image:             image,
-		Description:       strip.StripTags(sp.Content.Sections[0].Body),
-		Description_short: sp.Snippet,
-		Name:              sp.Name,
-		Level:             "triposo",
-		Location:          triposo.Location{Lat: sp.Coordinates.Latitude, Lng: sp.Coordinates.Longitude},
+		Id:                	sp.Id,
+		Image:             	image,
+		Images:							sp.Images,
+		Description:       	strip.StripTags(sp.Content.Sections[0].Body),
+		Description_short: 	sp.Snippet,
+		Name:              	sp.Name,
+		Level:             	"triposo",
+		Location:          	triposo.Location{Lat: sp.Coordinates.Latitude, Lng: sp.Coordinates.Longitude},
+		Best_for:						sp.Best_for,
+		Price_tier:					sp.Price_tier,
+		Facebook_id:				sp.Facebook_id,
+		Foursquare_id:			sp.Foursquare_id,
+		Tripadvisor_id:			sp.Tripadvisor_id,
+		Google_place_id:		sp.Google_place_id,
+		Booking_info:				sp.Booking_info,
+		Score:							sp.Score,
+		Opening_hours:			sp.Opening_hours,
 	}
 
 	return p

@@ -308,7 +308,7 @@ function addEmergencyNumber(emergency_numbers) {
   };
 }
 
-async function getEmbassy(req) {
+/*async function getEmbassy(req) {
   const id = req.params.country_id;
   const embassy = constructPlacesRequest(id, `tags=Embassy&query=${citizenCountry}&level=poi`, 20);
   return embassy;
@@ -344,7 +344,7 @@ async function getAddresses(embassies) {
     });
   }
   return;
-}
+}*/
 
 export const getCountry = async (req: Request, res: Response) => {
   const currencies = getCountriesCurrencies();
@@ -413,12 +413,12 @@ export const getCountry = async (req: Request, res: Response) => {
 
   country.emergency_numbers = addEmergencyNumber(emergency_numbers);
 
-  let embassiesRes = await getEmbassy(req);
+  /*let embassiesRes = await getEmbassy(req);
   let embassies = await getAddresses(embassiesRes);
   if (embassies) {
     let embassy_names = embassies.splice(0, 1)[0];
     data.country.embassies = formatEmbassy(embassies, embassy_names);
-  }
+  }*/
 
   res.send({
     country,

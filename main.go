@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/asqwrd/trotter-api/places"
+	"github.com/asqwrd/trotter-api/firebase"
+	"github.com/asqwrd/trotter-api/router"
 	"github.com/gorilla/handlers"
 )
 
@@ -19,12 +20,14 @@ func main() {
 		log.Println("Running on port: " + port)
 	}
 
+	trotterFirebase.Init()
+
 	sygicAPIKey := os.Getenv("SYGIC_API_KEY")
 	if sygicAPIKey == "" {
 		log.Fatal("$SYGIC_API_KEY not set")
 	}
 
-	router := places.NewRouter()
+	router := router.NewRouter()
 
 	allowedOrigins := handlers.AllowedOrigins([]string{"*"})
 	allowedMethods := handlers.AllowedMethods([]string{"GET"})

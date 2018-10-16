@@ -31,7 +31,8 @@ type Place struct {
 	Phone        string            `json:"phone,omitempty"`
 	Location     sygic.Location    `json:"location"`
 	Bounding_box sygic.BoundingBox `json:"bounding_box"`
-	Colors       interface{}       `json:"colors"`
+	Colors       Colors            `json:"colors"`
+	Color        interface{}       `json:"color"`
 }
 
 type PlaceChannel struct {
@@ -40,7 +41,16 @@ type PlaceChannel struct {
 	Error  error
 }
 
-func FromSygicPlace(sp *sygic.Place, colors interface{}) (p *Place) {
+type Colors struct {
+	Vibrant      string
+	Muted        string
+	LightVibrant string
+	LightMuted   string
+	DarkVibrant  string
+	DarkMuted    string
+}
+
+func FromSygicPlace(sp *sygic.Place, colors Colors) (p *Place) {
 	p = &Place{
 		// These have name overrides
 		Sygic_id:    sp.ID,
@@ -62,7 +72,7 @@ func FromSygicPlace(sp *sygic.Place, colors interface{}) (p *Place) {
 	return p
 }
 
-func FromSygicPlaceDetail(sp *sygic.PlaceDetail, colors interface{}) (p *Place) {
+func FromSygicPlaceDetail(sp *sygic.PlaceDetail, colors Colors) (p *Place) {
 	re := regexp.MustCompile(`\{[^\]]*?\}`)
 	p = &Place{
 		// These have name overrides
@@ -122,31 +132,46 @@ func FromTriposoPlaces(sourcePlaces []triposo.Place) (internalPlaces []triposo.I
 // FromSygicPlaces converts a sygic.Place to an internal Place value
 func FromSygicPlaces(sourcePlaces []sygic.Place) (internalPlaces []Place) {
 	internalPlaces = []Place{}
+	var colors Colors
 	for _, sourcePlace := range sourcePlaces {
-		internalPlaces = append(internalPlaces, *FromSygicPlace(&sourcePlace, nil))
+		internalPlaces = append(internalPlaces, *FromSygicPlace(&sourcePlace, colors))
 	}
 
 	return internalPlaces
 }
 
-func GetColor(url string) (data interface{}) {
-	checkErr := func(err error) {
-		if err != nil {
-			panic(err)
-		}
-	}
+func GetColor(url string) (*Colors, error) {
 	res, err := http.Get(url)
-	checkErr(err)
+	if err != nil {
+		return nil, err
+	}
 	defer res.Body.Close()
 
 	img, _, err := image.Decode(res.Body)
-	checkErr(err)
+	if err != nil {
+		return nil, err
+	}
 	palette, err := vibrant.NewPaletteFromImage(img)
-	checkErr(err)
-	color := make(map[string]interface{})
+	if err != nil {
+		return nil, err
+	}
+	var colors Colors
 	for name, swatch := range palette.ExtractAwesome() {
-		color[name] = swatch.Color.String()
+		switch name {
+		case "Vibrant":
+			colors.Vibrant = swatch.Color.String()
+		case "Muted":
+			colors.Muted = swatch.Color.String()
+		case "LightVibrant":
+			colors.LightVibrant = swatch.Color.String()
+		case "LightMuted":
+			colors.LightMuted = swatch.Color.String()
+		case "DarkVibrant":
+			colors.DarkVibrant = swatch.Color.String()
+		case "DarkMuted":
+			colors.DarkMuted = swatch.Color.String()
+		}
 	}
 
-	return &color
+	return &colors, nil
 }

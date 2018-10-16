@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"sort"
 	"time"
+
 	"github.com/asqwrd/trotter-api/location"
 	"github.com/asqwrd/trotter-api/response"
 	"github.com/asqwrd/trotter-api/sygic"
@@ -74,8 +75,8 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	go func() {
-    time.Sleep(10 * time.Second)
-    timeoutChannel <- true
+		time.Sleep(10 * time.Second)
+		timeoutChannel <- true
 	}()
 
 	for i := 0; i < 5; i++ {
@@ -90,7 +91,7 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
 				return
 			}
-			
+
 		}
 	}
 
@@ -109,20 +110,6 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-//Get Country
-
-func GetCountry(w http.ResponseWriter, r *http.Request) {
-	color := GetColor("http://api-images-www.triposo.com/20180627/gAAAAABbwMi0wMG8hb-t08NKGG0jxwI4IJf3gaxk6sZMLGsKDS1XIo_QYhREQWv4qdLFtasSKn8YGWdJyJm_vxWFopD_3xtS80Q9AFlsjtAGvmopEjVxbLeKIjrJ6f9mTQfPRkzPxOXak9G2JBUjYOY9WrNNKrvHwJ70CwMNH9kOTqv7C0Dr5DbowBaF65IC-T_qZyXYqZJ7wzKRIlZHVFmzaQvyHmOyHrFYO4ocYIrh-deK2_3ZZFZupBYhy_gl4cFwZL4F78e45-4kU3W8q2xWw3SEACDKuBfmWH-PR1IkQMaElSX40u4=")
-
-	data := map[string]interface{}{
-		"color": color,
-	}
-	
-	
-	response.Write(w, data, http.StatusOK)
-	return
-}
-
 //Get City
 
 func GetCity(w http.ResponseWriter, r *http.Request) {
@@ -130,7 +117,8 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	urlparams := []string{"sightseeing|sight|topattractions", "museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts", "amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos", "beaches|camping|wildlife|fishing|relaxinapark", "eatingout|breakfast|coffeeandcake|lunch|dinner", "do|shopping", "nightlife|comedy|drinks|dancing|pubcrawl|redlight|musicandshows|celebrations|foodexperiences|breweries|showstheatresandmusic"}
 
 	placeChannel := make(chan triposo.TriposoChannel)
-	cityChannel := make(chan []triposo.Place)
+	cityChannel := make(chan triposo.InternalPlace)
+	colorChannel := make(chan Colors)
 	var city *triposo.InternalPlace
 
 	var placeToSee []triposo.InternalPlace
@@ -150,6 +138,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	relaxChannel := make(chan []triposo.Place)
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
+	var cityColors Colors
 
 	for i, param := range urlparams {
 		go func(param string, i int) {
@@ -167,7 +156,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		for res := range placeChannel {
 			if res.Error != nil {
 				errorChannel <- res.Error
-				return;
+				return
 			}
 			switch {
 			case res.Index == 0:
@@ -195,16 +184,29 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 			errorChannel <- err
 			return
 		}
-		cityChannel <- *city
+
+		cityParam := *city
+		cityRes := FromTriposoPlace(&cityParam[0])
+
+		go func(image string) {
+			colors, err := GetColor(image)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+			colorChannel <- *colors
+		}(cityRes.Image)
+
+		cityChannel <- *cityRes
 
 	}()
 
 	go func() {
-    time.Sleep(10 * time.Second)
-    timeoutChannel <- true
+		time.Sleep(10 * time.Second)
+		timeoutChannel <- true
 	}()
 
-	for i := 0; i < 8; i++ {
+	for i := 0; i < 9; i++ {
 		select {
 		case see := <-seeChannel:
 			placeToSee = FromTriposoPlaces(see)
@@ -221,8 +223,9 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		case nightlife := <-nightlifeChannel:
 			nightlifePlaces = FromTriposoPlaces(nightlife)
 		case cityRes := <-cityChannel:
-			city = FromTriposoPlace(&cityRes[0])
-			city.Colors = GetColor(city.Image)
+			city = &cityRes
+		case colorRes := <-colorChannel:
+			cityColors = colorRes
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
@@ -232,6 +235,21 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+	}
+
+	city.Colors = cityColors
+	if len(cityColors.Vibrant) > 0 {
+		city.Color = cityColors.Vibrant
+	} else if len(cityColors.Muted) > 0 {
+		city.Color = cityColors.Muted
+	} else if len(cityColors.LightVibrant) > 0 {
+		city.Color = cityColors.LightVibrant
+	} else if len(cityColors.LightMuted) > 0 {
+		city.Color = cityColors.LightMuted
+	} else if len(cityColors.DarkVibrant) > 0 {
+		city.Color = cityColors.DarkVibrant
+	} else if len(cityColors.DarkMuted) > 0 {
+		city.Color = cityColors.DarkMuted
 	}
 
 	cityData := map[string]interface{}{
@@ -252,7 +270,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		"shop":           &shopPlaces,
 		"shop_locations": location.FromTriposoPlaces(shopPlaces),
 
-		"nightlife":      &nightlifePlaces,
+		"nightlife":           &nightlifePlaces,
 		"nightlife_locations": location.FromTriposoPlaces(nightlifePlaces),
 
 		"relax":           &relaxPlaces,
@@ -265,8 +283,8 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 
 //Get Home
 
-func GetHome(w http.ResponseWriter, r *http.Request){
-	typeparams := []string{"island","city","country","national_park"}
+func GetHome(w http.ResponseWriter, r *http.Request) {
+	typeparams := []string{"island", "city", "country", "national_park"}
 
 	placeChannel := make(chan PlaceChannel)
 
@@ -279,7 +297,7 @@ func GetHome(w http.ResponseWriter, r *http.Request){
 	cityChannel := make(chan []triposo.Place)
 	countryChannel := make(chan []sygic.Place)
 	nationalParkChannel := make(chan []triposo.Place)
-	
+
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
 
@@ -292,7 +310,7 @@ func GetHome(w http.ResponseWriter, r *http.Request){
 				res.Index = i
 				res.Error = err
 				placeChannel <- *res
-			}else{
+			} else {
 				place, err := triposo.GetLocationType(typeParam, "20")
 				res := new(PlaceChannel)
 				res.Places = *place
@@ -300,8 +318,7 @@ func GetHome(w http.ResponseWriter, r *http.Request){
 				res.Error = err
 				placeChannel <- *res
 			}
-			
-			
+
 		}(typeParam, i)
 
 	}
@@ -310,7 +327,7 @@ func GetHome(w http.ResponseWriter, r *http.Request){
 		for res := range placeChannel {
 			if res.Error != nil {
 				errorChannel <- res.Error
-				return;
+				return
 			}
 			switch {
 			case res.Index == 0:
@@ -327,8 +344,8 @@ func GetHome(w http.ResponseWriter, r *http.Request){
 	}()
 
 	go func() {
-    time.Sleep(10 * time.Second)
-    timeoutChannel <- true
+		time.Sleep(10 * time.Second)
+		timeoutChannel <- true
 	}()
 
 	for i := 0; i < 4; i++ {
@@ -353,30 +370,29 @@ func GetHome(w http.ResponseWriter, r *http.Request){
 	}
 
 	homeData := map[string]interface{}{
-		"popular_cities": 						cities,
+		"popular_cities": cities,
 
-		"popular_islands":           	islands,
+		"popular_islands": islands,
 
-		"popular_national_parks":    	nationalParks,
+		"popular_national_parks": nationalParks,
 
-		"popular_countries":          countries,
-
+		"popular_countries": countries,
 	}
 
 	response.Write(w, homeData, http.StatusOK)
 	return
 }
 
-
 //POI
 
 func GetPoi(w http.ResponseWriter, r *http.Request) {
 	poiID := mux.Vars(r)["poiID"]
-	poiChannel := make(chan []triposo.Place)
+	poiChannel := make(chan triposo.InternalPlace)
+	colorChannel := make(chan Colors)
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
+	var poiColor Colors
 	var poi *triposo.InternalPlace
-
 
 	go func() {
 		poi, err := triposo.GetPoi(poiID)
@@ -384,20 +400,32 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 			errorChannel <- err
 			return
 		}
-		poiChannel <- *poi
+		poiParam := *poi
+		poiRes := FromTriposoPlace(&poiParam[0])
+
+		go func(image string) {
+			colors, err := GetColor(image)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+			colorChannel <- *colors
+		}(poiRes.Image)
+		poiChannel <- *poiRes
 
 	}()
 
 	go func() {
-    time.Sleep(10 * time.Second)
-    timeoutChannel <- true
+		time.Sleep(10 * time.Second)
+		timeoutChannel <- true
 	}()
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 2; i++ {
 		select {
 		case poiRes := <-poiChannel:
-			poi = FromTriposoPlace(&poiRes[0])
-			poi.Colors = GetColor(poi.Image)
+			poi = &poiRes
+		case color := <-colorChannel:
+			poiColor = color
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
@@ -407,6 +435,21 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+	}
+
+	poi.Colors = poiColor
+	if len(poiColor.Vibrant) > 0 {
+		poi.Color = poiColor.Vibrant
+	} else if len(poiColor.Muted) > 0 {
+		poi.Color = poiColor.Muted
+	} else if len(poiColor.LightVibrant) > 0 {
+		poi.Color = poiColor.LightVibrant
+	} else if len(poiColor.LightMuted) > 0 {
+		poi.Color = poiColor.LightMuted
+	} else if len(poiColor.DarkVibrant) > 0 {
+		poi.Color = poiColor.DarkVibrant
+	} else if len(poiColor.DarkMuted) > 0 {
+		poi.Color = poiColor.DarkMuted
 	}
 
 	response.Write(w, poi, http.StatusOK)

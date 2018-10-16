@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/asqwrd/trotter-api/firebase"
 	"github.com/asqwrd/trotter-api/router"
 	"github.com/gorilla/handlers"
 )
@@ -19,8 +18,6 @@ func main() {
 	} else {
 		log.Println("Running on port: " + port)
 	}
-
-	trotterFirebase.Init()
 
 	sygicAPIKey := os.Getenv("SYGIC_API_KEY")
 	if sygicAPIKey == "" {

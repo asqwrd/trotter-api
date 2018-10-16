@@ -85,6 +85,7 @@ type InternalPlace struct {
 	Level             string        `json:"level"`
 	Location          Location      `json:"location"`
 	Colors            interface{}   `json:"colors"`
+	Color             string        `json:"color"`
 	Facebook_id       string        `json:"facebook_id,omitempty"`
 	Foursquare_id     string        `json:"foursquare_id,omitempty"`
 	Google_place_id   string        `json:"google_place_id,omitempty"`

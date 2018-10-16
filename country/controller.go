@@ -6,18 +6,21 @@ import (
 	"github.com/asqwrd/trotter-api/places"
 	"net/url"
 
-	"github.com/asqwrd/trotter-api/firebase"
 	"github.com/asqwrd/trotter-api/response"
-	"github.com/asqwrd/trotter-api/sygic" //"github.com/asqwrd/trotter-api/triposo"
+	"github.com/asqwrd/trotter-api/sygic"
+	"github.com/asqwrd/trotter-api/triposo"
 	"github.com/gorilla/mux"
+	"google.golang.org/api/iterator"
+	"golang.org/x/net/context"
+	"google.golang.org/api/option"
+	firebase "firebase.google.com/go"
+
 )
+
+
 
 var citizenCode = "US"
 var citizenCountry = "United States"
-var country_codes = trotterFirebase.GetCollection("countries_code")
-var emergency_numbers_db = trotterFirebase.GetCollection("emergency_numbers")
-var plugs_db = trotterFirebase.GetCollection("plugs")
-var currencies_db = trotterFirebase.GetCollection("currencies")
 var currenciesCache interface{}
 
 var passportBlankpages_map = Passport{
@@ -42,6 +45,7 @@ var passportValidity_map = PassportValidity{
 	THREE_MONTHS_AFTER_DEPARTURE:        "Your passport must be valid on entry and three months after your departure date.",
 	SIX_MONTHS_AFTER_DEPARTURE:          "Your passport must be valid on entry and six months after your departure date.",
 }
+
 
 func initializeQueryParams(level string) *url.Values {
 	qp := &url.Values{}
@@ -77,11 +81,37 @@ func getCurrencies() (*interface{}, error) {
 }
 
 func GetCountry(w http.ResponseWriter, r *http.Request) {
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+
+
 	routeVars := mux.Vars(r)
 	countryID := routeVars["countryID"]
 	var errorChannel = make(chan error)
-	var countryChannel = make(chan sygic.PlaceDetail)
+	var countryChannel = make(chan places.Place)
+	var destinationChannel = make(chan []triposo.Place)
+	var colorChannel = make(chan places.Colors)
 	var country places.Place
+	var countryColor places.Colors
+	var popularDestinations []triposo.InternalPlace
+	var plugsChannel = make(chan interface{})
+	var plugs interface{}
 	if currenciesCache == nil {
 		data, err := getCurrencies()
 		if err != nil {
@@ -91,25 +121,117 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Empty currency")
 		currenciesCache = data
 	}
+
 	go func() {
+		var destinationSubChannel = make(chan []triposo.Place)
 		res, err := sygic.GetPlace(countryID)
 		if err != nil {
 			errorChannel <- err
 			return
 		}
-		countryChannel <- *res
+		var colors places.Colors
+		countryRes := places.FromSygicPlaceDetail(res, colors)
+
+		go func(name string, image string) {
+			triposoIdRes, err := triposo.GetPlaceByName(name)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+
+			go func(id string){
+				triposoRes, err := triposo.GetDestination(id, "20")
+				if err != nil {
+					errorChannel <- err
+					return
+				}
+				destinationSubChannel <- *triposoRes
+			}(triposoIdRes.Id)
+
+			go func(image string){
+				colors, err :=places.GetColor(image)
+				if err != nil {
+					errorChannel <- err
+					return
+				}
+				colorChannel <- *colors
+			}(image)
+		}(countryRes.Name, countryRes.Image)
+
+		go func(name string){
+			iter := client.Collection("plugs").Where("country", "==", name).Documents(ctx)
+			for{
+				doc, err := iter.Next()
+				if err == iterator.Done {
+					return
+				}
+				if err != nil {
+					errorChannel <- err
+					return
+				}
+				
+				plugsChannel <- doc.Data()
+				return
+			}
+		}(countryRes.Name)
+
+		
+		
+		for i := 0; i < 1; i++ {
+			select {
+			case res := <-destinationSubChannel:
+				destinationChannel <- res
+			case err := <-errorChannel:
+				errorChannel <- err
+				return
+			}
+		}
+		
+
+		countryChannel <- *countryRes
+
+		
 	}()
 
-	for i := 0; i < 1; i++ {
+
+	for i := 0; i < 4; i++ {
 		select {
 		case res := <-countryChannel:
-			country = *places.FromSygicPlaceDetail(&res, nil)
+			country = res
+		case res := <-colorChannel:
+			countryColor = res
+		case res := <-destinationChannel:
+			popularDestinations = places.FromTriposoPlaces(res)
+		case res := <-plugsChannel:
+		 	plugs = res
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
 		}
 	}
 
-	response.Write(w, country, http.StatusOK)
+	country.Colors = countryColor
+	if len(countryColor.Vibrant) > 0 {
+		country.Color = countryColor.Vibrant
+	} else if len(countryColor.Muted) > 0 {
+		country.Color = countryColor.Muted
+	} else if len(countryColor.LightVibrant) > 0 {
+		country.Color = countryColor.LightVibrant
+	} else if len(countryColor.LightMuted) > 0 {
+		country.Color = countryColor.LightMuted
+	} else if len(countryColor.DarkVibrant) > 0 {
+		country.Color = countryColor.DarkVibrant
+	} else if len(countryColor.DarkMuted) > 0 {
+		country.Color = countryColor.DarkMuted
+	}
+
+	responseData := map[string]interface{}{
+		"country": country,
+		"popular_destinations":  popularDestinations,
+		"plugs": plugs,
+	}
+
+
+	response.Write(w, responseData, http.StatusOK)
 	return
 }

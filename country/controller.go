@@ -21,7 +21,7 @@ import (
 
 var citizenCode = "US"
 var citizenCountry = "United States"
-var currenciesCache interface{}
+var currenciesCache map[string]interface{}
 
 var passportBlankpages_map = Passport{
 	NOT_REQUIRED:              "You do not need to have any blank pages in your passport.",
@@ -53,10 +53,10 @@ func initializeQueryParams(level string) *url.Values {
 	return qp
 }
 
-func getCurrencies() (*interface{}, error) {
+func getCurrencies() (map[string]interface{}, error) {
 	var errorChannel = make(chan error)
-	var currencyChannel = make(chan interface{})
-	var data interface{}
+	var currencyChannel = make(chan map[string]interface{})
+	var data map[string]interface{}
 
 	go func() {
 		res, err := GetCountriesCurrenciesApi()
@@ -76,7 +76,7 @@ func getCurrencies() (*interface{}, error) {
 		}
 	}
 
-	return &data, nil
+	return data, nil
 
 }
 
@@ -111,7 +111,9 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	var countryColor places.Colors
 	var popularDestinations []triposo.InternalPlace
 	var plugsChannel = make(chan []interface{})
+	var currencyChannel = make(chan interface{})
 	var plugs []interface{}
+	var currency interface{}
 	if currenciesCache == nil {
 		data, err := getCurrencies()
 		if err != nil {
@@ -161,6 +163,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		var plugsData []interface{}
 
 		go func(name string){
+			
 			iter := client.Collection("plugs").Where("country", "==", name).Documents(ctx)
 			
 			for{
@@ -179,9 +182,45 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			
 		}(countryRes.Name)
 
+		go func(name string){
+			code, err := client.Collection("countries_code").Doc(name).Get(ctx)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+			countryCodeData := code.Data()
+			countryCode := countryCodeData["abbreviation"].(string)
+			go func(countryCode string){
+				citizenCurrency := currenciesCache["US"].(map[string]interface{})
+				toCurrency := currenciesCache[countryCode].(map[string]interface{})
 
-		
-		
+				if currenciesCache[countryCode] == nil {
+					data, err := client.Collection("currencies").Doc(countryCode).Get(ctx)
+					if err != nil {
+						errorChannel <- err
+						return
+					}
+					toCurrency = currenciesCache[data.Data()["id"].(string)].(map[string]interface{})
+										
+				}
+
+				go func(from map[string]interface{}, to map[string]interface{}){
+					currencyData, err := ConvertCurrency(to["currencyId"].(string), from["currencyId"].(string))
+					if err != nil {
+						errorChannel <- err
+						return
+					}
+					currencyChannel <- map[string]interface{}{
+						"converted_currency": currencyData["val"],
+						"converted_unit": to,
+						"unit": from,
+					}
+					return
+				}(citizenCurrency, toCurrency)
+			}(countryCode)
+
+		}(countryRes.Name)
+	
 		for i := 0; i < 1; i++ {
 			select {
 			case res := <-destinationSubChannel:
@@ -199,7 +238,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	}()
 
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 5; i++ {
 		select {
 		case res := <-countryChannel:
 			country = res
@@ -208,7 +247,9 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		case res := <-destinationChannel:
 			popularDestinations = places.FromTriposoPlaces(res)
 		case res := <-plugsChannel:
-		 	plugs = res
+			plugs = res
+		case res := <-currencyChannel:
+			currency = res
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
@@ -234,6 +275,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		"country": country,
 		"popular_destinations":  popularDestinations,
 		"plugs": plugs,
+		"currency": currency,
 	}
 
 

@@ -13,7 +13,12 @@ import (
 
 type currenciesApiResponse struct {
 	Status_code int
-	Results     interface{}
+	Results     map[string]interface{}
+}
+
+type currenciesConvertResponse struct {
+	Status_code int
+	Results     map[string]interface{}
 }
 
 type Passport struct {
@@ -39,7 +44,7 @@ type PassportValidity struct {
 	SIX_MONTHS_AFTER_DEPARTURE          string
 }
 
-func GetCountriesCurrenciesApi() (interface{}, error) {
+func GetCountriesCurrenciesApi() (map[string]interface{}, error) {
 	client := http.Client{Timeout: time.Second * 5}
 	req, err := http.NewRequest(http.MethodGet, "https://free.currencyconverterapi.com/api/v6/countries", nil)
 	if err != nil {
@@ -61,6 +66,32 @@ func GetCountriesCurrenciesApi() (interface{}, error) {
 		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
 	}
 
-	return &resp.Results, nil
+	return resp.Results, nil
+
+}
+
+func ConvertCurrency(to string, from string) (map[string]interface{}, error) {
+	client := http.Client{Timeout: time.Second * 5}
+	req, err := http.NewRequest(http.MethodGet, "https://free.currencyconverterapi.com/api/v6/convert?q="+from+"_"+to+"&compact=n", nil)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	resp := &currenciesConvertResponse{}
+	err = json.NewDecoder(res.Body).Decode(resp)
+	if err != nil {
+		log.Println(err)
+		log.Println(req.URL.String())
+		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
+	}
+
+	return resp.Results[from+"_"+to].(map[string]interface{}), nil
 
 }

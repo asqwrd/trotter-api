@@ -110,8 +110,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	var country places.Place
 	var countryColor places.Colors
 	var popularDestinations []triposo.InternalPlace
-	var plugsChannel = make(chan interface{})
-	var plugs interface{}
+	var plugsChannel = make(chan []interface{})
+	var plugs []interface{}
 	if currenciesCache == nil {
 		data, err := getCurrencies()
 		if err != nil {
@@ -158,8 +158,11 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			}(image)
 		}(countryRes.Name, countryRes.Image)
 
+		var plugsData []interface{}
+
 		go func(name string){
 			iter := client.Collection("plugs").Where("country", "==", name).Documents(ctx)
+			
 			for{
 				doc, err := iter.Next()
 				if err == iterator.Done {
@@ -170,10 +173,12 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				
-				plugsChannel <- doc.Data()
-				return
+				plugsData = append(plugsData, doc.Data())
+				plugsChannel <- plugsData
 			}
+			
 		}(countryRes.Name)
+
 
 		
 		

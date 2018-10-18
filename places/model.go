@@ -50,7 +50,7 @@ type Colors struct {
 	DarkMuted    string
 }
 
-func FromSygicPlace(sp *sygic.Place, colors Colors) (p *Place) {
+func FromSygicPlace(sp *sygic.Place) (p *Place) {
 	p = &Place{
 		// These have name overrides
 		Sygic_id:    sp.ID,
@@ -66,13 +66,12 @@ func FromSygicPlace(sp *sygic.Place, colors Colors) (p *Place) {
 		Phone:        sp.Phone,
 		Location:     sp.Location,
 		Bounding_box: sp.Bounding_box,
-		Colors:       colors,
 	}
 
 	return p
 }
 
-func FromSygicPlaceDetail(sp *sygic.PlaceDetail, colors Colors) (p *Place) {
+func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 	re := regexp.MustCompile(`\{[^\]]*?\}`)
 	p = &Place{
 		// These have name overrides
@@ -84,7 +83,6 @@ func FromSygicPlaceDetail(sp *sygic.PlaceDetail, colors Colors) (p *Place) {
 		Name:         sp.Name,
 		Location:     sp.Location,
 		Bounding_box: sp.Bounding_box,
-		Colors:       colors,
 	}
 
 	return p
@@ -132,9 +130,8 @@ func FromTriposoPlaces(sourcePlaces []triposo.Place) (internalPlaces []triposo.I
 // FromSygicPlaces converts a sygic.Place to an internal Place value
 func FromSygicPlaces(sourcePlaces []sygic.Place) (internalPlaces []Place) {
 	internalPlaces = []Place{}
-	var colors Colors
 	for _, sourcePlace := range sourcePlaces {
-		internalPlaces = append(internalPlaces, *FromSygicPlace(&sourcePlace, colors))
+		internalPlaces = append(internalPlaces, *FromSygicPlace(&sourcePlace))
 	}
 
 	return internalPlaces

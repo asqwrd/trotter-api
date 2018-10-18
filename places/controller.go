@@ -138,7 +138,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	relaxChannel := make(chan []triposo.Place)
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
-	var cityColors Colors
+	var cityColor string
 
 	for i, param := range urlparams {
 		go func(param string, i int) {
@@ -225,7 +225,19 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		case cityRes := <-cityChannel:
 			city = &cityRes
 		case colorRes := <-colorChannel:
-			cityColors = colorRes
+			if len(colorRes.Vibrant) > 0 {
+				cityColor = colorRes.Vibrant
+			} else if len(colorRes.Muted) > 0 {
+				cityColor = colorRes.Muted
+			} else if len(colorRes.LightVibrant) > 0 {
+				cityColor = colorRes.LightVibrant
+			} else if len(colorRes.LightMuted) > 0 {
+				cityColor = colorRes.LightMuted
+			} else if len(colorRes.DarkVibrant) > 0 {
+				cityColor = colorRes.DarkVibrant
+			} else if len(colorRes.DarkMuted) > 0 {
+				cityColor = colorRes.DarkMuted
+			}
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
@@ -237,23 +249,9 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	city.Colors = cityColors
-	if len(cityColors.Vibrant) > 0 {
-		city.Color = cityColors.Vibrant
-	} else if len(cityColors.Muted) > 0 {
-		city.Color = cityColors.Muted
-	} else if len(cityColors.LightVibrant) > 0 {
-		city.Color = cityColors.LightVibrant
-	} else if len(cityColors.LightMuted) > 0 {
-		city.Color = cityColors.LightMuted
-	} else if len(cityColors.DarkVibrant) > 0 {
-		city.Color = cityColors.DarkVibrant
-	} else if len(cityColors.DarkMuted) > 0 {
-		city.Color = cityColors.DarkMuted
-	}
-
 	cityData := map[string]interface{}{
-		"city": city,
+		"city":  city,
+		"color": cityColor,
 
 		"see":           &placeToSee,
 		"see_locations": location.FromTriposoPlaces(placeToSee),
@@ -391,7 +389,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 	colorChannel := make(chan Colors)
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
-	var poiColor Colors
+	var poiColor string
 	var poi *triposo.InternalPlace
 
 	go func() {
@@ -425,7 +423,19 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 		case poiRes := <-poiChannel:
 			poi = &poiRes
 		case color := <-colorChannel:
-			poiColor = color
+			if len(color.Vibrant) > 0 {
+				poiColor = color.Vibrant
+			} else if len(color.Muted) > 0 {
+				poiColor = color.Muted
+			} else if len(color.LightVibrant) > 0 {
+				poiColor = color.LightVibrant
+			} else if len(color.LightMuted) > 0 {
+				poiColor = color.LightMuted
+			} else if len(color.DarkVibrant) > 0 {
+				poiColor = color.DarkVibrant
+			} else if len(color.DarkMuted) > 0 {
+				poiColor = color.DarkMuted
+			}
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
@@ -437,21 +447,11 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	poi.Colors = poiColor
-	if len(poiColor.Vibrant) > 0 {
-		poi.Color = poiColor.Vibrant
-	} else if len(poiColor.Muted) > 0 {
-		poi.Color = poiColor.Muted
-	} else if len(poiColor.LightVibrant) > 0 {
-		poi.Color = poiColor.LightVibrant
-	} else if len(poiColor.LightMuted) > 0 {
-		poi.Color = poiColor.LightMuted
-	} else if len(poiColor.DarkVibrant) > 0 {
-		poi.Color = poiColor.DarkVibrant
-	} else if len(poiColor.DarkMuted) > 0 {
-		poi.Color = poiColor.DarkMuted
+	poiData := map[string]interface{}{
+		"poi":   poi,
+		"color": poiColor,
 	}
 
-	response.Write(w, poi, http.StatusOK)
+	response.Write(w, poiData, http.StatusOK)
 	return
 }

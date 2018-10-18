@@ -14,6 +14,8 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 	firebase "firebase.google.com/go"
+	//"google.golang.org/grpc"
+  //"google.golang.org/grpc/codes"
 
 )
 
@@ -80,6 +82,7 @@ func getCurrencies() (map[string]interface{}, error) {
 
 }
 
+
 func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
@@ -98,6 +101,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
+	
 
 
 
@@ -108,126 +112,163 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	var destinationChannel = make(chan []triposo.Place)
 	var colorChannel = make(chan places.Colors)
 	var country places.Place
-	var countryColor places.Colors
+	var countryColor string
 	var popularDestinations []triposo.InternalPlace
 	var plugsChannel = make(chan []interface{})
-	var currencyChannel = make(chan interface{})
+	var currencyChannel = make(chan map[string]interface{})
 	var plugs []interface{}
 	var currency interface{}
+
 	if currenciesCache == nil {
 		data, err := getCurrencies()
 		if err != nil {
 			response.WriteErrorResponse(w, err)
 			return
 		}
-		fmt.Println("Empty currency")
 		currenciesCache = data
 	}
 
 	go func() {
-		var destinationSubChannel = make(chan []triposo.Place)
+		destinationSubChannel := make(chan []triposo.Place)
+		currencySubChannel := make(chan map[string]interface{})
+		errorSubChannel := make(chan error)
+		plugsSubChannel := make(chan []interface{})
+		colorSubChannel := make(chan places.Colors)
 		res, err := sygic.GetPlace(countryID)
 		if err != nil {
 			errorChannel <- err
 			return
 		}
-		var colors places.Colors
-		countryRes := places.FromSygicPlaceDetail(res, colors)
+		countryRes := places.FromSygicPlaceDetail(res)
 
 		go func(name string, image string) {
-			triposoIdRes, err := triposo.GetPlaceByName(name)
+			/*
+			*
+			*
+			Destination block
+			*
+			**/
+			tripname := name
+			if name == "Ireland" {
+				tripname = "Republic of Ireland"
+			}
+			triposoIdRes, err := triposo.GetPlaceByName(tripname)
+			if err != nil {
+				errorSubChannel <- err
+				return
+			}
+			triposoRes, err := triposo.GetDestination(triposoIdRes.Id, "20")
+			if err != nil {
+				errorSubChannel <- err
+				return
+			}
+			destinationSubChannel <- *triposoRes
+
+			/*
+			*
+			*
+			Colors block
+			*
+			**/
+
+			colors, err :=places.GetColor(image)
 			if err != nil {
 				errorChannel <- err
 				return
 			}
+			colorSubChannel <- *colors
+			
+			/*
+			*
+			*
+			Currency block
+			*
+			*
+			**/
 
-			go func(id string){
-				triposoRes, err := triposo.GetDestination(id, "20")
-				if err != nil {
-					errorChannel <- err
-					return
-				}
-				destinationSubChannel <- *triposoRes
-			}(triposoIdRes.Id)
+			code, err := client.Collection("countries_code").Doc(name).Get(ctx)
+			if err != nil {
+				errorSubChannel <- err
+				return
+			}
+			
+			countryCodeData := code.Data()
+			countryCode := countryCodeData["abbreviation"].(string)
 
-			go func(image string){
-				colors, err :=places.GetColor(image)
-				if err != nil {
-					errorChannel <- err
-					return
-				}
-				colorChannel <- *colors
-			}(image)
-		}(countryRes.Name, countryRes.Image)
+			currency, err := client.Collection("currencies").Doc(countryCode).Get(ctx)
+			if err != nil { 
+				errorSubChannel <- err
+				return
+			}
+			
+			currencyCodeIdData := currency.Data()
+			currencyCodeId := currencyCodeIdData["id"].(string)
+			
+			go func(countryCode string){
+				citizenCurrency := currenciesCache["US"].(map[string]interface{})
+				var toCurrency map[string]interface{}
+					toCurrency = currenciesCache[countryCode].(map[string]interface{})
+					
+					go func(from map[string]interface{}, to map[string]interface{}) {
+						currencyData, err := ConvertCurrency(toCurrency["currencyId"].(string), citizenCurrency["currencyId"].(string))
+						if err != nil {
+							errorChannel <- err
+							return
+						}
+						result := map[string]interface{}{
+							"converted_currency": currencyData["val"],
+							"converted_unit": toCurrency,
+							"unit": citizenCurrency,
+						}
+						fmt.Println("channel")
+						currencySubChannel <- result
+					}(citizenCurrency, toCurrency)
+				
+			}(currencyCodeId)
 
-		var plugsData []interface{}
 
-		go func(name string){
+
+			/*
+			*
+			*
+			Plugs block
+			*
+			**/
+
+			var plugsData []interface{}
 			
 			iter := client.Collection("plugs").Where("country", "==", name).Documents(ctx)
 			
 			for{
 				doc, err := iter.Next()
 				if err == iterator.Done {
-					return
+					break
 				}
 				if err != nil {
-					errorChannel <- err
-					return
+					errorSubChannel <- err
+					break
 				}
 				
 				plugsData = append(plugsData, doc.Data())
-				plugsChannel <- plugsData
+				plugsSubChannel <- plugsData
 			}
-			
-		}(countryRes.Name)
+			fmt.Println("channel")
+		}(countryRes.Name, countryRes.Image)
 
-		go func(name string){
-			code, err := client.Collection("countries_code").Doc(name).Get(ctx)
-			if err != nil {
-				errorChannel <- err
-				return
-			}
-			countryCodeData := code.Data()
-			countryCode := countryCodeData["abbreviation"].(string)
-			go func(countryCode string){
-				citizenCurrency := currenciesCache["US"].(map[string]interface{})
-				toCurrency := currenciesCache[countryCode].(map[string]interface{})
 
-				if currenciesCache[countryCode] == nil {
-					data, err := client.Collection("currencies").Doc(countryCode).Get(ctx)
-					if err != nil {
-						errorChannel <- err
-						return
-					}
-					toCurrency = currenciesCache[data.Data()["id"].(string)].(map[string]interface{})
-										
-				}
-
-				go func(from map[string]interface{}, to map[string]interface{}){
-					currencyData, err := ConvertCurrency(to["currencyId"].(string), from["currencyId"].(string))
-					if err != nil {
-						errorChannel <- err
-						return
-					}
-					currencyChannel <- map[string]interface{}{
-						"converted_currency": currencyData["val"],
-						"converted_unit": to,
-						"unit": from,
-					}
-					return
-				}(citizenCurrency, toCurrency)
-			}(countryCode)
-
-		}(countryRes.Name)
-	
-		for i := 0; i < 1; i++ {
+		for i := 0; i < 4; i++ {
 			select {
+			case res := <-colorSubChannel:
+				colorChannel <- res
 			case res := <-destinationSubChannel:
 				destinationChannel <- res
-			case err := <-errorChannel:
-				errorChannel <- err
-				return
+			case res := <-plugsSubChannel:
+				plugsChannel <- res
+			case res := <-currencySubChannel:
+				fmt.Println(res)
+				currencyChannel <- res
+			case err := <-errorSubChannel:
+				errorChannel <- err	
 			}
 		}
 		
@@ -237,13 +278,24 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		
 	}()
 
-
 	for i := 0; i < 5; i++ {
 		select {
 		case res := <-countryChannel:
 			country = res
 		case res := <-colorChannel:
-			countryColor = res
+			if len(res.Vibrant) > 0 {
+				countryColor = res.Vibrant
+			} else if len(res.Muted) > 0 {
+				countryColor = res.Muted
+			} else if len(res.LightVibrant) > 0 {
+				countryColor = res.LightVibrant
+			} else if len(res.LightMuted) > 0 {
+				countryColor = res.LightMuted
+			} else if len(res.DarkVibrant) > 0 {
+				countryColor = res.DarkVibrant
+			} else if len(res.DarkMuted) > 0 {
+				countryColor = res.DarkMuted
+			}
 		case res := <-destinationChannel:
 			popularDestinations = places.FromTriposoPlaces(res)
 		case res := <-plugsChannel:
@@ -253,30 +305,21 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
+
 		}
 	}
 
-	country.Colors = countryColor
-	if len(countryColor.Vibrant) > 0 {
-		country.Color = countryColor.Vibrant
-	} else if len(countryColor.Muted) > 0 {
-		country.Color = countryColor.Muted
-	} else if len(countryColor.LightVibrant) > 0 {
-		country.Color = countryColor.LightVibrant
-	} else if len(countryColor.LightMuted) > 0 {
-		country.Color = countryColor.LightMuted
-	} else if len(countryColor.DarkVibrant) > 0 {
-		country.Color = countryColor.DarkVibrant
-	} else if len(countryColor.DarkMuted) > 0 {
-		country.Color = countryColor.DarkMuted
-	}
+	
 
 	responseData := map[string]interface{}{
 		"country": country,
 		"popular_destinations":  popularDestinations,
 		"plugs": plugs,
 		"currency": currency,
+		"color": countryColor,
 	}
+
+	
 
 
 	response.Write(w, responseData, http.StatusOK)

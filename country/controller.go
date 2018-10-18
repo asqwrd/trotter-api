@@ -129,11 +129,11 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go func() {
-		destinationSubChannel := make(chan []triposo.Place)
+		/*destinationSubChannel := make(chan []triposo.Place)
 		currencySubChannel := make(chan map[string]interface{})
 		errorSubChannel := make(chan error)
 		plugsSubChannel := make(chan []interface{})
-		colorSubChannel := make(chan places.Colors)
+		colorSubChannel := make(chan places.Colors)*/
 		res, err := sygic.GetPlace(countryID)
 		if err != nil {
 			errorChannel <- err
@@ -154,15 +154,15 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			}
 			triposoIdRes, err := triposo.GetPlaceByName(tripname)
 			if err != nil {
-				errorSubChannel <- err
+				errorChannel <- err
 				return
 			}
 			triposoRes, err := triposo.GetDestination(triposoIdRes.Id, "20")
 			if err != nil {
-				errorSubChannel <- err
+				errorChannel <- err
 				return
 			}
-			destinationSubChannel <- *triposoRes
+			destinationChannel <- *triposoRes
 
 			/*
 			*
@@ -176,7 +176,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 				errorChannel <- err
 				return
 			}
-			colorSubChannel <- *colors
+			colorChannel <- *colors
 			
 			/*
 			*
@@ -188,7 +188,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 			code, err := client.Collection("countries_code").Doc(name).Get(ctx)
 			if err != nil {
-				errorSubChannel <- err
+				errorChannel <- err
 				return
 			}
 			
@@ -197,7 +197,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 			currency, err := client.Collection("currencies").Doc(countryCode).Get(ctx)
 			if err != nil { 
-				errorSubChannel <- err
+				errorChannel <- err
 				return
 			}
 			
@@ -221,7 +221,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 							"unit": citizenCurrency,
 						}
 						fmt.Println("channel")
-						currencySubChannel <- result
+						currencyChannel <- result
 					}(citizenCurrency, toCurrency)
 				
 			}(currencyCodeId)
@@ -245,18 +245,18 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 				if err != nil {
-					errorSubChannel <- err
+					errorChannel <- err
 					break
 				}
 				
 				plugsData = append(plugsData, doc.Data())
-				plugsSubChannel <- plugsData
+				plugsChannel <- plugsData
 			}
 			fmt.Println("channel")
 		}(countryRes.Name, countryRes.Image)
 
 
-		for i := 0; i < 4; i++ {
+		/*for i := 0; i < 4; i++ {
 			select {
 			case res := <-colorSubChannel:
 				colorChannel <- res
@@ -270,7 +270,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			case err := <-errorSubChannel:
 				errorChannel <- err	
 			}
-		}
+		}*/
 		
 
 		countryChannel <- *countryRes

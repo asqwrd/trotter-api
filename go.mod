@@ -10,6 +10,7 @@ require (
 	github.com/gorilla/handlers v1.4.0
 	github.com/gorilla/mux v1.6.2
 	github.com/grokify/html-strip-tags-go v0.0.0-20180907063347-e9e44961e26f
+	github.com/mitchellh/mapstructure v1.1.2
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	go.opencensus.io v0.17.0 // indirect
 	golang.org/x/net v0.0.0-20181011144130-49bb7cea24b1

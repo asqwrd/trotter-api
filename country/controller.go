@@ -4,6 +4,10 @@ import (
 	"net/http"
 	"github.com/asqwrd/trotter-api/places"
 	"net/url"
+	"strconv"
+	"runtime"
+	"fmt"
+
 
 	"github.com/asqwrd/trotter-api/response"
 	"github.com/asqwrd/trotter-api/sygic"
@@ -13,6 +17,8 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 	firebase "firebase.google.com/go"
+	"github.com/mitchellh/mapstructure"
+
 	//"google.golang.org/grpc"
   //"google.golang.org/grpc/codes"
 
@@ -59,6 +65,7 @@ func getCurrencies() (map[string]interface{}, error) {
 
 
 func GetCountry(w http.ResponseWriter, r *http.Request) {
+	runtime.GOMAXPROCS(10)
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
@@ -83,7 +90,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	routeVars := mux.Vars(r)
 	countryID := routeVars["countryID"]
 	var errorChannel = make(chan error)
-	var countryChannel = make(chan places.Place)
+	//var countryChannel = make(chan places.Place)
 	var destinationChannel = make(chan []triposo.Place)
 	var colorChannel = make(chan places.Colors)
 	var country places.Place
@@ -96,6 +103,12 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	var visaChannel = make(chan interface{})
 	var visa interface{}
 
+
+	var safety string
+	safetyChannel := make(chan SafetyData)
+	emergencyNumbersChannel := make(chan EmergencyNumbers)
+	var emergencyNumbers EmergencyNumbers
+
 	if currenciesCache == nil {
 		data, err := getCurrencies()
 		if err != nil {
@@ -105,177 +118,186 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		currenciesCache = data
 	}
 
-	go func() {
-		/*destinationSubChannel := make(chan []triposo.Place)
-		currencySubChannel := make(chan map[string]interface{})
-		errorSubChannel := make(chan error)
-		plugsSubChannel := make(chan []interface{})
-		colorSubChannel := make(chan places.Colors)*/
-		res, err := sygic.GetPlace(countryID)
+	
+	res, err := sygic.GetPlace(countryID)
+	if err != nil {
+		errorChannel <- err
+		return
+	}
+	countryRes := places.FromSygicPlaceDetail(res)
+	country = *countryRes
+
+
+	go func(name string, image string) {
+		/*
+		*
+		*
+		Destination block
+		*
+		**/
+		tripname := name
+		if name == "Ireland" {
+			tripname = "Republic of Ireland"
+		}
+		triposoIdRes, err := triposo.GetPlaceByName(tripname)
 		if err != nil {
 			errorChannel <- err
 			return
 		}
-		countryRes := places.FromSygicPlaceDetail(res)
+		triposoRes, err := triposo.GetDestination(triposoIdRes.Id, "20")
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		destinationChannel <- *triposoRes
 
-		go func(name string, image string) {
-			/*
-			*
-			*
-			Destination block
-			*
-			**/
-			tripname := name
-			if name == "Ireland" {
-				tripname = "Republic of Ireland"
-			}
-			triposoIdRes, err := triposo.GetPlaceByName(tripname)
-			if err != nil {
-				errorChannel <- err
-				return
-			}
-			triposoRes, err := triposo.GetDestination(triposoIdRes.Id, "20")
-			if err != nil {
-				errorChannel <- err
-				return
-			}
-			destinationChannel <- *triposoRes
+		/*
+		*
+		*
+		Colors block
+		*
+		**/
 
-			/*
-			*
-			*
-			Colors block
-			*
-			**/
-
-			colors, err :=places.GetColor(image)
-			if err != nil {
-				errorChannel <- err
-				return
-			}
-			colorChannel <- *colors
-			
-			/*
-			*
-			*
-			Currency block
-			*
-			*
-			**/
-
-			code, err := client.Collection("countries_code").Doc(name).Get(ctx)
-			if err != nil {
-				errorChannel <- err
-				return
-			}
-			
-			countryCodeData := code.Data()
-			countryCode := countryCodeData["abbreviation"].(string)
-				/*
-			*
-			*
-			Visa Block
-			*
-			*
-			*/
-			visa, err := GetVisa(countryCode,citizenCode)
-			if err != nil {
-				errorChannel <- err
-				return
-			}
-			visaChannel <- FormatVisa(*visa)
-
-
-			currency, err := client.Collection("currencies").Doc(countryCode).Get(ctx)
-			if err != nil { 
-				errorChannel <- err
-				return
-			}
-			
-			currencyCodeIdData := currency.Data()
-			currencyCodeId := currencyCodeIdData["id"].(string)
-			
-			go func(countryCode string){
-				citizenCurrency := currenciesCache["US"].(map[string]interface{})
-				var toCurrency map[string]interface{}
-					toCurrency = currenciesCache[countryCode].(map[string]interface{})
-					
-					go func(from map[string]interface{}, to map[string]interface{}) {
-						currencyData, err := ConvertCurrency(toCurrency["currencyId"].(string), citizenCurrency["currencyId"].(string))
-						if err != nil {
-							errorChannel <- err
-							return
-						}
-						result := map[string]interface{}{
-							"converted_currency": currencyData["val"],
-							"converted_unit": toCurrency,
-							"unit": citizenCurrency,
-						}
-						currencyChannel <- result
-					}(citizenCurrency, toCurrency)
-				
-			}(currencyCodeId)
+		colors, err :=places.GetColor(image)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		colorChannel <- *colors
 		
+		/*
+		*
+		*
+		Country Code block
+		*
+		*
+		**/
+
+		code, err := client.Collection("countries_code").Doc(name).Get(ctx)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		
+		countryCodeData := code.Data()
+		countryCode := countryCodeData["abbreviation"].(string)
+
+		/*
+		*
+		*
+		Visa Block
+		*
+		*
+		*/
+		visa, err := GetVisa(countryCode,citizenCode)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		visaChannel <- FormatVisa(*visa)
+
+		/*
+		*
+		*
+		Safety Block
+		*
+		*
+		*/
+		safetyRes, err := GetSafety(countryCode)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		safetyChannel <- *safetyRes
+
+		/*
+		*
+		*
+		Currency Block
+		*
+		*
+		*/
+		currency, err := client.Collection("currencies").Doc(countryCode).Get(ctx)
+		if err != nil { 
+			errorChannel <- err
+			return
+		}
+		
+		currencyCodeIdData := currency.Data()
+		currencyCodeId := currencyCodeIdData["id"].(string)
+		
+		citizenCurrency := currenciesCache["US"].(map[string]interface{})
+		var toCurrency map[string]interface{}
+		toCurrency = currenciesCache[currencyCodeId].(map[string]interface{})
+			
+		currencyData, err := ConvertCurrency(toCurrency["currencyId"].(string), citizenCurrency["currencyId"].(string))
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		result := map[string]interface{}{
+			"converted_currency": currencyData["val"],
+			"converted_unit": toCurrency,
+			"unit": citizenCurrency,
+		}
+		currencyChannel <- result
 
 			/*
-			*
-			*
-			Plugs block
-			*
-			**/
+		*
+		*
+		Emergency numbers block
+		*
+		*
+		**/
+		numbers, err := client.Collection("emergency_numbers").Doc(countryCode).Get(ctx)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		numbersData := numbers.Data()
+		var emNumbers EmergencyNumbers
+		errDecode := mapstructure.Decode(numbersData, &emNumbers)
+		if errDecode != nil {
+			errorChannel <- err
+			return
+		}
 
-			var plugsData []interface{}
-			
-			iter := client.Collection("plugs").Where("country", "==", name).Documents(ctx)
-			
-			for{
-				doc, err := iter.Next()
-				if err == iterator.Done {
-					break
-				}
-				if err != nil {
-					errorChannel <- err
-					break
-				}
-				
-				plugsData = append(plugsData, doc.Data())
-				plugsChannel <- plugsData
+		fmt.Println(emNumbers)
+		emergencyNumbersChannel <- *FormatEmergencyNumbers(emNumbers)
+		
+		/*
+		*
+		*
+		Plugs block
+		*
+		*
+		**/
+
+		var plugsData []interface{}
+		
+		iter := client.Collection("plugs").Where("country", "==", name).Documents(ctx)
+		
+		for{
+			doc, err := iter.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				errorChannel <- err
+				break
 			}
 			
+			plugsData = append(plugsData, doc.Data())
+			plugsChannel <- plugsData
+		}
 
-		}(countryRes.Name, countryRes.Image)
-
+	
 		
+	}(country.Name, country.Image)
 
 
-
-
-		/*for i := 0; i < 4; i++ {
-			select {
-			case res := <-colorSubChannel:
-				colorChannel <- res
-			case res := <-destinationSubChannel:
-				destinationChannel <- res
-			case res := <-plugsSubChannel:
-				plugsChannel <- res
-			case res := <-currencySubChannel:
-				fmt.Println(res)
-				currencyChannel <- res
-			case err := <-errorSubChannel:
-				errorChannel <- err	
-			}
-		}*/
-		
-
-		countryChannel <- *countryRes
-
-		
-	}()
-
-	for i := 0; i < 6; i++ {
+	for i := 0; i < 7; i++ {
 		select {
-		case res := <-countryChannel:
-			country = res
 		case res := <-colorChannel:
 			if len(res.Vibrant) > 0 {
 				countryColor = res.Vibrant
@@ -298,6 +320,15 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			currency = res
 		case res := <-visaChannel:
 			visa = res
+		case res := <-safetyChannel:
+			rating, err := strconv.ParseFloat(res.Situation.Rating,32)
+			if err != nil {
+				response.WriteErrorResponse(w, err)
+				return
+			}
+			safety = *FormatSafety(float32(rating))
+		case res := <- emergencyNumbersChannel:
+			emergencyNumbers = res
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
@@ -314,6 +345,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		"currency": currency,
 		"color": countryColor,
 		"visa": visa,
+		"safety": safety,
+		"emergency_number": emergencyNumbers,
 	}
 
 	

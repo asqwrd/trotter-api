@@ -136,7 +136,7 @@ func GetPlaceByName(name string) (*PoiInfo, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
+		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
 	}
 
 	return &resp.Results[0], nil
@@ -165,7 +165,7 @@ func GetDestination(id string, count string) (*[]Place, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
+		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
 	}
 
 	return &resp.Results, nil
@@ -224,7 +224,7 @@ func GetPoiFromLocation(id string, count string, tag_labels string, index int) (
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
+		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
 	}
 
 	return &resp.Results, nil
@@ -254,7 +254,7 @@ func GetCity(id string) (*[]Place, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
+		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
 	}
 
 	return &resp.Results, nil
@@ -284,7 +284,7 @@ func GetLocationType(type_id string, count string) (*[]Place, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
+		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
 	}
 
 	return &resp.Results, nil

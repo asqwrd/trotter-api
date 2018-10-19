@@ -120,18 +120,72 @@ type visaResponse struct {
 	Vaccination Vaccination `json:"vaccination"`
 }
 
+type InternalVisa struct {
+	Visa        Visa        `json:"visa"`
+	Passport    Passport    `json:"passport"`
+	Vaccination Vaccination `json:"vaccination"`
+}
+
+type safetyResponse struct {
+	Data SafetyData
+}
+
+type SafetyData struct {
+	Code      SafetyCode      `json:"code"`
+	Situation SafetySituation `json:"situation"`
+}
+
+type SafetyCode struct {
+	Continent string `json:"continent"`
+	Country   string `json:"country"`
+}
+
+type SafetySituation struct {
+	Rating  string `json:"rating"`
+	Sources int    `json:"sources"`
+}
+
+type Numbers struct {
+	All []string `json:"all,omitempty"`
+}
+
+type EmergencyNumbers struct {
+	Ambulance                 Numbers  `json:"ambulance"`
+	Dispatch                  Numbers  `json:"dispatch"`
+	Fire                      Numbers  `json:"fire"`
+	Police                    Numbers  `json:"police"`
+	European_emergency_number []string `json:"european_emergency_number,omitempty"`
+	Member112                 bool     `json:"member112,omitempty"`
+}
+
+func FormatEmergencyNumbers(numbers EmergencyNumbers) (e *EmergencyNumbers) {
+	member112 := []string{}
+	if numbers.Member112 == true {
+		member112 = []string{"112"}
+	}
+	e = &EmergencyNumbers{
+		Ambulance:                 numbers.Ambulance,
+		Dispatch:                  numbers.Dispatch,
+		Fire:                      numbers.Fire,
+		Police:                    numbers.Police,
+		European_emergency_number: member112,
+	}
+
+	return e
+}
+
 func GetCountriesCurrenciesApi() (map[string]interface{}, error) {
 	client := http.Client{Timeout: time.Second * 5}
 	req, err := http.NewRequest(http.MethodGet, "https://free.currencyconverterapi.com/api/v6/countries", nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("Failed to access the Currencies API.")
 	}
 
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("Failed to access the Currencies API.")
 	}
 
 	resp := &currenciesApiResponse{}
@@ -139,7 +193,7 @@ func GetCountriesCurrenciesApi() (map[string]interface{}, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
+		return nil, errors.New("Server experienced an error while parsing Currencies API response.")
 	}
 
 	return resp.Results, nil
@@ -151,13 +205,13 @@ func ConvertCurrency(to string, from string) (map[string]interface{}, error) {
 	req, err := http.NewRequest(http.MethodGet, "https://free.currencyconverterapi.com/api/v6/convert?q="+from+"_"+to+"&compact=n", nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("Failed to access the Currency converter API.")
 	}
 
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("Failed to access the Currency converter API.")
 	}
 
 	resp := &currenciesConvertResponse{}
@@ -165,7 +219,7 @@ func ConvertCurrency(to string, from string) (map[string]interface{}, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
+		return nil, errors.New("Server experienced an error while parsing Currency converter API response.")
 	}
 
 	return resp.Results[from+"_"+to].(map[string]interface{}), nil
@@ -177,14 +231,14 @@ func GetVisa(to string, from string) (*visaResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, "https://api.joinsherpa.com/v2/entry-requirements/"+from+"-"+to, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("Failed to access the Sherpa API.")
 	}
 	req.Header.Set("Authorization", "Basic VkRMUUxDYk1tdWd2c09FdGloUTlrZmM2blFvZUdkOm5JWGF4QUxGUFYwSWl3Tk92QkVCckRDTlN3M1NDdjY3UjRVRXZEOXI=")
 
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("Failed to access the Sherpa API.")
 	}
 
 	resp := &visaResponse{}
@@ -192,17 +246,11 @@ func GetVisa(to string, from string) (*visaResponse, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
+		return nil, errors.New("Server experienced an error while parsing Sherpa API response.")
 	}
 
 	return resp, nil
 
-}
-
-type InternalVisa struct {
-	Visa        Visa `json:"visa"`
-	Passport    Passport
-	Vaccination Vaccination
 }
 
 func formatPassport(passport Passport) (p *Passport) {
@@ -233,4 +281,50 @@ func FormatVisa(visa visaResponse) (v *InternalVisa) {
 
 	return v
 
+}
+
+func GetSafety(countryCode string) (*SafetyData, error) {
+	client := http.Client{Timeout: time.Second * 5}
+	req, err := http.NewRequest(http.MethodGet, "https://www.reisewarnung.net/api?country="+countryCode, nil)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Safety API.")
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Safety API.")
+	}
+
+	resp := &safetyResponse{}
+	err = json.NewDecoder(res.Body).Decode(resp)
+	if err != nil {
+		log.Println(err)
+		log.Println(req.URL.String())
+		return nil, errors.New("Server experienced an error while parsing Safety API response.")
+	}
+
+	return &resp.Data, nil
+
+}
+
+func FormatSafety(rating float32) *string {
+	advice := "No safety information is available for this country."
+	if rating >= 0 && rating < 1 {
+		advice = "Travelling in this country is relatively safe."
+	} else if rating >= 1 && rating < 2.5 {
+		advice =
+			"Travelling in this country is relatively safe. Higher attention is advised when traveling here due to some areas being unsafe."
+	} else if rating >= 2.5 && rating < 3.5 {
+		advice =
+			"This country can be unsafe.  Warnings often relate to specific regions within this country. However, high attention is still advised when moving around. Trotter also recommends traveling to this country with someone who is familiar with the culture and area."
+	} else if rating >= 3.5 && rating < 4.5 {
+		advice =
+			"Travel to this country should be reduced to a necessary minimum and be conducted with good preparation and high attention. If you are not familiar with the area it is recommended you travel with someone who knows the area well."
+	} else if rating >= 4.5 {
+		advice =
+			"It is unsafe to travel to this country.  Trotter advises against traveling here.  You risk high chance of danger to you health and life."
+	}
+	return &advice
 }

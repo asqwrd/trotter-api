@@ -1,7 +1,6 @@
 package country
 
 import (
-	"fmt"
 	"net/http"
 	"github.com/asqwrd/trotter-api/places"
 	"net/url"
@@ -24,30 +23,6 @@ import (
 var citizenCode = "US"
 var citizenCountry = "United States"
 var currenciesCache map[string]interface{}
-
-var passportBlankpages_map = Passport{
-	NOT_REQUIRED:              "You do not need to have any blank pages in your passport.",
-	ONE:                       "You need at least one blank page in your passport.",
-	ONE_PER_ENTRY:             "You need one blank page per entry.",
-	SPACE_FOR_STAMP:           "You need space for your passport to be stamped.",
-	TWO:                       "You need two blank pages in your passport.",
-	TWO_CONSECUTIVE_PER_ENTRY: "You need two consecutive blank pages in your passport",
-	TWO_PER_ENTRY:             "You need two blank pages per entry",
-}
-
-var passportValidity_map = PassportValidity{
-	DURATION_OF_STAY:                    "Your passport must be valid for the duration of your stay in this country.",
-	ONE_MONTH_AFTER_ENTRY:               "Your passport must be valid for one month after entering this counrty.",
-	SIX_MONTHS_AFTER_DURATION_OF_STAY:   "Your passport must be valid on entry and for six months after the duration of your stay in this country.",
-	SIX_MONTHS_AFTER_ENTRY:              "Your passport must be valid on entry and six months after the date of enrty.",
-	SIX_MONTHS_AT_ENTRY:                 "Your passport must be valid for at least six months before entering this country.",
-	THREE_MONTHS_AFTER_DURATION_OF_STAY: "Your passport must be valid on entry and for three months after the duration of your stay in this country",
-	THREE_MONTHS_AFTER_ENTRY:            "Your passport must be valid on entry and for three months after entering this country",
-	VALID_AT_ENTRY:                      "Your passport must be valid on entry",
-	THREE_MONTHS_AFTER_DEPARTURE:        "Your passport must be valid on entry and three months after your departure date.",
-	SIX_MONTHS_AFTER_DEPARTURE:          "Your passport must be valid on entry and six months after your departure date.",
-}
-
 
 func initializeQueryParams(level string) *url.Values {
 	qp := &url.Values{}
@@ -118,6 +93,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	var currencyChannel = make(chan map[string]interface{})
 	var plugs []interface{}
 	var currency interface{}
+	var visaChannel = make(chan interface{})
+	var visa interface{}
 
 	if currenciesCache == nil {
 		data, err := getCurrencies()
@@ -194,6 +171,20 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			
 			countryCodeData := code.Data()
 			countryCode := countryCodeData["abbreviation"].(string)
+				/*
+			*
+			*
+			Visa Block
+			*
+			*
+			*/
+			visa, err := GetVisa(countryCode,citizenCode)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+			visaChannel <- FormatVisa(*visa)
+
 
 			currency, err := client.Collection("currencies").Doc(countryCode).Get(ctx)
 			if err != nil { 
@@ -220,13 +211,11 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 							"converted_unit": toCurrency,
 							"unit": citizenCurrency,
 						}
-						fmt.Println("channel")
 						currencyChannel <- result
 					}(citizenCurrency, toCurrency)
 				
 			}(currencyCodeId)
-
-
+		
 
 			/*
 			*
@@ -252,8 +241,13 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 				plugsData = append(plugsData, doc.Data())
 				plugsChannel <- plugsData
 			}
-			fmt.Println("channel")
+			
+
 		}(countryRes.Name, countryRes.Image)
+
+		
+
+
 
 
 		/*for i := 0; i < 4; i++ {
@@ -278,7 +272,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		
 	}()
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 6; i++ {
 		select {
 		case res := <-countryChannel:
 			country = res
@@ -302,6 +296,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			plugs = res
 		case res := <-currencyChannel:
 			currency = res
+		case res := <-visaChannel:
+			visa = res
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
@@ -317,6 +313,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		"plugs": plugs,
 		"currency": currency,
 		"color": countryColor,
+		"visa": visa,
 	}
 
 	

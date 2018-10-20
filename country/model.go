@@ -135,6 +135,11 @@ type SafetyData struct {
 	Situation SafetySituation `json:"situation"`
 }
 
+type Safety struct {
+	Advice string  `json:"advice"`
+	Rating float32 `json:"rating"`
+}
+
 type SafetyCode struct {
 	Continent string `json:"continent"`
 	Country   string `json:"country"`

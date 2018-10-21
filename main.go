@@ -12,7 +12,7 @@ import (
 
 func main() {
 	// Get the "PORT" env variable
-	port := os.Getenv("PORT")
+	port := os.Getenv("PORT_TROTTER")
 	if port == "" {
 		log.Fatal("$PORT must be set")
 	} else {

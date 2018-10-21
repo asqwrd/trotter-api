@@ -100,7 +100,7 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 	})
 
 	responseData := map[string]interface{}{
-		"popular_cities": FromTriposoPlaces(popularCities),
+		"popular_cities": FromTriposoPlaces(popularCities, "poi"),
 		"all_countries":  allCountries,
 	}
 
@@ -186,7 +186,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		}
 
 		cityParam := *city
-		cityRes := FromTriposoPlace(&cityParam[0])
+		cityRes := FromTriposoPlace(&cityParam[0], "city")
 
 		go func(image string) {
 			colors, err := GetColor(image)
@@ -209,19 +209,19 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	for i := 0; i < 9; i++ {
 		select {
 		case see := <-seeChannel:
-			placeToSee = FromTriposoPlaces(see)
+			placeToSee = FromTriposoPlaces(see, "poi")
 		case eat := <-eatChannel:
-			eatPlaces = FromTriposoPlaces(eat)
+			eatPlaces = FromTriposoPlaces(eat, "poi")
 		case discover := <-discoverChannel:
-			discoverPlaces = FromTriposoPlaces(discover)
+			discoverPlaces = FromTriposoPlaces(discover, "poi")
 		case shop := <-shopChannel:
-			shopPlaces = FromTriposoPlaces(shop)
+			shopPlaces = FromTriposoPlaces(shop, "poi")
 		case relax := <-relaxChannel:
-			relaxPlaces = FromTriposoPlaces(relax)
+			relaxPlaces = FromTriposoPlaces(relax, "poi")
 		case play := <-playChannel:
-			playPlaces = FromTriposoPlaces(play)
+			playPlaces = FromTriposoPlaces(play, "poi")
 		case nightlife := <-nightlifeChannel:
-			nightlifePlaces = FromTriposoPlaces(nightlife)
+			nightlifePlaces = FromTriposoPlaces(nightlife, "poi")
 		case cityRes := <-cityChannel:
 			city = &cityRes
 		case colorRes := <-colorChannel:
@@ -282,19 +282,17 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 //Get Home
 
 func GetHome(w http.ResponseWriter, r *http.Request) {
-	typeparams := []string{"island", "city", "country", "national_park"}
+	typeparams := []string{"island", "city", "country"}
 
 	placeChannel := make(chan PlaceChannel)
 
 	var islands []triposo.InternalPlace
 	var cities []triposo.InternalPlace
 	var countries []Place
-	var nationalParks []triposo.InternalPlace
 
 	islandChannel := make(chan []triposo.Place)
 	cityChannel := make(chan []triposo.Place)
 	countryChannel := make(chan []sygic.Place)
-	nationalParkChannel := make(chan []triposo.Place)
 
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
@@ -334,8 +332,6 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 				cityChannel <- res.Places.([]triposo.Place)
 			case res.Index == 2:
 				countryChannel <- res.Places.([]sygic.Place)
-			case res.Index == 3:
-				nationalParkChannel <- res.Places.([]triposo.Place)
 			}
 		}
 
@@ -346,16 +342,14 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 		timeoutChannel <- true
 	}()
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 3; i++ {
 		select {
 		case res := <-islandChannel:
-			islands = FromTriposoPlaces(res)
+			islands = FromTriposoPlaces(res, "island")
 		case res := <-countryChannel:
 			countries = FromSygicPlaces(res)
-		case res := <-nationalParkChannel:
-			nationalParks = FromTriposoPlaces(res)
 		case res := <-cityChannel:
-			cities = FromTriposoPlaces(res)
+			cities = FromTriposoPlaces(res, "city")
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
@@ -371,8 +365,6 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 		"popular_cities": cities,
 
 		"popular_islands": islands,
-
-		"popular_national_parks": nationalParks,
 
 		"popular_countries": countries,
 	}
@@ -399,7 +391,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		poiParam := *poi
-		poiRes := FromTriposoPlace(&poiParam[0])
+		poiRes := FromTriposoPlace(&poiParam[0], "poi")
 
 		go func(image string) {
 			colors, err := GetColor(image)

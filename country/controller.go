@@ -324,7 +324,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	for res := range resultsChannel {
 		switch res["routine"] {
 		case "destination":
-			popularDestinations = places.FromTriposoPlaces(res["result"].(interface{}).([]triposo.Place))
+			popularDestinations = places.FromTriposoPlaces(res["result"].(interface{}).([]triposo.Place),"city")
 		case "plugs":
 			plugs = res["result"].([]interface{})
 		case "currency":

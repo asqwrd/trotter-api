@@ -18,6 +18,7 @@ import (
 type Place struct {
 	// These are name overrides
 	Sygic_id          string `json:"sygic_id"`
+	Id                string `json:"id"`
 	Image             string `json:"image"`
 	Description       string `json:"description"`
 	Description_short string `json:"description_short,omitempty"`
@@ -54,6 +55,7 @@ func FromSygicPlace(sp *sygic.Place) (p *Place) {
 	p = &Place{
 		// These have name overrides
 		Sygic_id:    sp.ID,
+		Id:          sp.ID,
 		Image:       sp.Thumbnail_url,
 		Description: sp.Perex,
 
@@ -76,6 +78,7 @@ func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 	p = &Place{
 		// These have name overrides
 		Sygic_id:    sp.Id,
+		Id:          sp.Id,
 		Image:       re.ReplaceAllString(sp.Main_media.Media[0].Url_template, "1200x800"),
 		Description: sp.Perex,
 
@@ -88,7 +91,7 @@ func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 	return p
 }
 
-func FromTriposoPlace(sp *triposo.Place) (p *triposo.InternalPlace) {
+func FromTriposoPlace(sp *triposo.Place, level string) (p *triposo.InternalPlace) {
 	length := len(sp.Images)
 	var image = ""
 	if length > 0 {
@@ -102,7 +105,7 @@ func FromTriposoPlace(sp *triposo.Place) (p *triposo.InternalPlace) {
 		Description:       strip.StripTags(sp.Content.Sections[0].Body),
 		Description_short: sp.Snippet,
 		Name:              sp.Name,
-		Level:             "triposo",
+		Level:             level,
 		Location:          triposo.Location{Lat: sp.Coordinates.Latitude, Lng: sp.Coordinates.Longitude},
 		Best_for:          sp.Best_for,
 		Price_tier:        sp.Price_tier,
@@ -118,10 +121,10 @@ func FromTriposoPlace(sp *triposo.Place) (p *triposo.InternalPlace) {
 	return p
 }
 
-func FromTriposoPlaces(sourcePlaces []triposo.Place) (internalPlaces []triposo.InternalPlace) {
+func FromTriposoPlaces(sourcePlaces []triposo.Place, level string) (internalPlaces []triposo.InternalPlace) {
 	internalPlaces = []triposo.InternalPlace{}
 	for _, sourcePlace := range sourcePlaces {
-		internalPlaces = append(internalPlaces, *FromTriposoPlace(&sourcePlace))
+		internalPlaces = append(internalPlaces, *FromTriposoPlace(&sourcePlace, level))
 	}
 
 	return internalPlaces

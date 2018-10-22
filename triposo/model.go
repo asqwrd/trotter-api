@@ -62,10 +62,22 @@ type Place struct {
 	Google_place_id string        `json:"google_place_id"`
 	Tripadvisor_id  string        `json:"tripadvisor_id"`
 	Price_tier      int           `json:"price_tier"`
-	Booking_info    string        `json:"booking_info"`
+	Booking_info    Booking_info  `json:"booking_info"`
 	Best_for        []interface{} `json:"best_for"`
 	Intro           string        `json:"intro"`
 	Opening_hours   interface{}   `json:"opening_hours"`
+}
+
+type Booking_info struct {
+	Price             Price  `json:"price"`
+	Vendor            string `json:"vendor"`
+	Vendor_object_id  string `json:"vendor_object_id"`
+	Vendor_object_url string `json:"vendor_object_url"`
+}
+
+type Price struct {
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
 }
 
 type placeResponse struct {
@@ -89,7 +101,7 @@ type InternalPlace struct {
 	Google_place_id   string        `json:"google_place_id,omitempty"`
 	Tripadvisor_id    string        `json:"tripadvisor_id,omitempty"`
 	Price_tier        int           `json:"price_tier,omitempty"`
-	Booking_info      string        `json:"booking_info,omitempty"`
+	Booking_info      Booking_info  `json:"booking_info,omitempty"`
 	Best_for          []interface{} `json:"best_for,omitempty"`
 	Images            []Image       `json:"images"`
 	Score             float32       `json:"score"`

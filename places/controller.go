@@ -100,7 +100,7 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 	})
 
 	responseData := map[string]interface{}{
-		"popular_cities": FromTriposoPlaces(popularCities, "poi"),
+		"popular_cities": FromTriposoPlaces(popularCities, "city"),
 		"all_countries":  allCountries,
 	}
 

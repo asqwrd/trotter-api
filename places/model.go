@@ -24,16 +24,17 @@ type Place struct {
 	Description_short string `json:"description_short,omitempty"`
 
 	// These don't
-	Name         string            `json:"name"`
-	Name_suffix  string            `json:"name_suffix,omitempty"`
-	Parent_ids   []string          `json:"parent_ids,omitempty"`
-	Level        string            `json:"level,omitempty"`
-	Address      string            `json:"address,omitempty"`
-	Phone        string            `json:"phone,omitempty"`
-	Location     sygic.Location    `json:"location"`
-	Bounding_box sygic.BoundingBox `json:"bounding_box"`
-	Colors       Colors            `json:"colors"`
-	Color        interface{}       `json:"color"`
+	Name          string            `json:"name"`
+	Original_name string            `json:"original_name"`
+	Name_suffix   string            `json:"name_suffix,omitempty"`
+	Parent_ids    []string          `json:"parent_ids,omitempty"`
+	Level         string            `json:"level,omitempty"`
+	Address       string            `json:"address,omitempty"`
+	Phone         string            `json:"phone,omitempty"`
+	Location      sygic.Location    `json:"location"`
+	Bounding_box  sygic.BoundingBox `json:"bounding_box"`
+	Colors        Colors            `json:"colors"`
+	Color         interface{}       `json:"color"`
 }
 
 type PlaceChannel struct {
@@ -60,14 +61,15 @@ func FromSygicPlace(sp *sygic.Place) (p *Place) {
 		Description: sp.Perex,
 
 		// These don't
-		Name:         sp.Name,
-		Name_suffix:  sp.Name_suffix,
-		Parent_ids:   sp.Parent_ids,
-		Level:        sp.Level,
-		Address:      sp.Address,
-		Phone:        sp.Phone,
-		Location:     sp.Location,
-		Bounding_box: sp.Bounding_box,
+		Name:          sp.Name,
+		Original_name: sp.Original_name,
+		Name_suffix:   sp.Name_suffix,
+		Parent_ids:    sp.Parent_ids,
+		Level:         sp.Level,
+		Address:       sp.Address,
+		Phone:         sp.Phone,
+		Location:      sp.Location,
+		Bounding_box:  sp.Bounding_box,
 	}
 
 	return p

@@ -3,6 +3,7 @@ package triposo
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -159,6 +160,7 @@ func GetPlaceByName(name string) (*PoiInfo, error) {
 		log.Println(req.URL.String())
 		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
 	}
+	fmt.Println(resp.Results)
 
 	return &resp.Results[0], nil
 }

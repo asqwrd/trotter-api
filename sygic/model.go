@@ -36,7 +36,6 @@ type Object struct {
 	data interface{}
 }
 
-
 type Place struct {
 	// These names get overridden
 	ID            string
@@ -44,17 +43,18 @@ type Place struct {
 	Perex         string
 
 	// These don't
-	Name         	string
-	Name_suffix  	string
-	Parent_ids   	[]string
-	Level        	string
-	Address      	string
-	Phone        	string
-	Location     	Location
-	Bounding_box 	BoundingBox
-	Color					string
-	Visa					Object
-	Plugs					Object
+	Name          string
+	Original_name string
+	Name_suffix   string
+	Parent_ids    []string
+	Level         string
+	Address       string
+	Phone         string
+	Location      Location
+	Bounding_box  BoundingBox
+	Color         string
+	Visa          Object
+	Plugs         Object
 }
 
 const baseSygicAPI = "https://api.sygictravelapi.com/1.1/en/places/"
@@ -144,8 +144,9 @@ type media struct {
 type SygicChannel struct {
 	Places []Place
 	Index  int
-	Error error
+	Error  error
 }
+
 func GetPlace(placeID string) (*PlaceDetail, error) {
 	client := http.Client{Timeout: time.Second * 5}
 
@@ -173,7 +174,7 @@ func GetPlace(placeID string) (*PlaceDetail, error) {
 	return &resp.Data.Place, nil
 }
 
-func GetCountry(count string) (*[]Place, error){
+func GetCountry(count string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 5}
 
 	req, err := http.NewRequest(http.MethodGet, baseSygicAPI+"list?level=country&limit="+count, nil)

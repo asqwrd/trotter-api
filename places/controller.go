@@ -51,7 +51,8 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 
 	for _, country := range popularCountries {
 		go func(country Place) {
-			place, err := triposo.GetPlaceByName(country.Name)
+			fmt.Println(country.Original_name)
+			place, err := triposo.GetPlaceByName(country.Original_name)
 			if err != nil {
 				errorChannel <- err
 				return

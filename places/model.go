@@ -116,6 +116,7 @@ func FromTriposoPlace(sp *triposo.Place, level string) (p *triposo.InternalPlace
 		Booking_info:      sp.Booking_info,
 		Score:             sp.Score,
 		Opening_hours:     sp.Opening_hours,
+		Properties:        sp.Properties,
 	}
 
 	return p

@@ -66,6 +66,14 @@ type Place struct {
 	Best_for        []interface{} `json:"best_for"`
 	Intro           string        `json:"intro"`
 	Opening_hours   interface{}   `json:"opening_hours"`
+	Properties      []Property    `json:"properties"`
+}
+
+type Property struct {
+	Ordinal int    `json:"ordinal"`
+	Value   string `json:"value"`
+	Name    string `json:"name"`
+	Key     string `json:"key"`
 }
 
 type Booking_info struct {
@@ -106,6 +114,7 @@ type InternalPlace struct {
 	Images            []Image       `json:"images"`
 	Score             float32       `json:"score"`
 	Opening_hours     interface{}   `json:"opening_hours,omitempty"`
+	Properties        []Property    `json:"properties"`
 }
 
 type PoiInfo struct {
@@ -185,7 +194,7 @@ func GetDestination(id string, count string) (*[]Place, error) {
 
 func GetPoi(id string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 10}
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"poi.json?id="+id+"&fields=google_place_id,images,id,name,booking_info,best_for,facebook_id,opening_hours,score,tripadvisor_id,content,foursquare_id,price_tier,intro,coordinates&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"poi.json?id="+id+"&fields=google_place_id,images,id,name,booking_info,best_for,facebook_id,opening_hours,score,tripadvisor_id,content,foursquare_id,price_tier,intro,snippet,properties,coordinates&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("Failed to access the Triposo API.")

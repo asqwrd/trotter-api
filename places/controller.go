@@ -115,7 +115,13 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 
 func GetCity(w http.ResponseWriter, r *http.Request) {
 	cityID := mux.Vars(r)["cityID"]
-	urlparams := []string{"sightseeing|sight|topattractions", "museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts", "amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos", "beaches|camping|wildlife|fishing|relaxinapark", "eatingout|breakfast|coffeeandcake|lunch|dinner", "do|shopping", "nightlife|comedy|drinks|dancing|pubcrawl|redlight|musicandshows|celebrations|foodexperiences|breweries|showstheatresandmusic"}
+	urlparams := []string{"sightseeing|sight|topattractions", 
+	"museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts", 
+	"amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos", 
+	"beaches|camping|wildlife|fishing|relaxinapark", 
+	"eatingout|breakfast|coffeeandcake|lunch|dinner", 
+	"do|shopping", 
+	"nightlife|comedy|drinks|dancing|pubcrawl|redlight|musicandshows|celebrations|foodexperiences|breweries|showstheatresandmusic"}
 
 	placeChannel := make(chan triposo.TriposoChannel)
 	cityChannel := make(chan triposo.InternalPlace)
@@ -166,13 +172,13 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 				discoverChannel <- res.Places
 			case res.Index == 2:
 				playChannel <- res.Places
-			case res.Index == 3:
-				eatChannel <- res.Places
 			case res.Index == 4:
+				eatChannel <- res.Places
+			case res.Index == 6:
 				nightlifeChannel <- res.Places
 			case res.Index == 5:
 				shopChannel <- res.Places
-			case res.Index == 6:
+			case res.Index == 3:
 				relaxChannel <- res.Places
 			}
 		}
@@ -187,7 +193,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		}
 
 		cityParam := *city
-		cityRes := FromTriposoPlace(&cityParam[0], "city")
+		cityRes := FromTriposoPlace(cityParam[0], "city")
 
 		go func(image string) {
 			colors, err := GetColor(image)
@@ -198,7 +204,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 			colorChannel <- *colors
 		}(cityRes.Image)
 
-		cityChannel <- *cityRes
+		cityChannel <- cityRes
 
 	}()
 
@@ -392,7 +398,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		poiParam := *poi
-		poiRes := FromTriposoPlace(&poiParam[0], "poi")
+		poiRes := FromTriposoPlace(poiParam[0], "poi")
 
 		go func(image string) {
 			colors, err := GetColor(image)
@@ -402,7 +408,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 			}
 			colorChannel <- *colors
 		}(poiRes.Image)
-		poiChannel <- *poiRes
+		poiChannel <- poiRes
 
 	}()
 

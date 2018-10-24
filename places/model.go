@@ -61,7 +61,7 @@ func FromSygicPlace(sp *sygic.Place) (p *Place) {
 		Description: sp.Perex,
 
 		// These don't
-		Name:          sp.Name,
+		Name:          sp.Original_name,
 		Original_name: sp.Original_name,
 		Name_suffix:   sp.Name_suffix,
 		Parent_ids:    sp.Parent_ids,
@@ -85,22 +85,23 @@ func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 		Description: sp.Perex,
 
 		// These don't
-		Name:         sp.Name,
-		Location:     sp.Location,
-		Bounding_box: sp.Bounding_box,
+		Name:          sp.Original_name,
+		Original_name: sp.Original_name,
+		Location:      sp.Location,
+		Bounding_box:  sp.Bounding_box,
 	}
 
 	return p
 }
 
-func FromTriposoPlace(sp *triposo.Place, level string) (p *triposo.InternalPlace) {
+func FromTriposoPlace(sp triposo.Place, level string) (p triposo.InternalPlace) {
 	length := len(sp.Images)
 	var image = ""
 	if length > 0 {
 		image = sp.Images[0].Sizes.Medium.Url
 	}
 
-	p = &triposo.InternalPlace{
+	p = triposo.InternalPlace{
 		Id:                sp.Id,
 		Image:             image,
 		Images:            sp.Images,
@@ -127,7 +128,7 @@ func FromTriposoPlace(sp *triposo.Place, level string) (p *triposo.InternalPlace
 func FromTriposoPlaces(sourcePlaces []triposo.Place, level string) (internalPlaces []triposo.InternalPlace) {
 	internalPlaces = []triposo.InternalPlace{}
 	for _, sourcePlace := range sourcePlaces {
-		internalPlaces = append(internalPlaces, *FromTriposoPlace(&sourcePlace, level))
+		internalPlaces = append(internalPlaces, FromTriposoPlace(sourcePlace, level))
 	}
 
 	return internalPlaces

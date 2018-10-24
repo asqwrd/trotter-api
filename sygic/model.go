@@ -117,12 +117,13 @@ type placeData struct {
 }
 
 type PlaceDetail struct {
-	Id           string
-	Main_media   mainMedia
-	Name         string
-	Perex        string
-	Location     Location
-	Bounding_box BoundingBox
+	Id            string
+	Main_media    mainMedia
+	Name          string
+	Original_name string
+	Perex         string
+	Location      Location
+	Bounding_box  BoundingBox
 }
 
 type mainMedia struct {

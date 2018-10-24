@@ -180,7 +180,7 @@ func FormatEmergencyNumbers(numbers EmergencyNumbers) (e *EmergencyNumbers) {
 }
 
 func GetCountriesCurrenciesApi() (map[string]interface{}, error) {
-	client := http.Client{Timeout: time.Second * 5}
+	client := http.Client{Timeout: time.Second * 10}
 	req, err := http.NewRequest(http.MethodGet, "https://free.currencyconverterapi.com/api/v6/countries", nil)
 	if err != nil {
 		log.Println(err)
@@ -206,7 +206,7 @@ func GetCountriesCurrenciesApi() (map[string]interface{}, error) {
 }
 
 func ConvertCurrency(to string, from string) (map[string]interface{}, error) {
-	client := http.Client{Timeout: time.Second * 5}
+	client := http.Client{Timeout: time.Second * 10}
 	req, err := http.NewRequest(http.MethodGet, "https://free.currencyconverterapi.com/api/v6/convert?q="+from+"_"+to+"&compact=n", nil)
 	if err != nil {
 		log.Println(err)
@@ -232,7 +232,7 @@ func ConvertCurrency(to string, from string) (map[string]interface{}, error) {
 }
 
 func GetVisa(to string, from string) (*visaResponse, error) {
-	client := http.Client{Timeout: time.Second * 5}
+	client := http.Client{Timeout: time.Second * 10}
 	req, err := http.NewRequest(http.MethodGet, "https://api.joinsherpa.com/v2/entry-requirements/"+from+"-"+to, nil)
 	if err != nil {
 		log.Println(err)
@@ -289,7 +289,7 @@ func FormatVisa(visa visaResponse) (v *InternalVisa) {
 }
 
 func GetSafety(countryCode string) (*SafetyData, error) {
-	client := http.Client{Timeout: time.Second * 5}
+	client := http.Client{Timeout: time.Second * 10}
 	req, err := http.NewRequest(http.MethodGet, "https://www.reisewarnung.net/api?country="+countryCode, nil)
 	if err != nil {
 		log.Println(err)

@@ -63,11 +63,42 @@ type Place struct {
 	Google_place_id string        `json:"google_place_id"`
 	Tripadvisor_id  string        `json:"tripadvisor_id"`
 	Price_tier      int           `json:"price_tier"`
-	Booking_info    Booking_info  `json:"booking_info"`
-	Best_for        []interface{} `json:"best_for"`
+	Booking_info    *Booking_info `json:"booking_info,omitempty"`
+	Best_for        []BestFor     `json:"best_for,omitempty"`
 	Intro           string        `json:"intro"`
-	Opening_hours   interface{}   `json:"opening_hours"`
-	Properties      []Property    `json:"properties"`
+	Opening_hours   *OpeningHours `json:"opening_hours,omitempty"`
+	Properties      []Property    `json:"properties,omitempty"`
+}
+
+type BestFor struct {
+	Label      string `json:"label"`
+	Name       string `json:"name"`
+	Short_name string `json:"short_name"`
+	Snippet    string `json:"snippet"`
+}
+
+type OpeningHours struct {
+	Days *TimeRangesByDay `json:"days,omitempty"`
+}
+
+type TimeRangesByDay struct {
+	Mon []TimeRange `json:"mon"`
+	Tue []TimeRange `json:"tue"`
+	Wed []TimeRange `json:"wed"`
+	Thu []TimeRange `json:"thu"`
+	Fri []TimeRange `json:"fri"`
+	Sat []TimeRange `json:"sat,"`
+	Sun []TimeRange `json:"sun"`
+}
+
+type TimeRange struct {
+	End   DayTime `json:"end"`
+	Start DayTime `json:"start"`
+}
+
+type DayTime struct {
+	Hour   int `json:"hour,omitempty"`
+	Minute int `json:"minute"`
 }
 
 type Property struct {
@@ -78,15 +109,15 @@ type Property struct {
 }
 
 type Booking_info struct {
-	Price             Price  `json:"price"`
-	Vendor            string `json:"vendor"`
-	Vendor_object_id  string `json:"vendor_object_id"`
-	Vendor_object_url string `json:"vendor_object_url"`
+	Price             *Price `json:"price,omitempty"`
+	Vendor            string `json:"vendor,omitempty"`
+	Vendor_object_id  string `json:"vendor_object_id,omitempty"`
+	Vendor_object_url string `json:"vendor_object_url,omitempty"`
 }
 
 type Price struct {
-	Amount   string `json:"amount"`
-	Currency string `json:"currency"`
+	Amount   string `json:"amount,omitempty"`
+	Currency string `json:"currency,omitempty"`
 }
 
 type placeResponse struct {
@@ -110,11 +141,11 @@ type InternalPlace struct {
 	Google_place_id   string        `json:"google_place_id,omitempty"`
 	Tripadvisor_id    string        `json:"tripadvisor_id,omitempty"`
 	Price_tier        int           `json:"price_tier,omitempty"`
-	Booking_info      Booking_info  `json:"booking_info,omitempty"`
-	Best_for          []interface{} `json:"best_for,omitempty"`
+	Booking_info      *Booking_info `json:"booking_info,omitempty"`
+	Best_for          []BestFor     `json:"best_for"`
 	Images            []Image       `json:"images"`
 	Score             float32       `json:"score"`
-	Opening_hours     interface{}   `json:"opening_hours,omitempty"`
+	Opening_hours     *OpeningHours `json:"opening_hours,omitempty"`
 	Properties        []Property    `json:"properties"`
 }
 
@@ -227,7 +258,7 @@ func GetPoiFromLocation(id string, count string, tag_labels string, index int) (
 
 	client := http.Client{Timeout: time.Second * 10}
 
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"poi.json?location_id="+id+"&tag_labels="+tag_labels+"&count="+count+"&fields=google_place_id,id,name,coordinates,tripadvisor_id,facebook_id,location_id,opening_hours,foursquare_id,snippet,content,images&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"poi.json?location_id="+id+"&tag_labels="+tag_labels+"&count="+count+"&fields=google_place_id,id,name,coordinates,tripadvisor_id,facebook_id,location_id,opening_hours,foursquare_id,snippet,content,best_for,properties,images&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("Failed to access the Triposo API.")

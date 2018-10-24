@@ -110,7 +110,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	}
 	countryRes := places.FromSygicPlaceDetail(res)
 	country = *countryRes
-	tripname := country.Name
+	tripname := country.Original_name
 	if country.Name == "Ireland" {
 		tripname = "Republic of Ireland"
 	}

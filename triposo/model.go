@@ -3,7 +3,6 @@ package triposo
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -169,11 +168,12 @@ const TRIPOSO_TOKEN = "yan4ujbhzepr66ttsqxiqwcl38k3lx0w"
 func GetPlaceByName(name string) (*PoiInfo, error) {
 	client := http.Client{Timeout: time.Second * 10}
 
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?order_by=-trigram&count=1&fields=id,country_id&annotate=trigram:"+name+"&trigram=>=0.3&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?type=country&order_by=-trigram&count=1&fields=id,country_id&annotate=trigram:"+name+"&trigram=>=0.3&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("Failed to access the Triposo API.")
 	}
+	//fmt.Println(name)
 
 	q := req.URL.Query()
 	req.URL.RawQuery = q.Encode()
@@ -191,8 +191,7 @@ func GetPlaceByName(name string) (*PoiInfo, error) {
 		log.Println(req.URL.String())
 		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
 	}
-	fmt.Println(resp.Results)
-
+	//fmt.Println(resp.Results)
 	return &resp.Results[0], nil
 }
 

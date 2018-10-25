@@ -1,7 +1,6 @@
 package country
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -110,10 +109,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	}
 	countryRes := places.FromSygicPlaceDetail(res)
 	country = *countryRes
-	tripname := country.Original_name
-	if country.Name == "Ireland" {
-		tripname = "Republic of Ireland"
-	}
+	tripname := country.Name
 	triposoIdRes, err := triposo.GetPlaceByName(tripname)
 	if err != nil {
 		resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
@@ -136,7 +132,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		resultsChannel <- map[string]interface{}{"result": *triposoRes, "routine": "destination"}
-		fmt.Println("destinations")
 	}(country.Name)
 
 	/*
@@ -154,7 +149,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 			return
 		}
-		fmt.Println("colors")
 		resultsChannel <- map[string]interface{}{"result": colors, "routine": "color"}
 	}()
 
@@ -192,7 +186,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		resultsChannel <- map[string]interface{}{"result": FormatVisa(*visa), "routine": "visa"}
-		fmt.Println("visa")
 
 	}()
 
@@ -213,7 +206,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		resultsChannel <- map[string]interface{}{"result": *safetyRes, "routine": "safety"}
-		fmt.Println("safety")
 	}()
 
 	/*
@@ -251,7 +243,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			"unit":               citizenCurrency,
 		}
 		resultsChannel <- map[string]interface{}{"result": result, "routine": "currency"}
-		fmt.Println("currency")
 
 	}()
 
@@ -279,7 +270,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Println("numbers")
 		resultsChannel <- map[string]interface{}{"result": *FormatEmergencyNumbers(emNumbers), "routine": "numbers"}
 
 	}()
@@ -312,7 +302,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			plugsData = append(plugsData, doc.Data())
 			resultsChannel <- map[string]interface{}{"result": plugsData, "routine": "plugs"}
 		}
-		fmt.Println("plugs")
 
 	}(country.Name)
 

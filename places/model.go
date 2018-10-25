@@ -53,6 +53,13 @@ type Colors struct {
 }
 
 func FromSygicPlace(sp *sygic.Place) (p *Place) {
+	name := sp.Name
+	if name == "Czechia" {
+		name = "Czech Republic"
+	}
+	if name == "Ireland" {
+		name = "Republic of Ireland"
+	}
 	p = &Place{
 		// These have name overrides
 		Sygic_id:    sp.ID,
@@ -61,7 +68,7 @@ func FromSygicPlace(sp *sygic.Place) (p *Place) {
 		Description: sp.Perex,
 
 		// These don't
-		Name:          sp.Name,
+		Name:          name,
 		Original_name: sp.Original_name,
 		Name_suffix:   sp.Name_suffix,
 		Parent_ids:    sp.Parent_ids,
@@ -77,6 +84,13 @@ func FromSygicPlace(sp *sygic.Place) (p *Place) {
 
 func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 	re := regexp.MustCompile(`\{[^\]]*?\}`)
+	name := sp.Name
+	if name == "Czechia" {
+		name = "Czech Republic"
+	}
+	if name == "Ireland" {
+		name = "Republic of Ireland"
+	}
 	p = &Place{
 		// These have name overrides
 		Sygic_id:    sp.Id,
@@ -85,7 +99,7 @@ func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 		Description: sp.Perex,
 
 		// These don't
-		Name:          sp.Name,
+		Name:          name,
 		Original_name: sp.Original_name,
 		Location:      sp.Location,
 		Bounding_box:  sp.Bounding_box,

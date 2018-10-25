@@ -61,7 +61,7 @@ func FromSygicPlace(sp *sygic.Place) (p *Place) {
 		Description: sp.Perex,
 
 		// These don't
-		Name:          sp.Original_name,
+		Name:          sp.Name,
 		Original_name: sp.Original_name,
 		Name_suffix:   sp.Name_suffix,
 		Parent_ids:    sp.Parent_ids,
@@ -85,7 +85,7 @@ func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 		Description: sp.Perex,
 
 		// These don't
-		Name:          sp.Original_name,
+		Name:          sp.Name,
 		Original_name: sp.Original_name,
 		Location:      sp.Location,
 		Bounding_box:  sp.Bounding_box,

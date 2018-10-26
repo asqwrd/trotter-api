@@ -143,13 +143,19 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		if len(country.Image) > 0 {
+			colors, err := places.GetColor(country.Image)
+			if err != nil {
+				resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
+				return
+			}
+			resultsChannel <- map[string]interface{}{"result": colors, "routine": "color"}
+		} else {
+			var colors places.Colors
+			colors.Vibrant = "#c27949"
+			resultsChannel <- map[string]interface{}{"result": &colors, "routine": "color"}
 
-		colors, err := places.GetColor(country.Image)
-		if err != nil {
-			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
-			return
 		}
-		resultsChannel <- map[string]interface{}{"result": colors, "routine": "color"}
 	}()
 
 	/*

@@ -186,6 +186,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		city, err := triposo.GetCity(cityID)
 		if err != nil {
+			fmt.Println("here")
 			errorChannel <- err
 			return
 		}
@@ -194,12 +195,17 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		cityRes := FromTriposoPlace(cityParam[0], "city")
 
 		go func(image string) {
-			colors, err := GetColor(image)
-			if err != nil {
-				errorChannel <- err
-				return
+			if len(image) == 0 {
+				var colors Colors;
+				colors.Vibrant = "#c27949"
+				colorChannel <- colors
+			} else {
+				colors, err := GetColor(image)
+				if err != nil {
+					errorChannel <- err
+				}
+				colorChannel <- *colors
 			}
-			colorChannel <- *colors
 		}(cityRes.Image)
 
 		cityChannel <- cityRes
@@ -399,12 +405,17 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 		poiRes := FromTriposoPlace(poiParam[0], "poi")
 
 		go func(image string) {
-			colors, err := GetColor(image)
-			if err != nil {
-				errorChannel <- err
-				return
+			if len(image) == 0 {
+				var colors Colors;
+				colors.Vibrant = "#c27949"
+				colorChannel <- colors
+			} else {
+				colors, err := GetColor(image)
+				if err != nil {
+					errorChannel <- err
+				}
+				colorChannel <- *colors
 			}
-			colorChannel <- *colors
 		}(poiRes.Image)
 		poiChannel <- poiRes
 

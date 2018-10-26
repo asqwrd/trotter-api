@@ -1,6 +1,7 @@
 package places
 
 import (
+	"fmt"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -91,11 +92,15 @@ func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 	if name == "Ireland" {
 		name = "Republic of Ireland"
 	}
+	image := ""
+	if len(sp.Main_media.Media) > 0 {
+		image = re.ReplaceAllString(sp.Main_media.Media[0].Url_template, "1200x800")
+	}
 	p = &Place{
 		// These have name overrides
 		Sygic_id:    sp.Id,
 		Id:          sp.Id,
-		Image:       re.ReplaceAllString(sp.Main_media.Media[0].Url_template, "1200x800"),
+		Image:       image,
 		Description: sp.Perex,
 
 		// These don't
@@ -159,8 +164,10 @@ func FromSygicPlaces(sourcePlaces []sygic.Place) (internalPlaces []Place) {
 }
 
 func GetColor(url string) (*Colors, error) {
+
 	res, err := http.Get(url)
 	if err != nil {
+		fmt.Println("here")
 		return nil, err
 	}
 	defer res.Body.Close()

@@ -4,13 +4,13 @@ This repo will act as the backend for trotter. All api will be maintained here
 <br/>
 <br/>
 
-Right now node is being used but this can be changed to a better technology to manage the api on the backend
-Requires latest version of node
+# Prereqs:
+1. Set the environment variables `PORT_TROTTER` to what ever port desired.  We typically use 3002.
+2. Set the environment variable `SYGIC_API_KEY` to the api key for sygic.
 
-To run:
+# To run:
 
-1. `npm run build`
-2. `node dist/server.js`
+1. `go run main.go`
 
 API we are using to get Country Info
 

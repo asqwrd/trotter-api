@@ -277,9 +277,12 @@ func formatPassport(passport Passport) (p *Passport) {
 }
 
 func FormatVisa(visa visaResponse) (v *InternalVisa) {
-
+	var visaData Visa
+	if len(visa.Visa) > 0 {
+		visaData = visa.Visa[0]
+	}
 	v = &InternalVisa{
-		Visa:        visa.Visa[0],
+		Visa:        visaData,
 		Passport:    *formatPassport(visa.Passport),
 		Vaccination: visa.Vaccination,
 	}

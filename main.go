@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/asqwrd/trotter-api/places"
+	"github.com/asqwrd/trotter-api/router"
 	"github.com/gorilla/handlers"
 )
 
 func main() {
 	// Get the "PORT" env variable
-	port := os.Getenv("PORT")
+	port := os.Getenv("PORT_TROTTER")
 	if port == "" {
 		log.Fatal("$PORT must be set")
 	} else {
@@ -24,7 +24,7 @@ func main() {
 		log.Fatal("$SYGIC_API_KEY not set")
 	}
 
-	router := places.NewRouter()
+	router := router.NewRouter()
 
 	allowedOrigins := handlers.AllowedOrigins([]string{"*"})
 	allowedMethods := handlers.AllowedMethods([]string{"GET"})

@@ -25,7 +25,8 @@ export interface SygicPlace {
     west: number
     north: number
     east: number
-  } | null
+  } | null;
+  description: {text:string};
 }
 
 export interface PlacesData {
@@ -39,6 +40,7 @@ export interface Place {
   name_suffix: string;
   parent_ids: string[];
   description: string;
+  description_short: string;
   color: string;
   visa: string;
   plugs: Object[];
@@ -70,11 +72,12 @@ export interface Country {
   image_template: string;
   name: string;
   description: string;
+  description_short: string;
   color: string;
   visa: string;
   plugs: Object[];
   embassies: Object[];
   emergency_numbers: { ambulance: String[], police: String[], fire: String[], dispatch: String[] };
-  currency: { converted_currency: number, converted_unit: string, unit: string };
+  currency: { converted_currency: number, converted_unit: any, unit: any };
 
 }

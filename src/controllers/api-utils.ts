@@ -1,11 +1,17 @@
 import { SygicPlace, Place } from "./sygic-api.models";
+import { TriposoPlace, PlaceTriposo } from "./triposos-api-models";
 import request from "request-promise";
+import striptags from 'striptags';
 import { BASE_SYGIC_API } from "./sygic-api.constants";
 const API_KEY = "6SdxevLXN2aviv5g67sac2aySsawGYvJ6UcTmvWE";
 const SHERPA_URL = "https://api.joinsherpa.com/v2/entry-requirements/",
   username = "VDLQLCbMmugvsOEtihQ9kfc6nQoeGd",
   password = "nIXaxALFPV0IiwNOvBEBrDCNSw3SCv67R4UEvD9r",
+  TRIPOSO_ACCOUNT = '2ZWR5MHH',
+  TRIPOSO_TOKEN = 'yan4ujbhzepr66ttsqxiqwcl38k3lx0w',
   SHERPA_AUTH = "Basic " + new Buffer(username + ":" + password).toString("base64");
+ // /api/03/location.json?order_by=-trigram&count=1&fields=id,country_id&annotate=trigram:Port Harcourt&trigram=>=0.3
+
 
 let countryCurrencies;
 
@@ -14,16 +20,71 @@ export function sygicPlacesToInternal(sygicPlaces: SygicPlace[]): Place[] {
     return [
       ...acc,
       {
-        sygic_id: curr.id,
+        id: curr.id,
         image: curr.thumbnail_url,
         name: curr.name,
         name_suffix: curr.name_suffix,
         parent_ids: curr.parent_ids,
-        description: curr.perex,
+        description_short: curr.perex,
+        description: curr.description ? curr.description.text : null,
         level:curr.level,
         location:curr.location,
         address:curr.address,
         phone:curr.phone,
+      }
+    ];
+  }, []);
+}
+
+export function triposoPlacesToInternal(triposoPlaces: TriposoPlace[]): PlaceTriposo[] {
+  return triposoPlaces.reduce((acc, curr) => {
+    return [
+      ...acc,
+      {
+        id: curr.id,
+        image: curr.images[0] ? curr.images[0].sizes.medium.url : null,
+        name: curr.name,
+        description_short: curr.snippet,
+        description: curr.content && curr.content.sections ? striptags(curr.content.sections[0].body) : null,
+        level:'triposo',
+        location:{ lat: curr.coordinates.latitude, lng:curr.coordinates.longitude},
+        score:curr.score
+      }
+    ];
+  }, []);
+}
+
+export function triposoPOIToInternal(triposoPlace: TriposoPlace): PlaceTriposo {
+  return {
+    
+      id: triposoPlace.id,
+      images: triposoPlace.images,
+      name: triposoPlace.name,
+      content: triposoPlace.content,
+      description: triposoPlace.intro,
+      location:{ lat: triposoPlace.coordinates.latitude, lng:triposoPlace.coordinates.longitude},
+      score:triposoPlace.score,
+      facebook_id: triposoPlace.facebook_id,
+      foursquare_id: triposoPlace.foursquare_id,
+      google_place_id: triposoPlace.google_place_id,
+      tripadvisor_id: triposoPlace.tripadvisor_id,
+      best_for: triposoPlace.best_for,
+      booking_info: triposoPlace.booking_info,
+      opening_hours: triposoPlace.opening_hours,
+      price_tier: triposoPlace.price_tier,
+    
+  } as PlaceTriposo
+}
+
+export function triposoPlacesToLocations(triposoPlaces: TriposoPlace[]) {
+  return triposoPlaces.reduce((acc, curr) => {
+    return [
+      ...acc,
+      {
+        lat:curr.coordinates.latitude,
+        lng:curr.coordinates.longitude,
+        title:curr.name,
+        selected: false
       }
     ];
   }, []);
@@ -49,6 +110,41 @@ export function constructPlacesRequest(id: string, queryParams: string, limit: n
     uri: `${BASE_SYGIC_API}/places/list?${queryParams}&parents=${id}&limit=${limit}`,
     json: true,
     headers: { "x-api-key": API_KEY }
+  });
+}
+
+export function getTriposoId(place:string) {
+  return request.get({
+    uri: `https://www.triposo.com/api/20180627/location.json?order_by=-trigram&count=1&fields=id,country_id&annotate=trigram:${place}&trigram=>=0.3&account=${TRIPOSO_ACCOUNT}&token=${TRIPOSO_TOKEN}`,
+    json: true
+  });
+}
+
+export function getTriposoPOIFromLocation(id:string,tag_labels:string, count:number = 20) {
+  return request.get({
+    uri: encodeURI(`https://www.triposo.com/api/20180627/poi.json?location_id=${id}&tag_labels=${tag_labels}&count=${count}&fields=google_place_id,id,name,coordinates,tripadvisor_id,facebook_id,location_id,opening_hours,foursquare_id,snippet,content,images&account=${TRIPOSO_ACCOUNT}&token=${TRIPOSO_TOKEN}`),
+    json: true
+  });
+}
+
+export function getTriposoCity(id:string, count:number = 20) {
+  return request.get({
+    uri: `https://www.triposo.com/api/20180627/location.json?id=${id}&order_by=-score&count=${count}&fields=coordinates,parent_id,images,content,name,id,snippet&account=${TRIPOSO_ACCOUNT}&token=${TRIPOSO_TOKEN}`,
+    json: true
+  });
+}
+
+export function getTriposoPOI(id:string) {
+  return request.get({
+    uri: `https://www.triposo.com/api/20180627/poi.json?id=${id}&fields=google_place_id,images,id,name,booking_info,best_for,facebook_id,opening_hours,tripadvisor_id,content,foursquare_id,price_tier,intro,coordinates&account=${TRIPOSO_ACCOUNT}&token=${TRIPOSO_TOKEN}`,
+    json: true
+  });
+}
+
+export function getTriposoDestination(id:string, count:number = 20) {
+  return request.get({
+    uri: `https://www.triposo.com/api/20180627/location.json?part_of=${id}&order_by=-score&count=${count}&fields=id,score,parent_id,country_id,intro,name,images,content,coordinates&type=city&account=${TRIPOSO_ACCOUNT}&token=${TRIPOSO_TOKEN}`,
+    json: true
   });
 }
 

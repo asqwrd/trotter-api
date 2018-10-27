@@ -4,7 +4,6 @@ import Vibrant from "node-vibrant";
 import { Country } from "./sygic-api.models";
 import { db, geocoder } from "./firestore";
 import {
-  sygicPlacesToInternal,
   constructPlacesRequest,
   removeDuplicates,
   constructPlaceRequest,
@@ -13,7 +12,11 @@ import {
   getCountriesCurrencies,
   getCountriesCurrenciesApi,
   setCountriesCurrencies,
-  constructCurrencyConvertRequest
+  constructCurrencyConvertRequest,
+  getTriposoId,
+  getTriposoDestination,
+  triposoPlacesToInternal,
+  
 } from "./api-utils";
 import util from "util";
 
@@ -23,6 +26,7 @@ const citizenCountry = "United States";
 const country_codes = db.collection("countries_code");
 const emergency_numbers_db = db.collection("emergency_numbers");
 const plugs_db = db.collection("plugs");
+const currencies_db = db.collection("currencies");
 
 (async function() {
   const currencies = await getCountriesCurrenciesApi();
@@ -92,42 +96,49 @@ const countries_with_states = {
 async function getCountryResearch(req) {
   const id = req.params.country_id;
 
+
   const popular_destinations_request = constructPlacesRequest(
     id,
     "level=region|city|town|island",
-    20
+    50
   );
 
-  const sightseeing_request = constructPlacesRequest(id, "level=poi&categories=sightseeing", 20);
+  //const sightseeing_request = constructPlacesRequest(id, "level=poi&categories=sightseeing", 20);
 
-  const discovering_request = constructPlacesRequest(id, "level=poi&categories=discovering", 20);
+  //const discovering_request = constructPlacesRequest(id, "level=poi&categories=discovering", 20);
 
-  const playing_request = constructPlacesRequest(id, "level=poi&categories=playing", 20);
+  //const playing_request = constructPlacesRequest(id, "level=poi&categories=playing", 20);
 
-  const relaxing_request = constructPlacesRequest(id, "level=poi&categories=relaxing", 20);
+  //const relaxing_request = constructPlacesRequest(id, "level=poi&categories=relaxing", 20);
 
-  const country_request = constructPlaceRequest(id);
+  const country_request =  constructPlaceRequest(id);
+  
+  
+
+
 
   return Promise.all([
     country_request,
     popular_destinations_request,
-    sightseeing_request,
+    /*sightseeing_request,
     discovering_request,
     playing_request,
-    relaxing_request
+    relaxing_request*/
   ]).catch(error => {
     console.log(error);
   });
 }
 
-function formatCountryResearch(responses) {
+async function formatCountryResearch(responses) {
   // const [parent, destinations, sights, discover, play, relax] = responses;
   const parent = responses[0] as any;
   const destinations = responses[1] as any;
-  const sights = responses[2] as any;
+  /*const sights = responses[2] as any;
   const discover = responses[3] as any;
   const play = responses[4] as any;
-  const relax = responses[5] as any;
+  const relax = responses[5] as any;*/
+
+  
 
   const country_images = parent.data.place.main_media.media.reduce((acc, curr) => {
     return [
@@ -154,23 +165,27 @@ function formatCountryResearch(responses) {
     description: parent.data.place.perex
   } as Country;
 
-  let sightseeing = sygicPlacesToInternal(sights["data"].places);
+  /*let sightseeing = sygicPlacesToInternal(sights["data"].places);
 
   let discovering = sygicPlacesToInternal(discover["data"].places);
 
   let playing = sygicPlacesToInternal(play["data"].places);
 
-  let relaxing = sygicPlacesToInternal(relax["data"].places);
+  let relaxing = sygicPlacesToInternal(relax["data"].places);*/
 
-  let popular_destinations = sygicPlacesToInternal(destinations["data"].places);
+  //let popular_destinations = sygicPlacesToInternal(destinations["data"].places);
+  const counrty_triposo = await getTriposoId(country.name);
+  const cities = await getTriposoDestination(counrty_triposo.results[0].id);
+  let popular_destinations = triposoPlacesToInternal(cities.results);
+
 
   return {
     country,
     popular_destinations,
-    sightseeing,
+    /*sightseeing,
     discovering,
     playing,
-    relaxing
+    relaxing*/
   };
 }
 
@@ -184,13 +199,13 @@ async function countryUICalls(data, req) {
   let country_color = Vibrant.from(data.country.image).getPalette();
   let plugs = plugs_db.where("country", "==", country_name).get();
 
-  if (countries_with_states[data.country.name]) {
+  /*if (countries_with_states[data.country.name]) {
     const states = constructPlacesRequest(id, "level=state", 100);
 
     return Promise.all([country_color, country_code, plugs, states]).catch(error => {
       console.log(error);
     }) as Promise<any[]>;
-  }
+  }*/
 
   return Promise.all([country_color, country_code, plugs]).catch(error => {
     console.log(error);
@@ -293,7 +308,7 @@ function addEmergencyNumber(emergency_numbers) {
   };
 }
 
-async function getEmbassy(req) {
+/*async function getEmbassy(req) {
   const id = req.params.country_id;
   const embassy = constructPlacesRequest(id, `tags=Embassy&query=${citizenCountry}&level=poi`, 20);
   return embassy;
@@ -329,22 +344,25 @@ async function getAddresses(embassies) {
     });
   }
   return;
-}
+}*/
 
 export const getCountry = async (req: Request, res: Response) => {
   const currencies = getCountriesCurrencies();
   const citizenCurrency = currencies[citizenCode];
   let responses = await getCountryResearch(req);
-  let data = formatCountryResearch(responses);
+  let data = await formatCountryResearch(responses);
+  //let triposoData = getCountryResearchTriposo(data.country.name);
+  //console.log(triposoData);
+  //addTriposo(data,triposoData);
   let extraCountry = await countryUICalls(data, req);
   let [color, country_code, plugsRes, ...args]: any[] = extraCountry;
 
-  let states = args[0];
+  //let states = args[0];
   let popular_destinations = data.popular_destinations;
-  let sightseeing = data.sightseeing;
+  /*let sightseeing = data.sightseeing;
   let discover = data.discovering;
   let play = data.playing;
-  let relax = data.relaxing;
+  let relax = data.relaxing;*/
   let country = data.country;
   country.color = `rgb(${color.Vibrant._rgb[0]},${color.Vibrant._rgb[1]},${color.Vibrant._rgb[2]})`;
   let plugs = [];
@@ -357,11 +375,16 @@ export const getCountry = async (req: Request, res: Response) => {
 
   country.visa = null;
 
-  states = states ? sygicPlacesToInternal(states["data"].places) : [];
+  //states = states ? sygicPlacesToInternal(states["data"].places) : [];
+  let to_currency = currencies[visaCode];
+  if(!to_currency){
+    let to_data = await currencies_db.doc(visaCode).get();
+    to_currency = currencies[to_data.data().id];
+  }
 
   let currencyObj = {
     from: citizenCurrency,
-    to: currencies[visaCode]
+    to: to_currency
   };
   let helpfulInfo = await visaInfo(visaData, visaCode, country_code, currencyObj);
 
@@ -371,7 +394,7 @@ export const getCountry = async (req: Request, res: Response) => {
     converted_currency:
       converted_currency[`${currencyObj.from.currencyId}_${currencyObj.to.currencyId}`],
     converted_unit: currencyObj.to,
-    unit: citizenCurrency
+    unit: currencyObj.from
   };
 
   let visa = visaStuff;
@@ -390,21 +413,21 @@ export const getCountry = async (req: Request, res: Response) => {
 
   country.emergency_numbers = addEmergencyNumber(emergency_numbers);
 
-  let embassiesRes = await getEmbassy(req);
+  /*let embassiesRes = await getEmbassy(req);
   let embassies = await getAddresses(embassiesRes);
   if (embassies) {
     let embassy_names = embassies.splice(0, 1)[0];
     data.country.embassies = formatEmbassy(embassies, embassy_names);
-  }
+  }*/
 
   res.send({
     country,
     popular_destinations,
-    sightseeing,
+    /*sightseeing,
     discover,
     play,
     relax,
-    states,
+    states,*/
     safety
   });
 };

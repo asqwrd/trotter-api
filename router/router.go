@@ -1,9 +1,11 @@
-package places
+package router
 
 import (
 	"log"
 	"net/http"
 
+	"github.com/asqwrd/trotter-api/country"
+	"github.com/asqwrd/trotter-api/places"
 	"github.com/gorilla/mux"
 )
 
@@ -21,16 +23,22 @@ var routes = Routes{
 		"GetContinent",
 		"GET",
 		"/api/explore/continent/{continentID}/",
-		GetContinent,
+		places.GetContinent,
 	},
 	Route{
 		"GetCountry",
 		"GET",
-		"api/explore/country/{countryID}/",
-		GetCountry,
+		"/api/explore/countries/{countryID}/",
+		country.GetCountry,
 	},
 	Route{
-		"GetCity", "GET", "/api/explore/cities/{cityID}/", GetCity,
+		"GetCity", "GET", "/api/explore/cities/{cityID}/", places.GetCity,
+	},
+	Route{
+		"GetHome", "GET", "/api/explore/home/", places.GetHome,
+	},
+	Route{
+		"GetPoi", "GET", "/api/explore/poi/{poiID}", places.GetPoi,
 	},
 }
 

@@ -184,7 +184,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	go func() {
-		city, err := triposo.GetCity(cityID)
+		city, err := triposo.GetLocation(cityID)
 		if err != nil {
 			fmt.Println("here")
 			errorChannel <- err
@@ -293,16 +293,18 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 //Get Home
 
 func GetHome(w http.ResponseWriter, r *http.Request) {
-	typeparams := []string{"island", "city", "country"}
+	typeparams := []string{"island", "city", "country","national_park"}
 
 	placeChannel := make(chan PlaceChannel)
 
 	var islands []triposo.InternalPlace
 	var cities []triposo.InternalPlace
+	var national_parks []triposo.InternalPlace
 	var countries []Place
 
 	islandChannel := make(chan []triposo.Place)
 	cityChannel := make(chan []triposo.Place)
+	parkChannel := make(chan []triposo.Place)
 	countryChannel := make(chan []sygic.Place)
 
 	errorChannel := make(chan error)
@@ -343,6 +345,8 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 				cityChannel <- res.Places.([]triposo.Place)
 			case res.Index == 2:
 				countryChannel <- res.Places.([]sygic.Place)
+			case res.Index == 3:
+				parkChannel <- res.Places.([]triposo.Place)
 			}
 		}
 
@@ -353,7 +357,7 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 		timeoutChannel <- true
 	}()
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 4; i++ {
 		select {
 		case res := <-islandChannel:
 			islands = FromTriposoPlaces(res, "island")
@@ -361,6 +365,8 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 			countries = FromSygicPlaces(res)
 		case res := <-cityChannel:
 			cities = FromTriposoPlaces(res, "city")
+		case res := <-parkChannel:
+			national_parks = FromTriposoPlaces(res, "national_park")
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
@@ -378,6 +384,8 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 		"popular_islands": islands,
 
 		"popular_countries": countries,
+
+		"national_parks": national_parks,
 	}
 
 	response.Write(w, homeData, http.StatusOK)
@@ -461,5 +469,107 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Write(w, poiData, http.StatusOK)
+	return
+}
+
+//Get Park
+
+func GetPark(w http.ResponseWriter, r *http.Request) {
+	parkID := mux.Vars(r)["parkID"]
+	
+	parkChannel := make(chan triposo.InternalPlace)
+	colorChannel := make(chan Colors)
+	var park *triposo.InternalPlace
+
+	var pois []triposo.InternalPlace
+
+
+	poiChannel := make(chan []triposo.Place)
+	errorChannel := make(chan error)
+	timeoutChannel := make(chan bool)
+	var parkColor string
+
+		go func() {
+			place, err := triposo.GetPoiFromLocation(parkID, "20", "", 0)
+			if err != nil {
+				errorChannel <- err
+			}
+			poiChannel <- *place
+		}()
+
+
+	go func() {
+		parkData, err := triposo.GetLocation(parkID)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+
+		parkParam := *parkData
+		parkRes := FromTriposoPlace(parkParam[0], "national_park")
+
+		go func(image string) {
+			if len(image) == 0 {
+				var colors Colors;
+				colors.Vibrant = "#c27949"
+				colorChannel <- colors
+			} else {
+				colors, err := GetColor(image)
+				if err != nil {
+					errorChannel <- err
+				}
+				colorChannel <- *colors
+			}
+		}(parkRes.Image)
+
+		parkChannel <- parkRes
+
+	}()
+
+	go func() {
+		time.Sleep(10 * time.Second)
+		timeoutChannel <- true
+	}()
+
+	for i := 0; i < 3; i++ {
+		select {
+		case poi := <-poiChannel:
+			pois = FromTriposoPlaces(poi, "poi")
+		case parkRes := <-parkChannel:
+			park = &parkRes
+		case colorRes := <-colorChannel:
+			if len(colorRes.Vibrant) > 0 {
+				parkColor = colorRes.Vibrant
+			} else if len(colorRes.Muted) > 0 {
+				parkColor = colorRes.Muted
+			} else if len(colorRes.LightVibrant) > 0 {
+				parkColor = colorRes.LightVibrant
+			} else if len(colorRes.LightMuted) > 0 {
+				parkColor = colorRes.LightMuted
+			} else if len(colorRes.DarkVibrant) > 0 {
+				parkColor = colorRes.DarkVibrant
+			} else if len(colorRes.DarkMuted) > 0 {
+				parkColor = colorRes.DarkMuted
+			}
+		case err := <-errorChannel:
+			response.WriteErrorResponse(w, err)
+			return
+		case timeout := <-timeoutChannel:
+			if timeout == true {
+				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
+				return
+			}
+		}
+	}
+
+	parkData := map[string]interface{}{
+		"park":  park,
+		"color": parkColor,
+
+		"pois":           &pois,
+		"poi_locations": location.FromTriposoPlaces(pois),
+	}
+
+	response.Write(w, parkData, http.StatusOK)
 	return
 }

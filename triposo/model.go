@@ -256,8 +256,12 @@ func GetPoi(id string) (*[]Place, error) {
 func GetPoiFromLocation(id string, count string, tag_labels string, index int) (*[]Place, error) {
 
 	client := http.Client{Timeout: time.Second * 10}
+	url := baseTriposoAPI + "poi.json?location_id=" + id + "&count=" + count + "&fields=google_place_id,id,name,coordinates,tripadvisor_id,facebook_id,location_id,opening_hours,foursquare_id,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
+	if len(tag_labels) > 0 {
+		url = baseTriposoAPI + "poi.json?location_id=" + id + "&tag_labels=" + tag_labels + "&count=" + count + "&fields=google_place_id,id,name,coordinates,tripadvisor_id,facebook_id,location_id,opening_hours,foursquare_id,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
+	}
 
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"poi.json?location_id="+id+"&tag_labels="+tag_labels+"&count="+count+"&fields=google_place_id,id,name,coordinates,tripadvisor_id,facebook_id,location_id,opening_hours,foursquare_id,snippet,content,best_for,properties,images&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("Failed to access the Triposo API.")
@@ -284,7 +288,7 @@ func GetPoiFromLocation(id string, count string, tag_labels string, index int) (
 
 }
 
-func GetCity(id string) (*[]Place, error) {
+func GetLocation(id string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 10}
 
 	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?id="+id+"&order_by=-score&fields=coordinates,parent_id,images,content,name,id,snippet&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)

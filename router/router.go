@@ -43,6 +43,9 @@ var routes = Routes{
 	Route{
 		"GetPoi", "GET", "/api/explore/poi/{poiID}", places.GetPoi,
 	},
+	Route{
+		"Search", "GET", "/api/explore/search/{query}", places.Search,
+	},
 }
 
 // NewRouter configures a new router to the API

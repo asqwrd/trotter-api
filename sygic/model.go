@@ -204,3 +204,33 @@ func GetCountry(count string) (*[]Place, error) {
 
 	return &resp.Data.Places, nil
 }
+
+func Search(query string) (*[]Place, error) {
+	client := http.Client{Timeout: time.Second * 5}
+
+	req, err := http.NewRequest(http.MethodGet, baseSygicAPI+"list?level=country&limit=20&query="+query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	req.URL.RawQuery = q.Encode()
+
+	req.Header.Set("x-api-key", sygicAPIKey)
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	resp := &placesResponse{}
+	err = json.NewDecoder(res.Body).Decode(resp)
+	if err != nil {
+		log.Println(err)
+		log.Println(req.URL.String())
+		return nil, errors.New("Server experienced an error while parsing Sygic API response.")
+	}
+
+	return &resp.Data.Places, nil
+}

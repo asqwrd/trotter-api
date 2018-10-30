@@ -573,3 +573,106 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 	response.Write(w, parkData, http.StatusOK)
 	return
 }
+
+
+// Search
+
+func Search(w http.ResponseWriter, r *http.Request) {
+	query := mux.Vars(r)["query"]
+	typeparams := []string{"island", "city", "country","national_park","poi"}
+
+	placeChannel := make(chan PlaceChannel)
+
+	var triposoResults []triposo.InternalPlace
+	var sygicResults []Place
+
+	islandChannel := make(chan []triposo.Place)
+	cityChannel := make(chan []triposo.Place)
+	parkChannel := make(chan []triposo.Place)
+	poiChannel := make(chan []triposo.Place)
+	countryChannel := make(chan []sygic.Place)
+
+	errorChannel := make(chan error)
+	timeoutChannel := make(chan bool)
+
+	for i, typeParam := range typeparams {
+		go func(typeParam string, i int) {
+			if typeParam == "country" {
+				place, err := sygic.Search(query)
+				res := new(PlaceChannel)
+				res.Places = *place
+				res.Index = i
+				res.Error = err
+				placeChannel <- *res
+			} else {
+				place, err := triposo.Search(query, typeParam)
+				res := new(PlaceChannel)
+				res.Places = *place
+				res.Index = i
+				res.Error = err
+				placeChannel <- *res
+			}
+
+		}(typeParam, i)
+
+	}
+
+	go func() {
+		for res := range placeChannel {
+			if res.Error != nil {
+				errorChannel <- res.Error
+				return
+			}
+			switch {
+			case res.Index == 0:
+				islandChannel <- res.Places.([]triposo.Place)
+			case res.Index == 1:
+				cityChannel <- res.Places.([]triposo.Place)
+			case res.Index == 2:
+				countryChannel <- res.Places.([]sygic.Place)
+			case res.Index == 3:
+				parkChannel <- res.Places.([]triposo.Place)
+			case res.Index == 4:
+				poiChannel <- res.Places.([]triposo.Place)
+			}
+		}
+
+	}()
+
+	go func() {
+		time.Sleep(10 * time.Second)
+		timeoutChannel <- true
+	}()
+
+	for i := 0; i < 5; i++ {
+		select {
+		case res := <-islandChannel:
+			triposoResults = append(triposoResults, FromTriposoPlaces(res, "island")...)
+		case res := <-countryChannel:
+			sygicResults = FromSygicPlaces(res)
+		case res := <-cityChannel:
+			triposoResults = append(triposoResults, FromTriposoPlaces(res, "city")...)
+		case res := <-parkChannel:
+			triposoResults = append(triposoResults, FromTriposoPlaces(res, "national_park")...)
+		case res := <-poiChannel:
+			triposoResults = append(triposoResults, FromTriposoPlaces(res, "poi")...)
+		case err := <-errorChannel:
+			response.WriteErrorResponse(w, err)
+			return
+		case timeout := <-timeoutChannel:
+			if timeout == true {
+				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
+				return
+			}
+		}
+	}
+
+
+	homeData := map[string]interface{}{
+		"triposo_results": triposoResults,
+		"sygic_results": sygicResults,
+	}
+
+	response.Write(w, homeData, http.StatusOK)
+	return
+}

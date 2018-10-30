@@ -195,6 +195,40 @@ func GetPlaceByName(name string) (*PoiInfo, error) {
 	return &resp.Results[0], nil
 }
 
+func Search(query string, typeParam string) (*[]Place, error) {
+	client := http.Client{Timeout: time.Second * 20}
+	url := baseTriposoAPI + "location.json?type=" + typeParam + "&order_by=-trigram&fields=id,score,parent_id,country_id,intro,name,images,content,coordinates&annotate=trigram:" + query + "&trigram=>=0.3&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
+	if typeParam == "poi" {
+		url = baseTriposoAPI + "poi.json?fields=google_place_id,intro,tripadvisor_id,images,location_id,id,content,opening_hours,coordinates,snippet,score,facebook_id,attribution,best_for,properties,price_tier,name,foursquare_id,booking_info&annotate=trigram:" + query + "&trigram=>=0.3&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
+	}
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Triposo API.")
+	}
+	//fmt.Println(name)
+
+	q := req.URL.Query()
+	req.URL.RawQuery = q.Encode()
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	resp := &placeResponse{}
+	err = json.NewDecoder(res.Body).Decode(resp)
+	if err != nil {
+		log.Println(err)
+		log.Println(req.URL.String())
+		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
+	}
+	//fmt.Println(resp.Results)
+	return &resp.Results, nil
+}
+
 func GetDestination(id string, count string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 10}
 

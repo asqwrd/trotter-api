@@ -44,6 +44,12 @@ type PlaceChannel struct {
 	Error  error
 }
 
+type InternalPlaceChannel struct {
+	Place triposo.InternalPlace
+	Index int
+	Error error
+}
+
 type Colors struct {
 	Vibrant      string
 	Muted        string
@@ -143,6 +149,8 @@ func FromTriposoPlace(sp triposo.Place, level string) (p triposo.InternalPlace) 
 		Score:             sp.Score,
 		Opening_hours:     sp.Opening_hours,
 		Properties:        sp.Properties,
+		Parent_Id:         sp.Parent_Id,
+		Country_Id:        sp.Country_Id,
 	}
 
 	return p

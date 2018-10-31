@@ -56,7 +56,6 @@ type Place struct {
 	Snippet         string        `json:"snippet"`
 	Score           float32       `json:"score"`
 	Location_id     string        `json:"location_id"`
-	Parent_id       string        `json:"parent_id"`
 	Facebook_id     string        `json:"facebook_id"`
 	Foursquare_id   string        `json:"foursquare_id"`
 	Google_place_id string        `json:"google_place_id"`
@@ -67,6 +66,8 @@ type Place struct {
 	Intro           string        `json:"intro"`
 	Opening_hours   *OpeningHours `json:"opening_hours,omitempty"`
 	Properties      []Property    `json:"properties,omitempty"`
+	Parent_Id       string        `json:"parent_id,omitempty"`
+	Country_Id      string        `json:"country_id,omitempty"`
 }
 
 type BestFor struct {
@@ -146,6 +147,9 @@ type InternalPlace struct {
 	Score             float32       `json:"score"`
 	Opening_hours     *OpeningHours `json:"opening_hours,omitempty"`
 	Properties        []Property    `json:"properties"`
+	Parent_Id         string        `json:"parent_id,omitempty"`
+	Parent_Name       string        `json:"parent_name,omitempty"`
+	Country_Id        string        `json:"country_id,omitempty"`
 }
 
 type PoiInfo struct {
@@ -197,7 +201,7 @@ func GetPlaceByName(name string) (*PoiInfo, error) {
 
 func Search(query string, typeParam string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 20}
-	url := baseTriposoAPI + "location.json?type=" + typeParam + "&order_by=-trigram&fields=id,score,parent_id,country_id,intro,name,images,content,coordinates&annotate=trigram:" + query + "&trigram=>=0.3&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
+	url := baseTriposoAPI + "location.json?type=" + typeParam + "&order_by=-trigram&fields=name,parent_id,score,images,id,type,coordinates,country_id,snippet,content,properties,intro&annotate=trigram:" + query + "&trigram=>=0.3&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
 	if typeParam == "poi" {
 		url = baseTriposoAPI + "poi.json?fields=google_place_id,intro,tripadvisor_id,images,location_id,id,content,opening_hours,coordinates,snippet,score,facebook_id,attribution,best_for,properties,price_tier,name,foursquare_id,booking_info&annotate=trigram:" + query + "&trigram=>=0.3&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
 	}

@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/asqwrd/trotter-api/auth"
 	"github.com/asqwrd/trotter-api/country"
 	"github.com/asqwrd/trotter-api/places"
 	"github.com/gorilla/mux"
@@ -54,7 +55,7 @@ func NewRouter() *mux.Router {
 			Methods(route.Method).
 			Path(route.Pattern).
 			Name(route.Name).
-			Handler(handler)
+			Handler(auth.BasicAuthMiddleware(handler))
 	}
 	return router
 }

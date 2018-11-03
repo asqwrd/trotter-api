@@ -46,6 +46,9 @@ var routes = Routes{
 	Route{
 		"Search", "GET", "/api/explore/search/{query}", places.Search,
 	},
+	Route{
+		"RecentSearch", "GET", "/api/explore/recent_searches", places.RecentSearch,
+	},
 }
 
 // NewRouter configures a new router to the API

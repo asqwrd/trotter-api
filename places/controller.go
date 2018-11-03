@@ -12,6 +12,12 @@ import (
 	"github.com/asqwrd/trotter-api/sygic"
 	"github.com/asqwrd/trotter-api/triposo"
 	"github.com/gorilla/mux"
+	firebase "firebase.google.com/go"
+	"cloud.google.com/go/firestore"
+	"golang.org/x/net/context"
+	"google.golang.org/api/option"
+	"google.golang.org/api/iterator"
+	"strings"
 )
 
 func initializeQueryParams(level string) *url.Values {
@@ -581,6 +587,23 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	query := mux.Vars(r)["query"]
 	typeparams := []string{"island", "city", "country","national_park"}
 
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
 	placeChannel := make(chan PlaceChannel)
 
 	var triposoResults []triposo.InternalPlace
@@ -594,6 +617,28 @@ func Search(w http.ResponseWriter, r *http.Request) {
 
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
+	addQuery := make(chan bool)
+
+	go func(){
+		search, err := client.Collection("searches").Doc(strings.ToUpper(query)).Get(ctx)
+		if err != nil {
+			addQuery <- true
+			return
+		}
+
+		searchData := search.Data()
+		count := searchData["count"].(int64) + 1
+		_, errSearch := client.Collection("searches").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
+			"count": count,
+			"value": query,
+		})
+		if errSearch != nil {
+			// Handle any errors in an appropriate way, such as returning them.
+			response.WriteErrorResponse(w, errSearch)
+		}
+		addQuery <- false
+		
+	}()
 
 	for i, typeParam := range typeparams {
 		go func(typeParam string, i int) {
@@ -701,10 +746,106 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	for i := 0; i < 1; i++ {
+		select {
+		case res := <- addQuery:
+			if res == true && (len(triposoResults) > 0 || len(sygicResults) > 0) {
+				_, err := client.Collection("searches").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
+					"count": 1,
+					"value": query,
+				})
+				if err != nil {
+					// Handle any errors in an appropriate way, such as returning them.
+					response.WriteErrorResponse(w, err)
+				}
+			}
+		}
+	}
+
+	
+
 
 	homeData := map[string]interface{}{
 		"triposo_results": triposoResults,
 		"sygic_results": sygicResults,
+	}
+
+	response.Write(w, homeData, http.StatusOK)
+	return
+}
+
+// Recent Search
+
+func RecentSearch(w http.ResponseWriter, r *http.Request) {
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	errorChannel := make(chan error)
+	timeoutChannel := make(chan bool)
+	searchChannel := make(chan []interface{})
+	var searches []interface{}
+
+	go func(){
+		search := client.Collection("searches").OrderBy("count", firestore.Desc).Limit(10).Documents(ctx)
+
+		var searchesData []interface{}
+		for {
+			doc, err := search.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				errorChannel <- err
+				break
+			}
+
+			searchesData = append(searchesData, doc.Data())
+		}
+		//fmt.Println(searchesData)
+		searchChannel <- searchesData
+	}()
+
+	go func() {
+		time.Sleep(10 * time.Second)
+		timeoutChannel <- true
+	}()
+
+	for i := 0; i < 1; i++ {
+		select {
+		case res := <-searchChannel:
+			searches = res
+		case err := <-errorChannel:
+			response.WriteErrorResponse(w, err)
+			return
+		case timeout := <-timeoutChannel:
+			if timeout == true {
+				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
+				return
+			}
+		}
+	}
+	
+	
+
+
+
+	homeData := map[string]interface{}{
+		"recent_search": searches,
 	}
 
 	response.Write(w, homeData, http.StatusOK)

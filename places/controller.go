@@ -12,6 +12,12 @@ import (
 	"github.com/asqwrd/trotter-api/sygic"
 	"github.com/asqwrd/trotter-api/triposo"
 	"github.com/gorilla/mux"
+	firebase "firebase.google.com/go"
+	"cloud.google.com/go/firestore"
+	"golang.org/x/net/context"
+	"google.golang.org/api/option"
+	"google.golang.org/api/iterator"
+	"strings"
 )
 
 func initializeQueryParams(level string) *url.Values {
@@ -184,7 +190,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	go func() {
-		city, err := triposo.GetCity(cityID)
+		city, err := triposo.GetLocation(cityID)
 		if err != nil {
 			fmt.Println("here")
 			errorChannel <- err
@@ -293,16 +299,18 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 //Get Home
 
 func GetHome(w http.ResponseWriter, r *http.Request) {
-	typeparams := []string{"island", "city", "country"}
+	typeparams := []string{"island", "city", "country","national_park"}
 
 	placeChannel := make(chan PlaceChannel)
 
 	var islands []triposo.InternalPlace
 	var cities []triposo.InternalPlace
+	var national_parks []triposo.InternalPlace
 	var countries []Place
 
 	islandChannel := make(chan []triposo.Place)
 	cityChannel := make(chan []triposo.Place)
+	parkChannel := make(chan []triposo.Place)
 	countryChannel := make(chan []sygic.Place)
 
 	errorChannel := make(chan error)
@@ -343,6 +351,8 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 				cityChannel <- res.Places.([]triposo.Place)
 			case res.Index == 2:
 				countryChannel <- res.Places.([]sygic.Place)
+			case res.Index == 3:
+				parkChannel <- res.Places.([]triposo.Place)
 			}
 		}
 
@@ -353,7 +363,7 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 		timeoutChannel <- true
 	}()
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 4; i++ {
 		select {
 		case res := <-islandChannel:
 			islands = FromTriposoPlaces(res, "island")
@@ -361,6 +371,8 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 			countries = FromSygicPlaces(res)
 		case res := <-cityChannel:
 			cities = FromTriposoPlaces(res, "city")
+		case res := <-parkChannel:
+			national_parks = FromTriposoPlaces(res, "national_park")
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
@@ -378,6 +390,8 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 		"popular_islands": islands,
 
 		"popular_countries": countries,
+
+		"national_parks": national_parks,
 	}
 
 	response.Write(w, homeData, http.StatusOK)
@@ -461,5 +475,379 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Write(w, poiData, http.StatusOK)
+	return
+}
+
+//Get Park
+
+func GetPark(w http.ResponseWriter, r *http.Request) {
+	parkID := mux.Vars(r)["parkID"]
+	
+	parkChannel := make(chan triposo.InternalPlace)
+	colorChannel := make(chan Colors)
+	var park *triposo.InternalPlace
+
+	var pois []triposo.InternalPlace
+
+
+	poiChannel := make(chan []triposo.Place)
+	errorChannel := make(chan error)
+	timeoutChannel := make(chan bool)
+	var parkColor string
+
+		go func() {
+			place, err := triposo.GetPoiFromLocation(parkID, "20", "", 0)
+			if err != nil {
+				errorChannel <- err
+			}
+			poiChannel <- *place
+		}()
+
+
+	go func() {
+		parkData, err := triposo.GetLocation(parkID)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+
+		parkParam := *parkData
+		parkRes := FromTriposoPlace(parkParam[0], "national_park")
+
+		go func(image string) {
+			if len(image) == 0 {
+				var colors Colors;
+				colors.Vibrant = "#c27949"
+				colorChannel <- colors
+			} else {
+				colors, err := GetColor(image)
+				if err != nil {
+					errorChannel <- err
+				}
+				colorChannel <- *colors
+			}
+		}(parkRes.Image)
+
+		parkChannel <- parkRes
+
+	}()
+
+	go func() {
+		time.Sleep(10 * time.Second)
+		timeoutChannel <- true
+	}()
+
+	for i := 0; i < 3; i++ {
+		select {
+		case poi := <-poiChannel:
+			pois = FromTriposoPlaces(poi, "poi")
+		case parkRes := <-parkChannel:
+			park = &parkRes
+		case colorRes := <-colorChannel:
+			if len(colorRes.Vibrant) > 0 {
+				parkColor = colorRes.Vibrant
+			} else if len(colorRes.Muted) > 0 {
+				parkColor = colorRes.Muted
+			} else if len(colorRes.LightVibrant) > 0 {
+				parkColor = colorRes.LightVibrant
+			} else if len(colorRes.LightMuted) > 0 {
+				parkColor = colorRes.LightMuted
+			} else if len(colorRes.DarkVibrant) > 0 {
+				parkColor = colorRes.DarkVibrant
+			} else if len(colorRes.DarkMuted) > 0 {
+				parkColor = colorRes.DarkMuted
+			}
+		case err := <-errorChannel:
+			response.WriteErrorResponse(w, err)
+			return
+		case timeout := <-timeoutChannel:
+			if timeout == true {
+				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
+				return
+			}
+		}
+	}
+
+	parkData := map[string]interface{}{
+		"park":  park,
+		"color": parkColor,
+
+		"pois":           &pois,
+		"poi_locations": location.FromTriposoPlaces(pois),
+	}
+
+	response.Write(w, parkData, http.StatusOK)
+	return
+}
+
+
+// Search
+
+func Search(w http.ResponseWriter, r *http.Request) {
+	query := mux.Vars(r)["query"]
+	typeparams := []string{"island", "city", "country","national_park"}
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	placeChannel := make(chan PlaceChannel)
+
+	var triposoResults []triposo.InternalPlace
+	var sygicResults []Place
+
+	islandChannel := make(chan []triposo.Place)
+	cityChannel := make(chan []triposo.Place)
+	parkChannel := make(chan []triposo.Place)
+	//poiChannel := make(chan []triposo.Place)
+	countryChannel := make(chan []sygic.Place)
+
+	errorChannel := make(chan error)
+	timeoutChannel := make(chan bool)
+	addQuery := make(chan bool)
+
+	go func(){
+		search, err := client.Collection("searches").Doc(strings.ToUpper(query)).Get(ctx)
+		if err != nil {
+			addQuery <- true
+			return
+		}
+
+		searchData := search.Data()
+		count := searchData["count"].(int64) + 1
+		_, errSearch := client.Collection("searches").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
+			"count": count,
+			"value": query,
+		})
+		if errSearch != nil {
+			// Handle any errors in an appropriate way, such as returning them.
+			response.WriteErrorResponse(w, errSearch)
+		}
+		addQuery <- false
+		
+	}()
+
+	for i, typeParam := range typeparams {
+		go func(typeParam string, i int) {
+			if typeParam == "country" {
+				place, err := sygic.Search(query)
+				res := new(PlaceChannel)
+				res.Places = *place
+				res.Index = i
+				res.Error = err
+				placeChannel <- *res
+			} else {
+				place, err := triposo.Search(query, typeParam)
+				res := new(PlaceChannel)
+				res.Places = *place
+				res.Index = i
+				res.Error = err
+				placeChannel <- *res
+			}
+
+		}(typeParam, i)
+
+	}
+
+	go func() {
+		for res := range placeChannel {
+			if res.Error != nil {
+				errorChannel <- res.Error
+				return
+			}
+			switch {
+			case res.Index == 0:
+				islandChannel <- res.Places.([]triposo.Place)
+			case res.Index == 1:
+				cityChannel <- res.Places.([]triposo.Place)
+			case res.Index == 2:
+				countryChannel <- res.Places.([]sygic.Place)
+			case res.Index == 3:
+				parkChannel <- res.Places.([]triposo.Place)
+			}
+		}
+
+	}()
+
+	go func() {
+		time.Sleep(10 * time.Second)
+		timeoutChannel <- true
+	}()
+
+	for i := 0; i < 4; i++ {
+		select {
+		case res := <-islandChannel:
+			triposoResults = append(triposoResults, FromTriposoPlaces(res, "island")...)
+		case res := <-countryChannel:
+			sygicResults = FromSygicPlaces(res)
+		case res := <-cityChannel:
+			triposoResults = append(triposoResults, FromTriposoPlaces(res, "city")...)
+		case res := <-parkChannel:
+			triposoResults = append(triposoResults, FromTriposoPlaces(res, "national_park")...)
+		case err := <-errorChannel:
+			response.WriteErrorResponse(w, err)
+			return
+		case timeout := <-timeoutChannel:
+			if timeout == true {
+				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
+				return
+			}
+		}
+	}
+	
+	resChannel := make(chan InternalPlaceChannel)
+
+	for index := 0; index < len(triposoResults); index++ {
+		go func(index int){
+			if triposoResults[index].Country_Id == "United_States" {
+				parent, err := triposo.GetLocation(triposoResults[index].Parent_Id)
+				res := new(InternalPlaceChannel)
+				parentParam := *parent 
+				res.Place = FromTriposoPlace(parentParam[0],"")
+				res.Index = index
+				res.Error = err
+
+				resChannel <- *res
+			} else {
+				parent, err := triposo.GetLocation(triposoResults[index].Country_Id)
+				res := new(InternalPlaceChannel)
+				parentParam := *parent 
+				res.Place = FromTriposoPlace(parentParam[0],"")
+				res.Index = index
+				res.Error = err
+				resChannel <- *res
+			}
+			
+
+		}(index)
+	}
+
+	for i := 0; i < len(triposoResults); i++ {
+		select {
+			case res := <-resChannel:
+			if res.Error != nil {
+				response.WriteErrorResponse(w, res.Error)
+				return
+			}
+			triposoResults[res.Index].Parent_Name = res.Place.Name 
+		}
+	}
+
+	for i := 0; i < 1; i++ {
+		select {
+		case res := <- addQuery:
+			if res == true && (len(triposoResults) > 0 || len(sygicResults) > 0) {
+				_, err := client.Collection("searches").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
+					"count": 1,
+					"value": query,
+				})
+				if err != nil {
+					// Handle any errors in an appropriate way, such as returning them.
+					response.WriteErrorResponse(w, err)
+				}
+			}
+		}
+	}
+
+	
+
+
+	homeData := map[string]interface{}{
+		"triposo_results": triposoResults,
+		"sygic_results": sygicResults,
+	}
+
+	response.Write(w, homeData, http.StatusOK)
+	return
+}
+
+// Recent Search
+
+func RecentSearch(w http.ResponseWriter, r *http.Request) {
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	errorChannel := make(chan error)
+	timeoutChannel := make(chan bool)
+	searchChannel := make(chan []interface{})
+	var searches []interface{}
+
+	go func(){
+		search := client.Collection("searches").OrderBy("count", firestore.Desc).Limit(10).Documents(ctx)
+
+		var searchesData []interface{}
+		for {
+			doc, err := search.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				errorChannel <- err
+				break
+			}
+
+			searchesData = append(searchesData, doc.Data())
+		}
+		//fmt.Println(searchesData)
+		searchChannel <- searchesData
+	}()
+
+	go func() {
+		time.Sleep(10 * time.Second)
+		timeoutChannel <- true
+	}()
+
+	for i := 0; i < 1; i++ {
+		select {
+		case res := <-searchChannel:
+			searches = res
+		case err := <-errorChannel:
+			response.WriteErrorResponse(w, err)
+			return
+		case timeout := <-timeoutChannel:
+			if timeout == true {
+				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
+				return
+			}
+		}
+	}
+	
+	
+
+
+
+	homeData := map[string]interface{}{
+		"recent_search": searches,
+	}
+
+	response.Write(w, homeData, http.StatusOK)
 	return
 }

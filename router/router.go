@@ -36,10 +36,19 @@ var routes = Routes{
 		"GetCity", "GET", "/api/explore/cities/{cityID}/", places.GetCity,
 	},
 	Route{
+		"GetPark", "GET", "/api/explore/national_parks/{parkID}/", places.GetPark,
+	},
+	Route{
 		"GetHome", "GET", "/api/explore/home/", places.GetHome,
 	},
 	Route{
 		"GetPoi", "GET", "/api/explore/poi/{poiID}", places.GetPoi,
+	},
+	Route{
+		"Search", "GET", "/api/explore/search/{query}", places.Search,
+	},
+	Route{
+		"RecentSearch", "GET", "/api/explore/recent_searches", places.RecentSearch,
 	},
 }
 

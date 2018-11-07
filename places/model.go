@@ -44,6 +44,12 @@ type PlaceChannel struct {
 	Error  error
 }
 
+type InternalPlaceChannel struct {
+	Place triposo.InternalPlace
+	Index int
+	Error error
+}
+
 type Colors struct {
 	Vibrant      string
 	Muted        string
@@ -119,12 +125,16 @@ func FromTriposoPlace(sp triposo.Place, level string) (p triposo.InternalPlace) 
 	if length > 0 {
 		image = sp.Images[0].Sizes.Medium.Url
 	}
+	description := ""
+	if len(sp.Content.Sections) > 0 {
+		description = strip.StripTags(sp.Content.Sections[0].Body)
+	}
 
 	p = triposo.InternalPlace{
 		Id:                sp.Id,
 		Image:             image,
 		Images:            sp.Images,
-		Description:       strip.StripTags(sp.Content.Sections[0].Body),
+		Description:       description,
 		Description_short: sp.Snippet,
 		Name:              sp.Name,
 		Level:             level,
@@ -139,6 +149,8 @@ func FromTriposoPlace(sp triposo.Place, level string) (p triposo.InternalPlace) 
 		Score:             sp.Score,
 		Opening_hours:     sp.Opening_hours,
 		Properties:        sp.Properties,
+		Parent_Id:         sp.Parent_Id,
+		Country_Id:        sp.Country_Id,
 	}
 
 	return p

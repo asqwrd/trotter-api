@@ -7,6 +7,7 @@ import (
 	"github.com/asqwrd/trotter-api/auth"
 	"github.com/asqwrd/trotter-api/country"
 	"github.com/asqwrd/trotter-api/places"
+	"github.com/asqwrd/trotter-api/trips"
 	"github.com/gorilla/mux"
 )
 
@@ -45,10 +46,13 @@ var routes = Routes{
 		"GetPoi", "GET", "/api/explore/poi/{poiID}", places.GetPoi,
 	},
 	Route{
-		"Search", "GET", "/api/explore/search/{query}", places.Search,
+		"Search", "GET", "/api/search/{query}", places.Search,
 	},
 	Route{
-		"RecentSearch", "GET", "/api/explore/recent_searches", places.RecentSearch,
+		"RecentSearch", "GET", "/api/search/recent_searches", places.RecentSearch,
+	},
+	Route{
+		"CreateTrip", "POST", "/api/trips/create", trips.CreateTrip,
 	},
 }
 

@@ -765,12 +765,12 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	
 
 
-	homeData := map[string]interface{}{
+	searchData := map[string]interface{}{
 		"triposo_results": triposoResults,
 		"sygic_results": sygicResults,
 	}
 
-	response.Write(w, homeData, http.StatusOK)
+	response.Write(w, searchData, http.StatusOK)
 	return
 }
 
@@ -844,10 +844,10 @@ func RecentSearch(w http.ResponseWriter, r *http.Request) {
 
 
 
-	homeData := map[string]interface{}{
+	recentSearchData := map[string]interface{}{
 		"recent_search": searches,
 	}
 
-	response.Write(w, homeData, http.StatusOK)
+	response.Write(w, recentSearchData, http.StatusOK)
 	return
 }

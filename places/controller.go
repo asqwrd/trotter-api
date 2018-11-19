@@ -306,33 +306,33 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 	var islands []triposo.InternalPlace
 	var cities []triposo.InternalPlace
 	var national_parks []triposo.InternalPlace
-	var countries []Place
+	var countries []triposo.InternalPlace
 
 	islandChannel := make(chan []triposo.Place)
 	cityChannel := make(chan []triposo.Place)
 	parkChannel := make(chan []triposo.Place)
-	countryChannel := make(chan []sygic.Place)
+	countryChannel := make(chan []triposo.Place)
 
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
 
 	for i, typeParam := range typeparams {
 		go func(typeParam string, i int) {
-			if typeParam == "country" {
+			/*if typeParam == "country" {
 				place, err := sygic.GetCountry("20")
 				res := new(PlaceChannel)
 				res.Places = *place
 				res.Index = i
 				res.Error = err
 				placeChannel <- *res
-			} else {
+			} else {*/
 				place, err := triposo.GetLocationType(typeParam, "20")
 				res := new(PlaceChannel)
 				res.Places = *place
 				res.Index = i
 				res.Error = err
 				placeChannel <- *res
-			}
+			//}
 
 		}(typeParam, i)
 
@@ -350,7 +350,7 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 			case res.Index == 1:
 				cityChannel <- res.Places.([]triposo.Place)
 			case res.Index == 2:
-				countryChannel <- res.Places.([]sygic.Place)
+				countryChannel <- res.Places.([]triposo.Place)
 			case res.Index == 3:
 				parkChannel <- res.Places.([]triposo.Place)
 			}
@@ -368,7 +368,7 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 		case res := <-islandChannel:
 			islands = FromTriposoPlaces(res, "island")
 		case res := <-countryChannel:
-			countries = FromSygicPlaces(res)
+			countries = FromTriposoPlaces(res,"country")
 		case res := <-cityChannel:
 			cities = FromTriposoPlaces(res, "city")
 		case res := <-parkChannel:
@@ -585,7 +585,7 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 
 func Search(w http.ResponseWriter, r *http.Request) {
 	query := mux.Vars(r)["query"]
-	typeparams := []string{"island", "city", "country","national_park"}
+	typeparams := []string{"island", "city", "city_state","country","national_park"}
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
@@ -611,9 +611,10 @@ func Search(w http.ResponseWriter, r *http.Request) {
 
 	islandChannel := make(chan []triposo.Place)
 	cityChannel := make(chan []triposo.Place)
+	cityStateChannel := make(chan []triposo.Place)
 	parkChannel := make(chan []triposo.Place)
 	//poiChannel := make(chan []triposo.Place)
-	countryChannel := make(chan []sygic.Place)
+	countryChannel := make(chan []triposo.Place)
 
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
@@ -642,21 +643,21 @@ func Search(w http.ResponseWriter, r *http.Request) {
 
 	for i, typeParam := range typeparams {
 		go func(typeParam string, i int) {
-			if typeParam == "country" {
+			/*if typeParam == "country" {
 				place, err := sygic.Search(query)
 				res := new(PlaceChannel)
 				res.Places = *place
 				res.Index = i
 				res.Error = err
 				placeChannel <- *res
-			} else {
+			} else {*/
 				place, err := triposo.Search(query, typeParam)
 				res := new(PlaceChannel)
 				res.Places = *place
 				res.Index = i
 				res.Error = err
 				placeChannel <- *res
-			}
+			//}
 
 		}(typeParam, i)
 
@@ -674,8 +675,10 @@ func Search(w http.ResponseWriter, r *http.Request) {
 			case res.Index == 1:
 				cityChannel <- res.Places.([]triposo.Place)
 			case res.Index == 2:
-				countryChannel <- res.Places.([]sygic.Place)
+				cityStateChannel <- res.Places.([]triposo.Place)
 			case res.Index == 3:
+				countryChannel <- res.Places.([]triposo.Place)
+			case res.Index == 4:
 				parkChannel <- res.Places.([]triposo.Place)
 			}
 		}
@@ -692,9 +695,11 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		case res := <-islandChannel:
 			triposoResults = append(triposoResults, FromTriposoPlaces(res, "island")...)
 		case res := <-countryChannel:
-			sygicResults = FromSygicPlaces(res)
+			triposoResults = append(triposoResults,FromTriposoPlaces(res,"country")...)
 		case res := <-cityChannel:
 			triposoResults = append(triposoResults, FromTriposoPlaces(res, "city")...)
+		case res := <-cityStateChannel:
+			triposoResults = append(triposoResults, FromTriposoPlaces(res, "city_state")...)
 		case res := <-parkChannel:
 			triposoResults = append(triposoResults, FromTriposoPlaces(res, "national_park")...)
 		case err := <-errorChannel:

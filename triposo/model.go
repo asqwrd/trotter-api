@@ -50,6 +50,7 @@ type Image struct {
 type Place struct {
 	Name            string        `json:"name"`
 	Id              string        `json:"id"`
+	Type            string        `json:"type"`
 	Coordinates     Coordinates   `json:"coordinates"`
 	Content         Content       `json:"content"`
 	Images          []Image       `json:"images"`
@@ -130,6 +131,7 @@ type poiInfoResponse struct {
 
 type InternalPlace struct {
 	Id                string        `json:"id"`
+	Type              string        `json:"type"`
 	Image             string        `json:"image,omitempty"`
 	Description       string        `json:"description" json:"intro"`
 	Description_short string        `json:"description_short,omitempty"`
@@ -329,7 +331,7 @@ func GetPoiFromLocation(id string, count string, tag_labels string, index int) (
 func GetLocation(id string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 10}
 
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?id="+id+"&order_by=-score&fields=coordinates,parent_id,images,content,name,id,snippet&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?id="+id+"&order_by=-score&fields=coordinates,parent_id,images,content,name,id,snippet,type&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("Failed to access the Triposo API.")

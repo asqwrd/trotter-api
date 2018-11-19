@@ -34,6 +34,12 @@ var routes = Routes{
 		country.GetCountry,
 	},
 	Route{
+		"GetCityState",
+		"GET",
+		"/api/explore/city_states/{countryID}/",
+		country.GetCountry,
+	},
+	Route{
 		"GetCity", "GET", "/api/explore/cities/{cityID}/", places.GetCity,
 	},
 	Route{
@@ -46,7 +52,7 @@ var routes = Routes{
 		"GetPoi", "GET", "/api/explore/poi/{poiID}/", places.GetPoi,
 	},
 	Route{
-		"Search", "GET", "/api/search/destinations/{query}/", places.Search,
+		"Search", "GET", "/api/search/find/{query}/", places.Search,
 	},
 	Route{
 		"RecentSearch", "GET", "/api/search/recent/", places.RecentSearch,

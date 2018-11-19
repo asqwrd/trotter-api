@@ -132,6 +132,7 @@ func FromTriposoPlace(sp triposo.Place, level string) (p triposo.InternalPlace) 
 
 	p = triposo.InternalPlace{
 		Id:                sp.Id,
+		Type:              sp.Type,
 		Image:             image,
 		Images:            sp.Images,
 		Description:       description,

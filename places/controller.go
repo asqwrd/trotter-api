@@ -607,7 +607,6 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	placeChannel := make(chan PlaceChannel)
 
 	var triposoResults []triposo.InternalPlace
-	var sygicResults []Place
 
 	islandChannel := make(chan []triposo.Place)
 	cityChannel := make(chan []triposo.Place)
@@ -690,7 +689,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		timeoutChannel <- true
 	}()
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 5; i++ {
 		select {
 		case res := <-islandChannel:
 			triposoResults = append(triposoResults, FromTriposoPlaces(res, "island")...)
@@ -754,7 +753,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	for i := 0; i < 1; i++ {
 		select {
 		case res := <- addQuery:
-			if res == true && (len(triposoResults) > 0 || len(sygicResults) > 0) {
+			if res == true && (len(triposoResults) > 0) {
 				_, err := client.Collection("searches").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
 					"count": 1,
 					"value": query,
@@ -771,8 +770,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 
 
 	searchData := map[string]interface{}{
-		"triposo_results": triposoResults,
-		"sygic_results": sygicResults,
+		"results": triposoResults,
 	}
 
 	response.Write(w, searchData, http.StatusOK)

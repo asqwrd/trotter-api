@@ -723,6 +723,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 				res.Place = FromTriposoPlace(parentParam[0],"")
 				res.Index = index
 				res.Error = err
+				triposoResults[index].Country_Name = "United States"
 
 				resChannel <- *res
 			} else {
@@ -746,7 +747,10 @@ func Search(w http.ResponseWriter, r *http.Request) {
 				response.WriteErrorResponse(w, res.Error)
 				return
 			}
-			triposoResults[res.Index].Parent_Name = res.Place.Name 
+			triposoResults[res.Index].Parent_Name = res.Place.Name
+			if len(triposoResults[res.Index].Country_Name) == 0 {
+				triposoResults[res.Index].Country_Name = res.Place.Name 
+			}
 		}
 	}
 
@@ -852,5 +856,98 @@ func RecentSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Write(w, recentSearchData, http.StatusOK)
+	return
+}
+
+// Popular Locations
+
+func GetPopularLocations(w http.ResponseWriter, r *http.Request) {
+
+	placeChannel := make(chan []triposo.Place)
+
+	var triposoResults []triposo.InternalPlace
+
+	errorChannel := make(chan error)
+	timeoutChannel := make(chan bool)
+
+
+		go func() {
+
+				places, err := triposo.GetLocations("10")
+				if err != nil {
+					errorChannel <- err
+				}
+				placeChannel <- *places
+
+		}()
+
+	go func() {
+		time.Sleep(10 * time.Second)
+		timeoutChannel <- true
+	}()
+
+	for i := 0; i < 1; i++ {
+		select {
+		case res := <-placeChannel:
+			triposoResults = FromTriposoPlaces(res,"")
+		case err := <-errorChannel:
+			response.WriteErrorResponse(w, err)
+			return
+		case timeout := <-timeoutChannel:
+			if timeout == true {
+				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
+				return
+			}
+		}
+	}
+	
+	resChannel := make(chan InternalPlaceChannel)
+
+	for index := 0; index < len(triposoResults); index++ {
+		go func(index int){
+			if triposoResults[index].Country_Id == "United_States" {
+				parent, err := triposo.GetLocation(triposoResults[index].Parent_Id)
+				res := new(InternalPlaceChannel)
+				parentParam := *parent 
+				res.Place = FromTriposoPlace(parentParam[0],"")
+				res.Index = index
+				res.Error = err
+				triposoResults[index].Country_Name = "United States"
+
+				resChannel <- *res
+			} else {
+				parent, err := triposo.GetLocation(triposoResults[index].Country_Id)
+				res := new(InternalPlaceChannel)
+				parentParam := *parent 
+				res.Place = FromTriposoPlace(parentParam[0],"")
+				res.Index = index
+				res.Error = err
+				resChannel <- *res
+			}
+			
+
+		}(index)
+	}
+
+	for i := 0; i < len(triposoResults); i++ {
+		select {
+			case res := <-resChannel:
+			if res.Error != nil {
+				response.WriteErrorResponse(w, res.Error)
+				return
+			}
+			triposoResults[res.Index].Parent_Name = res.Place.Name
+			if len(triposoResults[res.Index].Country_Name) == 0 {
+				triposoResults[res.Index].Country_Name = res.Place.Name 
+			}
+		}
+	}
+
+
+	popularData := map[string]interface{}{
+		"results": triposoResults,
+	}
+
+	response.Write(w, popularData, http.StatusOK)
 	return
 }

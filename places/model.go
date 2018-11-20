@@ -129,6 +129,9 @@ func FromTriposoPlace(sp triposo.Place, level string) (p triposo.InternalPlace) 
 	if len(sp.Content.Sections) > 0 {
 		description = strip.StripTags(sp.Content.Sections[0].Body)
 	}
+	if len(level) == 0 {
+		level = sp.Type
+	}
 
 	p = triposo.InternalPlace{
 		Id:                sp.Id,

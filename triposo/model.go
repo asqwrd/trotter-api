@@ -151,6 +151,7 @@ type InternalPlace struct {
 	Properties        []Property    `json:"properties"`
 	Parent_Id         string        `json:"parent_id,omitempty"`
 	Parent_Name       string        `json:"parent_name,omitempty"`
+	Country_Name      string        `json:"country_name,omitempty"`
 	Country_Id        string        `json:"country_id,omitempty"`
 }
 
@@ -362,6 +363,35 @@ func GetLocationType(type_id string, count string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 10}
 
 	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?type="+type_id+"&count="+count+"&order_by=-score&fields=coordinates,parent_id,images,content,name,id,score,snippet&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	q := req.URL.Query()
+	req.URL.RawQuery = q.Encode()
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	resp := &placesResponse{}
+	err = json.NewDecoder(res.Body).Decode(resp)
+	if err != nil {
+		log.Println(err)
+		log.Println(req.URL.String())
+		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
+	}
+
+	return &resp.Results, nil
+}
+
+func GetLocations(count string) (*[]Place, error) {
+	client := http.Client{Timeout: time.Second * 10}
+
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?count="+count+"&order_by=-score&fields=parent_id,country_id,name,id,score,coordinates,type,images&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("Failed to access the Triposo API.")

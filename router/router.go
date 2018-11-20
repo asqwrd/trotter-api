@@ -58,6 +58,9 @@ var routes = Routes{
 		"RecentSearch", "GET", "/api/search/recent/", places.RecentSearch,
 	},
 	Route{
+		"GetPopularLocations", "GET", "/api/trips/popular_locations/", places.GetPopularLocations,
+	},
+	Route{
 		"CreateTrip", "POST", "/api/trips/create/", trips.CreateTrip,
 	},
 }

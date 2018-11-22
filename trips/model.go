@@ -19,6 +19,7 @@ type Trip struct {
 	ItineraryId     string           `json:"itinerary_id" firestore:"itinerary_id"`
 	OwnerId         string           `json:"owner_id" firestore:"owner_id"`
 	TripInformation TripInformation  `json:"trip_information" firestore:"trip_information"`
+	ID              string           `json:"id" firestore:"id"`
 }
 
 type TripInformation struct {

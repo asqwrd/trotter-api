@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"net/http" //"net/url"
 	//"github.com/asqwrd/trotter-api/triposo"
-	firebase "firebase.google.com/go"        //"cloud.google.com/go/firestore"
+	firebase "firebase.google.com/go"        
+	"cloud.google.com/go/firestore"
 	"github.com/asqwrd/trotter-api/response" //"github.com/gorilla/mux"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
@@ -47,6 +48,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 		}
 		var trip Trip
 		doc.DataTo(&trip)
+		fmt.Println(doc.Data());
 		trips = append(trips, trip)
 	}
 
@@ -94,6 +96,14 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, errCreate)
 	}
 
+	_, err2 := client.Collection("trips").Doc(doc.ID).Set(ctx, map[string]interface{}{
+		"id": doc.ID,
+	},firestore.MergeAll)
+	if err2 != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		response.WriteErrorResponse(w, err2)
+	}
+	
 	tripData := map[string]interface{}{
 		"doc": doc,
 		"wr":  wr,

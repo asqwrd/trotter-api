@@ -9,8 +9,8 @@ import (
 	firebase "firebase.google.com/go"        //"cloud.google.com/go/firestore"
 	"github.com/asqwrd/trotter-api/response" //"github.com/gorilla/mux"
 	"golang.org/x/net/context"
+	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
-	//"google.golang.org/api/iterator"
 )
 
 // GetTrips
@@ -19,6 +19,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
+	var trips []Trip
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
@@ -34,12 +35,26 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 
-	tripData := map[string]interface{}{
-		"triposo_results": []string{"island", "city", "country", "national_park"},
-		"sygic_results":   []string{"island", "city", "country", "national_park"},
+	iter := client.Collection("trips").Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		var trip Trip
+		doc.DataTo(&trip)
+		trips = append(trips, trip)
 	}
 
-	response.Write(w, tripData, http.StatusOK)
+	tripsData := map[string]interface{}{
+		"trips": trips,
+	}
+
+	response.Write(w, tripsData, http.StatusOK)
 	return
 }
 
@@ -50,6 +65,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 	var trip Trip
 	err := decoder.Decode(&trip)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}

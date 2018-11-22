@@ -12,8 +12,8 @@ type Trip struct {
 	CountryName     string           `json:"country_name" firestore:"country_name"`
 	Location        triposo.Location `json:"location" firestore:"location"`
 	Image           string           `json:"image" firestore:"image"`
-	StartDate       int              `json:"start_date" firestore:"start_date"`
-	EndDate         int              `json:"end_date" firestore:"end_date"`
+	StartDate       string           `json:"start_date" firestore:"start_date"`
+	EndDate         string           `json:"end_date" firestore:"end_date"`
 	Name            string           `json:"name" firestore:"name"`
 	Group           []string         `json:"group" firestore:"group"`
 	ItineraryId     string           `json:"itinerary_id" firestore:"itinerary_id"`

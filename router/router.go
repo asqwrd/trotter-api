@@ -63,6 +63,9 @@ var routes = Routes{
 	Route{
 		"CreateTrip", "POST", "/api/trips/create/", trips.CreateTrip,
 	},
+	Route{
+		"GetTrips", "GET", "/api/trips/all/", trips.GetTrips,
+	},
 }
 
 // NewRouter configures a new router to the API

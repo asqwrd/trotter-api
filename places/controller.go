@@ -192,7 +192,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		city, err := triposo.GetLocation(cityID)
 		if err != nil {
-			fmt.Println("here")
+			//fmt.Println("here")
 			errorChannel <- err
 			return
 		}

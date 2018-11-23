@@ -48,7 +48,6 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 		}
 		var trip Trip
 		doc.DataTo(&trip)
-		fmt.Println(doc.Data());
 		trips = append(trips, trip)
 	}
 

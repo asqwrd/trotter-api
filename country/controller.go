@@ -59,6 +59,7 @@ func getCurrencies() (map[string]interface{}, error) {
 
 func GetCountry(w http.ResponseWriter, r *http.Request) {
 	runtime.GOMAXPROCS(10)
+	fmt.Println("Get Country started");
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()

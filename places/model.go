@@ -200,17 +200,17 @@ func GetColor(url string) (*Colors, error) {
 	for name, swatch := range palette.ExtractAwesome() {
 		switch name {
 		case "Vibrant":
-			colors.Vibrant = swatch.Color.String()
+			colors.Vibrant = swatch.Color.RGBHex()
 		case "Muted":
-			colors.Muted = swatch.Color.String()
+			colors.Muted = swatch.Color.RGBHex()
 		case "LightVibrant":
-			colors.LightVibrant = swatch.Color.String()
+			colors.LightVibrant = swatch.Color.RGBHex()
 		case "LightMuted":
-			colors.LightMuted = swatch.Color.String()
+			colors.LightMuted = swatch.Color.RGBHex()
 		case "DarkVibrant":
-			colors.DarkVibrant = swatch.Color.String()
+			colors.DarkVibrant = swatch.Color.RGBHex()
 		case "DarkMuted":
-			colors.DarkMuted = swatch.Color.String()
+			colors.DarkMuted = swatch.Color.RGBHex()
 		}
 	}
 

@@ -395,6 +395,7 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Write(w, homeData, http.StatusOK)
+	fmt.Println("home done")
 	return
 }
 

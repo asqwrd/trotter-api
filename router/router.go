@@ -64,6 +64,9 @@ var routes = Routes{
 		"CreateTrip", "POST", "/api/trips/create/", trips.CreateTrip,
 	},
 	Route{
+		"GetTrip", "GET", "/api/trips/get/{tripId}", trips.GetTrip,
+	},
+	Route{
 		"GetTrips", "GET", "/api/trips/all/", trips.GetTrips,
 	},
 }

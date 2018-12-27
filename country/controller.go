@@ -289,13 +289,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		}
 	//	numbersData := numbers.Data()
 		var emNumbers EmergencyNumbers
-		numbers.DataTo(&emNumbers)
-		//var emNumbers EmergencyNumbers
-		/*errDecode := mapstructure.Decode(numbersData, &emNumbers)
-		if errDecode != nil {
-			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
-			return
-		}*/
+		numbers.DataTo(&emNumbers)}
 
 		resultsChannel <- map[string]interface{}{"result": *FormatEmergencyNumbers(emNumbers), "routine": "numbers"}
 

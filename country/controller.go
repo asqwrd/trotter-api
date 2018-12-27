@@ -15,7 +15,7 @@ import (
 	"github.com/asqwrd/trotter-api/response" //"github.com/asqwrd/trotter-api/sygic"
 	"github.com/asqwrd/trotter-api/triposo"
 	"github.com/gorilla/mux"
-	"github.com/mitchellh/mapstructure"
+	//"github.com/mitchellh/mapstructure"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -287,13 +287,16 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 			return
 		}
-		numbersData := numbers.Data()
+	//	numbersData := numbers.Data()
 		var emNumbers EmergencyNumbers
-		errDecode := mapstructure.Decode(numbersData, &emNumbers)
+		numbers.DataTo(&emNumbers)
+		//var emNumbers EmergencyNumbers
+		/*errDecode := mapstructure.Decode(numbersData, &emNumbers)
 		if errDecode != nil {
 			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 			return
-		}
+		}*/
+		fmt.Println(emNumbers)
 
 		resultsChannel <- map[string]interface{}{"result": *FormatEmergencyNumbers(emNumbers), "routine": "numbers"}
 

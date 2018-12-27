@@ -208,7 +208,7 @@ func GetTrip(w http.ResponseWriter, r *http.Request) {
 	//tripChannel := make(chan Trip)
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
-	fmt.Println("Here")
+	fmt.Println("Got Trips")
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
 		response.WriteErrorResponse(w, err)

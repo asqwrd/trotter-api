@@ -296,7 +296,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 			return
 		}*/
-		fmt.Println(emNumbers)
 
 		resultsChannel <- map[string]interface{}{"result": *FormatEmergencyNumbers(emNumbers), "routine": "numbers"}
 

@@ -3,7 +3,6 @@ package country
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
@@ -169,7 +168,6 @@ func FormatEmergencyNumbers(numbers EmergencyNumbers) (e *EmergencyNumbers) {
 	if numbers.Member112 == true {
 		member112 = []string{"112"}
 	}
-	fmt.Println(numbers)
 	e = &EmergencyNumbers{
 		Ambulance:                 numbers.Ambulance,
 		Dispatch:                  numbers.Dispatch,

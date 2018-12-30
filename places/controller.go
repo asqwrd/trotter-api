@@ -299,41 +299,31 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 //Get Home
 
 func GetHome(w http.ResponseWriter, r *http.Request) {
-	typeparams := []string{"island", "city", "country", "national_park"}
+	typeparams := []string{"island", "city"}
 
 	placeChannel := make(chan PlaceChannel)
 
 	var islands []triposo.InternalPlace
 	var cities []triposo.InternalPlace
-	var national_parks []triposo.InternalPlace
-	var countries []triposo.InternalPlace
+	//var national_parks []triposo.InternalPlace
+	//var countries []triposo.InternalPlace
 
 	islandChannel := make(chan []triposo.Place)
 	cityChannel := make(chan []triposo.Place)
-	parkChannel := make(chan []triposo.Place)
-	countryChannel := make(chan []triposo.Place)
+	//parkChannel := make(chan []triposo.Place)
+	//countryChannel := make(chan []triposo.Place)
 
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
 
 	for i, typeParam := range typeparams {
 		go func(typeParam string, i int) {
-			/*if typeParam == "country" {
-				place, err := sygic.GetCountry("20")
-				res := new(PlaceChannel)
-				res.Places = *place
-				res.Index = i
-				res.Error = err
-				placeChannel <- *res
-			} else {*/
 			place, err := triposo.GetLocationType(typeParam, "20")
 			res := new(PlaceChannel)
 			res.Places = *place
 			res.Index = i
 			res.Error = err
 			placeChannel <- *res
-			//}
-
 		}(typeParam, i)
 
 	}
@@ -349,13 +339,8 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 				islandChannel <- res.Places.([]triposo.Place)
 			case res.Index == 1:
 				cityChannel <- res.Places.([]triposo.Place)
-			case res.Index == 2:
-				countryChannel <- res.Places.([]triposo.Place)
-			case res.Index == 3:
-				parkChannel <- res.Places.([]triposo.Place)
 			}
 		}
-
 	}()
 
 	go func() {
@@ -363,16 +348,12 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 		timeoutChannel <- true
 	}()
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 2; i++ {
 		select {
 		case res := <-islandChannel:
 			islands = FromTriposoPlaces(res, "island")
-		case res := <-countryChannel:
-			countries = FromTriposoPlaces(res, "country")
 		case res := <-cityChannel:
 			cities = FromTriposoPlaces(res, "city")
-		case res := <-parkChannel:
-			national_parks = FromTriposoPlaces(res, "national_park")
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
@@ -384,14 +365,77 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	cityParentChannel := make(chan PlaceChannel)
+	go func(){
+		for i := 0; i < len(cities); i++ {
+			go func(index int) {
+				country_id := cities[index].Country_Id
+				if country_id == "United_States" {
+					country_id = cities[index].Parent_Id
+				}
+				country, err := triposo.GetLocation(country_id)
+				res := new(PlaceChannel)
+				res.Places = *country
+				res.Index = index
+				res.Error = err
+				cityParentChannel <- *res
+			}(i)
+		}
+	}()
+
+	islandParentChannel := make(chan PlaceChannel)
+	go func(){
+		for i := 0; i < len(islands); i++ {
+			go func(index int) {
+				country_id := islands[index].Country_Id
+				if country_id == "United_States" {
+					country_id = islands[index].Parent_Id
+				}
+				country, err := triposo.GetLocation(country_id)
+				res := new(PlaceChannel)
+				res.Places = *country
+				res.Index = index
+				res.Error = err
+				islandParentChannel <- *res
+			}(i)
+		}
+	}()
+
+
+	for i := 0; i < len(cities); i++ {
+		select{
+		case res := <- cityParentChannel:
+			if res.Error != nil {
+				response.WriteErrorResponse(w, res.Error)
+				return
+			}
+			cities[res.Index].Country_Name = res.Places.([]triposo.Place)[0].Name
+			if cities[res.Index].Country_Id == "United_States" {
+				cities[res.Index].Country_Name = "United States"
+			}
+			cities[res.Index].Parent_Name = res.Places.([]triposo.Place)[0].Name 
+		}
+	}
+
+	for i := 0; i < len(islands); i++ {
+		select{
+		case res := <- islandParentChannel:
+			if res.Error != nil {
+				response.WriteErrorResponse(w, res.Error)
+				return
+			}
+			islands[res.Index].Country_Name = res.Places.([]triposo.Place)[0].Name
+			if islands[res.Index].Country_Id == "United_States" {
+				islands[res.Index].Country_Name = "United States"
+			}
+			islands[res.Index].Parent_Name = res.Places.([]triposo.Place)[0].Name 
+		}
+	}
+
 	homeData := map[string]interface{}{
 		"popular_cities": cities,
 
 		"popular_islands": islands,
-
-		"popular_countries": countries,
-
-		"national_parks": national_parks,
 	}
 
 	response.Write(w, homeData, http.StatusOK)

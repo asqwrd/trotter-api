@@ -4,42 +4,47 @@ import (
 	"github.com/asqwrd/trotter-api/triposo"
 )
 
+//Trip type for trips response
 type Trip struct {
 	Image        string        `json:"image" firestore:"image"`
 	Name         string        `json:"name" firestore:"name"`
 	Group        []string      `json:"group" firestore:"group"`
-	ItineraryId  string        `json:"itinerary_id" firestore:"itinerary_id"`
-	OwnerId      string        `json:"owner_id" firestore:"owner_id"`
+	ItineraryID  string        `json:"itinerary_id" firestore:"itinerary_id"`
+	OwnerID      string        `json:"owner_id" firestore:"owner_id"`
 	ID           string        `json:"id" firestore:"id"`
 	Color        string        `json:"color" firestore:"color"`
 	Destinations []Destination `json:"destinations" firestore:"destinations"`
 }
 
+// TripRes Struct for post
 type TripRes struct {
 	Trip         Trip
 	Destinations []Destination
 }
 
+// Destination struct
 type Destination struct {
 	Accommodation   Accommodation    `json:"accomodation" firestore:"accomodation"`
 	Transportation  Transportation   `json:"transportation" firestore:"transportation"`
 	Location        triposo.Location `json:"location" firestore:"location"`
-	DestinationId   string           `json:"destination_id" firestore:"destination_id"`
+	DestinationID   string           `json:"destination_id" firestore:"destination_id"`
 	DestinationName string           `json:"destination_name" firestore:"destination_name"`
 	Level           string           `json:"level" firestore:"level"`
-	CountryId       string           `json:"country_id" firestore:"country_id"`
+	CountryID       string           `json:"country_id" firestore:"country_id"`
 	CountryName     string           `json:"country_name" firestore:"country_name"`
 	StartDate       int              `json:"start_date" firestore:"start_date"`
 	EndDate         int              `json:"end_date" firestore:"end_date"`
 	ID              string           `json:"id" firestore:"id"`
 }
 
+// DestinationChannel for routines
 type DestinationChannel struct {
 	Destinations []Destination
 	Index        int
 	Error        error
 }
 
+// Accommodation type for trip response
 type Accommodation struct {
 	Type           string        `json:"type" firestore:"type"`
 	Source         string        `json:"source" firestore:"source"`
@@ -54,7 +59,7 @@ type Accommodation struct {
 	Lon            string        `json:"lon" firestore:"lon"`
 	CheckinDate    string        `json:"checkin_date" firestore:"checkin_date"`
 	CheckoutDate   string        `json:"checkout_date" firestore:"checkout_date"`
-	TimeZoneId     string        `json:"time_zone_id" firestore:"time_zone_id"`
+	TimeZoneID     string        `json:"time_zone_id" firestore:"time_zone_id"`
 	Price          string        `json:"price" firestore:"price"`
 	Currency       string        `json:"currency" firestore:"currency"`
 	NumberOfRooms  string        `json:"number_of_rooms" firestore:"number_of_rooms"`
@@ -98,10 +103,10 @@ type Stop struct {
 	DestinationLon       string `json:"destination_lon,omitempty" firestore:"destination_lon"`
 
 	DepartureDatetime   string `json:"departure_datetime,omitempty" firestore:"departure_datetime"`
-	DepartureTimeZoneId string `json:"departure_time_zone_id,omitempty" firestore:"departure_time_zone_id"`
+	DepartureTimeZoneID string `json:"departure_time_zone_id,omitempty" firestore:"departure_time_zone_id"`
 
 	ArrivalDatetime   string `json:"arrival_datetime,omitempty" firestore:"arrival_datetime"`
-	ArrivalTimeZoneId string `json:"arrival_time_zone_id,omitempty" firestore:"arrival_time_zone_id"`
+	ArrivalTimeZoneID string `json:"arrival_time_zone_id,omitempty" firestore:"arrival_time_zone_id"`
 	ConfirmationNo    string `json:"confirmation_no,omitempty" firestore:"confirmation_no"`
 	NumberOfPax       string `json:"number_of_pax,omitempty" firestore:"number_of_pax"`
 	TicketNumber      string `json:"ticket_number,omitempty" firestore:"ticket_number"`

@@ -245,7 +245,7 @@ func GetTrip(w http.ResponseWriter, r *http.Request) {
 	} else if len(colors.LightMuted) > 0 {
 		trip.Color = colors.LightMuted
 	} else if len(colors.DarkVibrant) > 0 {
-		trip.Color = colors.DarkVibrant
+		trip.Color = colors.DarkVibrant 
 	} else if len(colors.DarkMuted) > 0 {
 		trip.Color = colors.DarkMuted
 	}
@@ -272,5 +272,99 @@ func GetTrip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Write(w, tripData, http.StatusOK)
+	return
+}
+
+
+// AddDestination function 
+func AddDestination(w http.ResponseWriter, r *http.Request) {
+	tripID := mux.Vars(r)["tripId"]
+	exists := false
+	decoder := json.NewDecoder(r.Body)
+	destinationChannel := make(chan firestore.DocumentRef)
+	var destination Destination
+	err := decoder.Decode(&destination)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	//Check Destination
+	iter := client.Collection("trips").Doc(tripID).Collection("destinations").Where("destination_id", "==", destination.DestinationID).Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			break
+		}
+		if doc.Exists() == true {
+			exists = true;
+			break;
+		}
+	}
+
+	//Adding destinations
+	if exists == true {
+		response.Write(w, map[string]interface{}{
+			"exists": true,
+			"message": "This destination already exists for this trip",
+		}, http.StatusConflict)	
+		return
+	}	
+	go func(tripId string, destination Destination){
+		destDoc, _, errCreate := client.Collection("trips").Doc(tripId).Collection("destinations").Add(ctx, destination)
+		if errCreate != nil {
+			// Handle any errors in an appropriate way, such as returning them.
+			fmt.Println(errCreate)
+			response.WriteErrorResponse(w, errCreate)
+		}
+
+		_, err2 := client.Collection("trips").Doc(tripId).Collection("destinations").Doc(destDoc.ID).Set(ctx, map[string]interface{}{
+			"id": destDoc.ID,
+		},firestore.MergeAll)
+		if err2 != nil {
+			// Handle any errors in an appropriate way, such as returning them.
+			response.WriteErrorResponse(w, err2)
+		}
+		destinationChannel <- *destDoc
+	}(tripID, destination)
+
+	var dest firestore.DocumentRef
+	for i:=0; i < 1; i++ {
+		select{
+		case res := <- destinationChannel:
+			dest = res
+		}
+	}
+	
+	
+	
+	destinationData := map[string]interface{}{
+		"destination": dest,
+	}
+
+	response.Write(w, destinationData, http.StatusOK)	
 	return
 }

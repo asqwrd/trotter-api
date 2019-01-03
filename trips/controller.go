@@ -286,8 +286,6 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, err)
 		return
 	}
-	fmt.Println(destination);
-
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
@@ -414,5 +412,43 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Write(w, destinationData, http.StatusOK)	
+	return
+}
+
+// DeleteDestination function 
+func DeleteDestination(w http.ResponseWriter, r *http.Request) {
+	tripID := mux.Vars(r)["tripId"]
+	destinationID := mux.Vars(r)["destinationId"]
+	
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+	
+	_, errDelete := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destinationID).Delete(ctx)
+	if errDelete != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(errDelete)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+	
+	deleteData := map[string]interface{}{
+		"success": true,
+	}
+
+	response.Write(w, deleteData, http.StatusOK)	
 	return
 }

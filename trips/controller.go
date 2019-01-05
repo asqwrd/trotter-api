@@ -274,6 +274,52 @@ func GetTrip(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// UpdateTrip function
+func UpdateTrip(w http.ResponseWriter, r *http.Request) {
+	tripID := mux.Vars(r)["tripId"]
+	decoder := json.NewDecoder(r.Body)
+	var trip map[string]interface{}
+	err := decoder.Decode(&trip)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+	fmt.Println(trip)
+
+	_, err2 := client.Collection("trips").Doc(tripID).Set(ctx, trip,firestore.MergeAll)
+
+	if err2 != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		response.WriteErrorResponse(w, err2)	
+		return
+	}
+
+	tripData := map[string]interface{}{
+		"success": true,
+	}
+
+	response.Write(w, tripData, http.StatusOK)	
+	return
+}
+
 // UpdateDestination function
 func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 	destinationID := mux.Vars(r)["destinationId"]
@@ -419,7 +465,7 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 func DeleteDestination(w http.ResponseWriter, r *http.Request) {
 	tripID := mux.Vars(r)["tripId"]
 	destinationID := mux.Vars(r)["destinationId"]
-	
+
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
 

@@ -70,6 +70,9 @@ var routes = Routes{
 		"DeleteDestination", "DELETE", "/api/trips/delete/{tripId}/destination/{destinationId}", trips.DeleteDestination,
 	},
 	Route{
+		"UpdateTrip", "PUT", "/api/trips/update/trip/{tripId}", trips.UpdateTrip,
+	},
+	Route{
 		"UpdateDestination", "PUT", "/api/trips/update/{tripId}/destination/{destinationId}", trips.UpdateDestination,
 	},
 	Route{

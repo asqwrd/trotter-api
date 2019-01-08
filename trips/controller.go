@@ -113,6 +113,8 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 		"trips": trips,
 	}
 
+	fmt.Print("Got trips");
+
 	response.Write(w, tripsData, http.StatusOK)
 	return
 }
@@ -146,7 +148,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 
-	doc, wr, errCreate := client.Collection("trips").Add(ctx, trip.Trip)
+	doc, _, errCreate := client.Collection("trips").Add(ctx, trip.Trip)
 	if errCreate != nil {
 		// Handle any errors in an appropriate way, such as returning them.
 		fmt.Println(errCreate)
@@ -178,6 +180,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 			if err2 != nil {
 				// Handle any errors in an appropriate way, such as returning them.
 				response.WriteErrorResponse(w, err2)
+				return
 			}
 			destinationChannel <- destDoc.ID
 		}(i, doc.ID)
@@ -190,42 +193,37 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	
-	tripData := map[string]interface{}{
-		"doc": doc,
-		"dest_ids": destIDS,
-		"wr":  wr,
+	id := doc.ID
+	tripData, err := getTrip(id)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
 	}
 
 	response.Write(w, tripData, http.StatusOK)
 	return
 }
 
-// GetTrip function
-func GetTrip(w http.ResponseWriter, r *http.Request) {
-	tripID := mux.Vars(r)["tripId"]
-	//tripChannel := make(chan Trip)
+//Private getTrip funtion
+func getTrip(tripID string) (map[string]interface{}, error){
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
 	fmt.Println("Got Trips")
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
+		return nil, err
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
+		return nil, err
 	}
 
 	defer client.Close()
 
 	snap, err := client.Collection("trips").Doc(tripID).Get(ctx)
 	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
+		return nil, err
 	}
 	var trip Trip
 	snap.DataTo(&trip)
@@ -233,7 +231,7 @@ func GetTrip(w http.ResponseWriter, r *http.Request) {
 
 	colors, err := places.GetColor(trip.Image)
 	if err != nil {
-		response.WriteErrorResponse(w, err);
+		return nil, err
 	}
 	if len(colors.Vibrant) > 0 {
 		trip.Color = colors.Vibrant
@@ -257,19 +255,29 @@ func GetTrip(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
+			return nil, err
 		}
 		var destination Destination
 		doc.DataTo(&destination)
 		dest = append(dest, destination)
 	}
-	
 	tripData := map[string]interface{}{
 		"trip": trip,
 		"destinations": dest,
 	}
+	return tripData, err
+}
 
+// GetTrip function
+func GetTrip(w http.ResponseWriter, r *http.Request) {
+	tripID := mux.Vars(r)["tripId"]
+	//tripChannel := make(chan Trip)
+	tripData, err := getTrip(tripID);
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+	
 	response.Write(w, tripData, http.StatusOK)
 	return
 }
@@ -492,6 +500,89 @@ func DeleteDestination(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	deleteData := map[string]interface{}{
+		"success": true,
+	}
+
+	response.Write(w, deleteData, http.StatusOK)	
+	return
+}
+
+// DeleteTrip function 
+func DeleteTrip(w http.ResponseWriter, r *http.Request) {
+	tripID := mux.Vars(r)["tripId"]
+	var errorChannel = make(chan error)
+	var destDeleteChannel = make(chan interface{})
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	var dest []Destination
+	iter := client.Collection("trips").Doc(tripID).Collection("destinations").Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		var destination Destination
+		doc.DataTo(&destination)
+		dest = append(dest, destination)
+	}
+
+	for i:=0; i < len(dest); i++ {
+		go func(tripID string, destination Destination) {
+			deleteRes, errDelete := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destination.ID).Delete(ctx)
+			if errDelete != nil {
+				// Handle any errors in an appropriate way, such as returning them.
+				fmt.Println(errDelete)
+				errorChannel <- errDelete
+			}
+			destDeleteChannel <- deleteRes
+		}(tripID,dest[i])
+	}
+
+	count := 0
+
+	_, errDelete := client.Collection("trips").Doc(tripID).Delete(ctx)
+	if errDelete != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(errDelete)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	for i:=0; i < len(dest); i++ {
+		select{
+		case <- destDeleteChannel:
+			count = count + 1
+		case err := <- errorChannel:
+			response.WriteErrorResponse(w, err)
+			return
+		}
+	}
+
+	
+	
+	
+	deleteData := map[string]interface{}{
+		"destinations_deleted": count,
 		"success": true,
 	}
 

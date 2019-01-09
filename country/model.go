@@ -155,12 +155,12 @@ type Numbers struct {
 }
 
 type EmergencyNumbers struct {
-	Ambulance                 Numbers  `json:"ambulance"`
-	Dispatch                  Numbers  `json:"dispatch"`
-	Fire                      Numbers  `json:"fire"`
-	Police                    Numbers  `json:"police"`
-	European_emergency_number []string `json:"european_emergency_number,omitempty"`
-	Member112                 bool     `json:"member112,omitempty"`
+	Ambulance                 Numbers  `json:"ambulance" firestore:"ambulance"`
+	Dispatch                  Numbers  `json:"dispatch" firestore:"dispatch"`
+	Fire                      Numbers  `json:"fire" firestore:"fire"`
+	Police                    Numbers  `json:"police" firestore:"police"`
+	European_emergency_number []string `json:"european_emergency_number"`
+	Member112                 bool     `json:"member_112,omitempty" firestore:"member_112"`
 }
 
 func FormatEmergencyNumbers(numbers EmergencyNumbers) (e *EmergencyNumbers) {

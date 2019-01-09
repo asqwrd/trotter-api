@@ -7,6 +7,7 @@ import (
 	"github.com/asqwrd/trotter-api/auth"
 	"github.com/asqwrd/trotter-api/country"
 	"github.com/asqwrd/trotter-api/places"
+	"github.com/asqwrd/trotter-api/trips"
 	"github.com/gorilla/mux"
 )
 
@@ -33,6 +34,12 @@ var routes = Routes{
 		country.GetCountry,
 	},
 	Route{
+		"GetCityState",
+		"GET",
+		"/api/explore/city_states/{countryID}/",
+		country.GetCountry,
+	},
+	Route{
 		"GetCity", "GET", "/api/explore/cities/{cityID}/", places.GetCity,
 	},
 	Route{
@@ -42,13 +49,40 @@ var routes = Routes{
 		"GetHome", "GET", "/api/explore/home/", places.GetHome,
 	},
 	Route{
-		"GetPoi", "GET", "/api/explore/poi/{poiID}", places.GetPoi,
+		"GetPoi", "GET", "/api/explore/poi/{poiID}/", places.GetPoi,
 	},
 	Route{
-		"Search", "GET", "/api/explore/search/{query}", places.Search,
+		"Search", "GET", "/api/search/find/{query}/", places.Search,
 	},
 	Route{
-		"RecentSearch", "GET", "/api/explore/recent_searches", places.RecentSearch,
+		"RecentSearch", "GET", "/api/search/recent/", places.RecentSearch,
+	},
+	Route{
+		"GetPopularLocations", "GET", "/api/trips/popular_locations/", places.GetPopularLocations,
+	},
+	Route{
+		"CreateTrip", "POST", "/api/trips/create/", trips.CreateTrip,
+	},
+	Route{
+		"AddDestination", "POST", "/api/trips/add/{tripId}", trips.AddDestination,
+	},
+	Route{
+		"DeleteDestination", "DELETE", "/api/trips/delete/{tripId}/destination/{destinationId}", trips.DeleteDestination,
+	},
+	Route{
+		"DeleteTrip", "DELETE", "/api/trips/delete/trip/{tripId}", trips.DeleteTrip,
+	},
+	Route{
+		"UpdateTrip", "PUT", "/api/trips/update/trip/{tripId}", trips.UpdateTrip,
+	},
+	Route{
+		"UpdateDestination", "PUT", "/api/trips/update/{tripId}/destination/{destinationId}", trips.UpdateDestination,
+	},
+	Route{
+		"GetTrip", "GET", "/api/trips/get/{tripId}", trips.GetTrip,
+	},
+	Route{
+		"GetTrips", "GET", "/api/trips/all/", trips.GetTrips,
 	},
 }
 

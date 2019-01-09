@@ -44,6 +44,12 @@ type PlaceChannel struct {
 	Error  error
 }
 
+type ColorChannel struct {
+	Colors Colors
+	Index  int
+	Error  error
+}
+
 type InternalPlaceChannel struct {
 	Place triposo.InternalPlace
 	Index int
@@ -129,9 +135,13 @@ func FromTriposoPlace(sp triposo.Place, level string) (p triposo.InternalPlace) 
 	if len(sp.Content.Sections) > 0 {
 		description = strip.StripTags(sp.Content.Sections[0].Body)
 	}
+	if len(level) == 0 {
+		level = sp.Type
+	}
 
 	p = triposo.InternalPlace{
 		Id:                sp.Id,
+		Type:              sp.Type,
 		Image:             image,
 		Images:            sp.Images,
 		Description:       description,
@@ -151,6 +161,7 @@ func FromTriposoPlace(sp triposo.Place, level string) (p triposo.InternalPlace) 
 		Properties:        sp.Properties,
 		Parent_Id:         sp.Parent_Id,
 		Country_Id:        sp.Country_Id,
+		Location_Id:       sp.Location_Id,
 	}
 
 	return p
@@ -196,17 +207,17 @@ func GetColor(url string) (*Colors, error) {
 	for name, swatch := range palette.ExtractAwesome() {
 		switch name {
 		case "Vibrant":
-			colors.Vibrant = swatch.Color.String()
+			colors.Vibrant = swatch.Color.RGBHex()
 		case "Muted":
-			colors.Muted = swatch.Color.String()
+			colors.Muted = swatch.Color.RGBHex()
 		case "LightVibrant":
-			colors.LightVibrant = swatch.Color.String()
+			colors.LightVibrant = swatch.Color.RGBHex()
 		case "LightMuted":
-			colors.LightMuted = swatch.Color.String()
+			colors.LightMuted = swatch.Color.RGBHex()
 		case "DarkVibrant":
-			colors.DarkVibrant = swatch.Color.String()
+			colors.DarkVibrant = swatch.Color.RGBHex()
 		case "DarkMuted":
-			colors.DarkMuted = swatch.Color.String()
+			colors.DarkMuted = swatch.Color.RGBHex()
 		}
 	}
 

@@ -131,7 +131,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		go func(name string) {
 			defer wg.Done()
 
-			triposoRes, err := triposo.GetDestination(country.Id, "20")
+			triposoRes, err := triposo.GetDestination(country.ID, "20")
 			if err != nil {
 				resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 				return
@@ -144,7 +144,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cityData, err := getCityState(country.Id)
+			cityData, err := getCityState(country.ID)
 			if err != nil {
 				resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 				return

@@ -369,9 +369,9 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 	go func(){
 		for i := 0; i < len(cities); i++ {
 			go func(index int) {
-				country_id := cities[index].Country_Id
+				country_id := cities[index].CountryID
 				if country_id == "United_States" {
-					country_id = cities[index].Parent_Id
+					country_id = cities[index].ParentID
 				}
 				country, err := triposo.GetLocation(country_id)
 				res := new(PlaceChannel)
@@ -387,9 +387,9 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 	go func(){
 		for i := 0; i < len(islands); i++ {
 			go func(index int) {
-				country_id := islands[index].Country_Id
+				country_id := islands[index].CountryID
 				if country_id == "United_States" {
-					country_id = islands[index].Parent_Id
+					country_id = islands[index].ParentID
 				}
 				country, err := triposo.GetLocation(country_id)
 				res := new(PlaceChannel)
@@ -409,11 +409,11 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 				response.WriteErrorResponse(w, res.Error)
 				return
 			}
-			cities[res.Index].Country_Name = res.Places.([]triposo.Place)[0].Name
-			if cities[res.Index].Country_Id == "United_States" {
-				cities[res.Index].Country_Name = "United States"
+			cities[res.Index].CountryName = res.Places.([]triposo.Place)[0].Name
+			if cities[res.Index].CountryID == "United_States" {
+				cities[res.Index].CountryName = "United States"
 			}
-			cities[res.Index].Parent_Name = res.Places.([]triposo.Place)[0].Name 
+			cities[res.Index].ParentName = res.Places.([]triposo.Place)[0].Name 
 		}
 	}
 
@@ -424,11 +424,11 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 				response.WriteErrorResponse(w, res.Error)
 				return
 			}
-			islands[res.Index].Country_Name = res.Places.([]triposo.Place)[0].Name
-			if islands[res.Index].Country_Id == "United_States" {
-				islands[res.Index].Country_Name = "United States"
+			islands[res.Index].CountryName = res.Places.([]triposo.Place)[0].Name
+			if islands[res.Index].CountryID == "United_States" {
+				islands[res.Index].CountryName = "United States"
 			}
-			islands[res.Index].Parent_Name = res.Places.([]triposo.Place)[0].Name 
+			islands[res.Index].ParentName = res.Places.([]triposo.Place)[0].Name 
 		}
 	}
 
@@ -443,8 +443,7 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-//POI
-
+//GetPoi func
 func GetPoi(w http.ResponseWriter, r *http.Request) {
 	poiID := mux.Vars(r)["poiID"]
 	poiChannel := make(chan triposo.InternalPlace)
@@ -746,18 +745,18 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		for index := 0; index < len(triposoResults); index++ {
 			go func(index int) {
 				
-				if triposoResults[index].Country_Id == "United_States" {
-					parent, err := triposo.GetLocation(triposoResults[index].Parent_Id)
+				if triposoResults[index].CountryID == "United_States" {
+					parent, err := triposo.GetLocation(triposoResults[index].ParentID)
 					res := new(InternalPlaceChannel)
 					parentParam := *parent
 					res.Place = FromTriposoPlace(parentParam[0], "")
 					res.Index = index
 					res.Error = err
-					triposoResults[index].Country_Name = "United States"
+					triposoResults[index].CountryName = "United States"
 
 					resChannel <- *res
 				} else {
-					parent, err := triposo.GetLocation(triposoResults[index].Country_Id)
+					parent, err := triposo.GetLocation(triposoResults[index].CountryID)
 					res := new(InternalPlaceChannel)
 					parentParam := *parent
 					res.Place = FromTriposoPlace(parentParam[0], "")
@@ -776,9 +775,9 @@ func Search(w http.ResponseWriter, r *http.Request) {
 					response.WriteErrorResponse(w, res.Error)
 					return
 				}
-				triposoResults[res.Index].Parent_Name = res.Place.Name
-				if len(triposoResults[res.Index].Country_Name) == 0 {
-					triposoResults[res.Index].Country_Name = res.Place.Name
+				triposoResults[res.Index].ParentName = res.Place.Name
+				if len(triposoResults[res.Index].CountryName) == 0 {
+					triposoResults[res.Index].CountryName = res.Place.Name
 				}
 			}
 		}
@@ -1013,18 +1012,18 @@ func GetPopularLocations(w http.ResponseWriter, r *http.Request) {
 
 	for index := 0; index < len(triposoResults); index++ {
 		go func(index int) {
-			if triposoResults[index].Country_Id == "United_States" {
-				parent, err := triposo.GetLocation(triposoResults[index].Parent_Id)
+			if triposoResults[index].CountryID == "United_States" {
+				parent, err := triposo.GetLocation(triposoResults[index].ParentID)
 				res := new(InternalPlaceChannel)
 				parentParam := *parent
 				res.Place = FromTriposoPlace(parentParam[0], "")
 				res.Index = index
 				res.Error = err
-				triposoResults[index].Country_Name = "United States"
+				triposoResults[index].CountryName = "United States"
 
 				resChannel <- *res
 			} else {
-				parent, err := triposo.GetLocation(triposoResults[index].Country_Id)
+				parent, err := triposo.GetLocation(triposoResults[index].CountryID)
 				res := new(InternalPlaceChannel)
 				parentParam := *parent
 				res.Place = FromTriposoPlace(parentParam[0], "")
@@ -1043,9 +1042,9 @@ func GetPopularLocations(w http.ResponseWriter, r *http.Request) {
 				response.WriteErrorResponse(w, res.Error)
 				return
 			}
-			triposoResults[res.Index].Parent_Name = res.Place.Name
-			if len(triposoResults[res.Index].Country_Name) == 0 {
-				triposoResults[res.Index].Country_Name = res.Place.Name
+			triposoResults[res.Index].ParentName = res.Place.Name
+			if len(triposoResults[res.Index].CountryName) == 0 {
+				triposoResults[res.Index].CountryName = res.Place.Name
 			}
 		}
 	}

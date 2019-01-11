@@ -140,33 +140,34 @@ func FromTriposoPlace(sp triposo.Place, level string) (p triposo.InternalPlace) 
 	}
 
 	p = triposo.InternalPlace{
-		Id:                sp.Id,
-		Type:              sp.Type,
-		Image:             image,
-		Images:            sp.Images,
-		Description:       description,
-		Description_short: sp.Snippet,
-		Name:              sp.Name,
-		Level:             level,
-		Location:          triposo.Location{Lat: sp.Coordinates.Latitude, Lng: sp.Coordinates.Longitude},
-		Best_for:          sp.Best_for,
-		Price_tier:        sp.Price_tier,
-		Facebook_id:       sp.Facebook_id,
-		Foursquare_id:     sp.Foursquare_id,
-		Tripadvisor_id:    sp.Tripadvisor_id,
-		Google_place_id:   sp.Google_place_id,
-		Booking_info:      sp.Booking_info,
-		Score:             sp.Score,
-		Opening_hours:     sp.Opening_hours,
-		Properties:        sp.Properties,
-		Parent_Id:         sp.Parent_Id,
-		Country_Id:        sp.Country_Id,
-		Location_Id:       sp.Location_Id,
+		ID:                	sp.ID,
+		Type:              	sp.Type,
+		Image:             	image,
+		Images:            	sp.Images,
+		Description:       	description,
+		DescriptionShort:		sp.Snippet,
+		Name:              	sp.Name,
+		Level:             	level,
+		Location:          	triposo.Location{Lat: sp.Coordinates.Latitude, Lng: sp.Coordinates.Longitude},
+		BestFor:          	sp.BestFor,
+		PriceTier:        	sp.PriceTier,
+		FacebookID:       	sp.FacebookID,
+		FoursquareID:     	sp.FoursquareID,
+		TripadvisorID:    	sp.TripadvisorID,
+		GooglePlaceID:   		sp.GooglePlaceID,
+		BookingInfo:      	sp.BookingInfo,
+		Score:             	sp.Score,
+		OpeningHours:     	sp.OpeningHours,
+		Properties:        	sp.Properties,
+		ParentID:         	sp.ParentID,
+		CountryID:        	sp.CountryID,
+		LocationID:       	sp.LocationID,
 	}
 
 	return p
 }
 
+//FromTriposoPlaces func
 func FromTriposoPlaces(sourcePlaces []triposo.Place, level string) (internalPlaces []triposo.InternalPlace) {
 	internalPlaces = []triposo.InternalPlace{}
 	for _, sourcePlace := range sourcePlaces {

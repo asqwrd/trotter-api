@@ -42,46 +42,52 @@ type ImageSizes struct {
 	Medium MediumSize `json:"medium"`
 }
 
+//Image struct
 type Image struct {
-	Owner_url string     `json:"owner_url"`
-	Sizes     ImageSizes `json:"sizes"`
+	OwnerURL string     `json:"owner_url"`
+	Sizes    ImageSizes `json:"sizes"`
 }
 
+//Place struct
 type Place struct {
-	Name            string        `json:"name"`
-	Id              string        `json:"id"`
-	Type            string        `json:"type"`
-	Coordinates     Coordinates   `json:"coordinates"`
-	Content         Content       `json:"content"`
-	Images          []Image       `json:"images"`
-	Snippet         string        `json:"snippet"`
-	Score           float32       `json:"score"`
-	Location_Id     string        `json:"location_id"`
-	Facebook_id     string        `json:"facebook_id"`
-	Foursquare_id   string        `json:"foursquare_id"`
-	Google_place_id string        `json:"google_place_id"`
-	Tripadvisor_id  string        `json:"tripadvisor_id"`
-	Price_tier      int           `json:"price_tier"`
-	Booking_info    *Booking_info `json:"booking_info,omitempty"`
-	Best_for        []BestFor     `json:"best_for,omitempty"`
-	Intro           string        `json:"intro"`
-	Opening_hours   *OpeningHours `json:"opening_hours,omitempty"`
-	Properties      []Property    `json:"properties,omitempty"`
-	Parent_Id       string        `json:"parent_id,omitempty"`
-	Country_Id      string        `json:"country_id,omitempty"`
+	Name          string        `json:"name"`
+	ID            string        `json:"id"`
+	Type          string        `json:"type"`
+	Coordinates   Coordinates   `json:"coordinates"`
+	Content       Content       `json:"content"`
+	Images        []Image       `json:"images"`
+	Snippet       string        `json:"snippet"`
+	Score         float32       `json:"score"`
+	LocationID    string        `json:"location_id"`
+	FacebookID    string        `json:"facebook_id"`
+	FoursquareID  string        `json:"foursquare_id"`
+	GooglePlaceID string        `json:"google_place_id"`
+	TripadvisorID string        `json:"tripadvisor_id"`
+	PriceTier     int           `json:"price_tier"`
+	BookingInfo   *BookingInfo  `json:"booking_info,omitempty"`
+	BestFor       []BestFor     `json:"best_for,omitempty"`
+	Intro         string        `json:"intro"`
+	OpeningHours  *OpeningHours `json:"opening_hours,omitempty"`
+	Properties    []Property    `json:"properties,omitempty"`
+	ParentID      string        `json:"parent_id,omitempty"`
+	CountryID     string        `json:"country_id,omitempty"`
 }
 
+//BestFor struct
 type BestFor struct {
-	Label      string `json:"label"`
-	Name       string `json:"name"`
-	Short_name string `json:"short_name"`
-	Snippet    string `json:"snippet"`
+	Label     string `json:"label"`
+	Name      string `json:"name"`
+	ShortName string `json:"short_name"`
+	Snippet   string `json:"snippet"`
 }
 
+//OpeningHours struct
 type OpeningHours struct {
-	Days *TimeRangesByDay `json:"days,omitempty"`
+	Days    *TimeRangesByDay `json:"days,omitempty"`
+	OpenNow bool             `json:"open_now" firestore:"open_now"`
 }
 
+//TimeRangesByDay struct
 type TimeRangesByDay struct {
 	Mon []TimeRange `json:"mon"`
 	Tue []TimeRange `json:"tue"`
@@ -92,16 +98,19 @@ type TimeRangesByDay struct {
 	Sun []TimeRange `json:"sun"`
 }
 
+//TimeRange struct
 type TimeRange struct {
 	End   DayTime `json:"end"`
 	Start DayTime `json:"start"`
 }
 
+//DayTime struct
 type DayTime struct {
 	Hour   int `json:"hour,omitempty"`
 	Minute int `json:"minute"`
 }
 
+//Property struct
 type Property struct {
 	Ordinal int    `json:"ordinal"`
 	Value   string `json:"value"`
@@ -109,13 +118,15 @@ type Property struct {
 	Key     string `json:"key"`
 }
 
-type Booking_info struct {
-	Price             *Price `json:"price,omitempty"`
-	Vendor            string `json:"vendor,omitempty"`
-	Vendor_object_id  string `json:"vendor_object_id,omitempty"`
-	Vendor_object_url string `json:"vendor_object_url,omitempty"`
+//BookingInfo struct
+type BookingInfo struct {
+	Price           *Price `json:"price,omitempty"`
+	Vendor          string `json:"vendor,omitempty"`
+	VendorObjectID  string `json:"vendor_object_id,omitempty"`
+	VendorObjectURL string `json:"vendor_object_url,omitempty"`
 }
 
+// Price struct
 type Price struct {
 	Amount   string `json:"amount,omitempty"`
 	Currency string `json:"currency,omitempty"`
@@ -129,31 +140,32 @@ type poiInfoResponse struct {
 	Results []PoiInfo
 }
 
+//InternalPlace struct
 type InternalPlace struct {
-	Id                string        `json:"id"`
-	Type              string        `json:"type"`
-	Image             string        `json:"image,omitempty"`
-	Description       string        `json:"description" json:"intro"`
-	Description_short string        `json:"description_short,omitempty"`
-	Name              string        `json:"name"`
-	Level             string        `json:"level"`
-	Location          Location      `json:"location"`
-	Location_Id       string        `json:"location_id"`
-	Facebook_id       string        `json:"facebook_id,omitempty"`
-	Foursquare_id     string        `json:"foursquare_id,omitempty"`
-	Google_place_id   string        `json:"google_place_id,omitempty"`
-	Tripadvisor_id    string        `json:"tripadvisor_id,omitempty"`
-	Price_tier        int           `json:"price_tier,omitempty"`
-	Booking_info      *Booking_info `json:"booking_info,omitempty"`
-	Best_for          []BestFor     `json:"best_for"`
-	Images            []Image       `json:"images"`
-	Score             float32       `json:"score"`
-	Opening_hours     *OpeningHours `json:"opening_hours,omitempty"`
-	Properties        []Property    `json:"properties"`
-	Parent_Id         string        `json:"parent_id,omitempty"`
-	Parent_Name       string        `json:"parent_name,omitempty"`
-	Country_Name      string        `json:"country_name,omitempty"`
-	Country_Id        string        `json:"country_id,omitempty"`
+	ID               string        `json:"id"`
+	Type             string        `json:"type"`
+	Image            string        `json:"image,omitempty"`
+	Description      string        `json:"description" json:"intro"`
+	DescriptionShort string        `json:"description_short,omitempty"`
+	Name             string        `json:"name"`
+	Level            string        `json:"level"`
+	Location         Location      `json:"location"`
+	LocationID       string        `json:"location_id"`
+	FacebookID       string        `json:"facebook_id,omitempty"`
+	FoursquareID     string        `json:"foursquare_id,omitempty"`
+	GooglePlaceID    string        `json:"google_place_id,omitempty"`
+	TripadvisorID    string        `json:"tripadvisor_id,omitempty"`
+	PriceTier        int           `json:"price_tier,omitempty"`
+	BookingInfo      *BookingInfo  `json:"booking_info,omitempty"`
+	BestFor          []BestFor     `json:"best_for"`
+	Images           []Image       `json:"images"`
+	Score            float32       `json:"score"`
+	OpeningHours     *OpeningHours `json:"opening_hours,omitempty"`
+	Properties       []Property    `json:"properties"`
+	ParentID         string        `json:"parent_id,omitempty"`
+	ParentName       string        `json:"parent_name,omitempty"`
+	CountryName      string        `json:"country_name,omitempty"`
+	CountryID        string        `json:"country_id,omitempty"`
 }
 
 type PoiInfo struct {

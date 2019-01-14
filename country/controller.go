@@ -83,8 +83,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	var country triposo.InternalPlace
 	var countryColor string
-	var popularDestinations []triposo.InternalPlace
-	var city_state interface{}
+	//var popularDestinations []triposo.InternalPlace
+	var cityState interface{}
 
 	var plugs []interface{}
 	var currency interface{}
@@ -126,7 +126,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		Destination block
 		*
 		**/
-	if country.Type == "country" {
+	/*if country.Type == "country" {
 		wg.Add(1)
 		go func(name string) {
 			defer wg.Done()
@@ -138,7 +138,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			}
 			resultsChannel <- map[string]interface{}{"result": *triposoRes, "routine": "destination"}
 		}(country.Name)
-	}
+	}*/
 
 	if country.Type == "city_state" {
 		wg.Add(1)
@@ -338,7 +338,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		for res := range resultsChannel {
 			switch res["routine"] {
 			case "cityData":
-				city_state = res["result"]
+				cityState = res["result"]
 			case "plugs":
 				plugs = res["result"].([]interface{})
 			case "currency":
@@ -377,7 +377,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		}
 		responseData = map[string]interface{}{
 			"city_state":        country,
-			"city_state_places": city_state,
+			"city_state_places": cityState,
 			"plugs":             plugs,
 			"currency":          currency,
 			"color":             countryColor,
@@ -388,8 +388,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	} else {
 		for res := range resultsChannel {
 			switch res["routine"] {
-			case "destination":
-				popularDestinations = places.FromTriposoPlaces(res["result"].(interface{}).([]triposo.Place), "city")
+			/*case "destination":
+				popularDestinations = places.FromTriposoPlaces(res["result"].(interface{}).([]triposo.Place), "city")*/
 			case "plugs":
 				plugs = res["result"].([]interface{})
 			case "currency":
@@ -428,7 +428,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		}
 		responseData = map[string]interface{}{
 			"country":              country,
-			"popular_destinations": popularDestinations,
+			//"popular_destinations": popularDestinations,
 			"plugs":                plugs,
 			"currency":             currency,
 			"color":                countryColor,

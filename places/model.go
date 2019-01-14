@@ -162,6 +162,7 @@ func FromTriposoPlace(sp triposo.Place, level string) (p triposo.InternalPlace) 
 		ParentID:         	sp.ParentID,
 		CountryID:        	sp.CountryID,
 		LocationID:       	sp.LocationID,
+		Trigram:       			sp.Trigram,
 	}
 
 	return p

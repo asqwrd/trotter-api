@@ -69,7 +69,7 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		for place := range placeChannel {
 			go func(place triposo.PoiInfo) {
-				city, err := triposo.GetDestination(place.Id, "2")
+				city, err := triposo.GetDestination(place.ID, "2")
 				if err != nil {
 					errorChannel <- err
 					return
@@ -369,11 +369,11 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 	go func(){
 		for i := 0; i < len(cities); i++ {
 			go func(index int) {
-				country_id := cities[index].CountryID
-				if country_id == "United_States" {
-					country_id = cities[index].ParentID
+				countryID := cities[index].CountryID
+				if countryID == "United_States" {
+					countryID = cities[index].ParentID
 				}
-				country, err := triposo.GetLocation(country_id)
+				country, err := triposo.GetLocation(countryID)
 				res := new(PlaceChannel)
 				res.Places = *country
 				res.Index = index
@@ -622,8 +622,7 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// Search
-
+// Search function
 func Search(w http.ResponseWriter, r *http.Request) {
 	query := mux.Vars(r)["query"]
 	id := r.URL.Query().Get("id")
@@ -649,7 +648,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	defer client.Close()
 
 	if (len(id) == 0) {
-		typeparams := []string{"island", "city", "city_state", "national_park"}
+		typeparams := []string{"island", "city", "city_state", "national_park", "region"}
 		placeChannel := make(chan PlaceChannel)
 
 		var triposoResults []triposo.InternalPlace
@@ -658,6 +657,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		cityChannel := make(chan []triposo.Place)
 		cityStateChannel := make(chan []triposo.Place)
 		parkChannel := make(chan []triposo.Place)
+		regionChannel := make(chan []triposo.Place)
 		//poiChannel := make(chan []triposo.Place)
 		//countryChannel := make(chan []triposo.Place)
 
@@ -709,6 +709,8 @@ func Search(w http.ResponseWriter, r *http.Request) {
 					cityStateChannel <- res.Places.([]triposo.Place)
 				case res.Index == 3:
 					parkChannel <- res.Places.([]triposo.Place)
+				case res.Index == 4:
+					regionChannel <- res.Places.([]triposo.Place)
 				}
 			}
 
@@ -719,7 +721,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 			timeoutChannel <- true
 		}()
 
-		for i := 0; i < 4; i++ {
+		for i := 0; i < 5; i++ {
 			select {
 			case res := <-islandChannel:
 				triposoResults = append(triposoResults, FromTriposoPlaces(res, "island")...)
@@ -729,6 +731,8 @@ func Search(w http.ResponseWriter, r *http.Request) {
 				triposoResults = append(triposoResults, FromTriposoPlaces(res, "city_state")...)
 			case res := <-parkChannel:
 				triposoResults = append(triposoResults, FromTriposoPlaces(res, "national_park")...)
+			case res := <-regionChannel:
+				triposoResults = append(triposoResults, FromTriposoPlaces(res, "region")...)
 			case err := <-errorChannel:
 				response.WriteErrorResponse(w, err)
 				return
@@ -797,6 +801,10 @@ func Search(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
+		sort.Slice(triposoResults, 
+			func(i, j int) bool { 
+				return triposoResults[i].Trigram > triposoResults[j].Trigram 
+			})
 
 		searchData := map[string]interface{}{
 			"results": triposoResults,
@@ -885,10 +893,8 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Recent Search
-
+// RecentSearch function
 func RecentSearch(w http.ResponseWriter, r *http.Request) {
-
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
 	poi := r.URL.Query().Get("poi")

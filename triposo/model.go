@@ -71,6 +71,7 @@ type Place struct {
 	Properties    []Property    `json:"properties,omitempty"`
 	ParentID      string        `json:"parent_id,omitempty"`
 	CountryID     string        `json:"country_id,omitempty"`
+	Trigram       float32       `json:"trigram"`
 }
 
 //BestFor struct
@@ -166,12 +167,14 @@ type InternalPlace struct {
 	ParentName       string        `json:"parent_name,omitempty"`
 	CountryName      string        `json:"country_name,omitempty"`
 	CountryID        string        `json:"country_id,omitempty"`
+	Trigram          float32       `json:"trigram"`
 }
 
+//PoiInfo struct
 type PoiInfo struct {
-	Country_id string  `json:"country_id"`
-	Id         string  `json:"id"`
-	Trigram    float32 `json:"trigram"`
+	CountryID string  `json:"country_id"`
+	ID        string  `json:"id"`
+	Trigram   float32 `json:"trigram"`
 }
 
 type TriposoChannel struct {

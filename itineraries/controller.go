@@ -5,9 +5,9 @@ import (
 	//"time"
 	"fmt"
 	"net/http" //"net/url"
-	//"github.com/asqwrd/trotter-api/triposo"
+	"github.com/asqwrd/trotter-api/triposo"
 	firebase "firebase.google.com/go" 
-	//"github.com/asqwrd/trotter-api/places"
+	"github.com/asqwrd/trotter-api/places"
 	//"cloud.google.com/go/firestore"
 	"github.com/asqwrd/trotter-api/response" 
 	"github.com/gorilla/mux"
@@ -114,6 +114,8 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 func getItinerary(itineraryID string) (map[string]interface{}, error){
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
+	errorChannel := make(chan error)
+	destinationChannel := make(chan map[string]interface{})
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
 		return nil, err
@@ -132,25 +134,26 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 	}
 	var itinerary Itinerary
 	snap.DataTo(&itinerary)
-	
 
-	/*colors, err := places.GetColor(itinerary.Image)
-	if err != nil {
-		return nil, err
-	}
-	if len(colors.Vibrant) > 0 {
-		trip.Color = colors.Vibrant
-	} else if len(colors.Muted) > 0 {
-		trip.Color = colors.Muted
-	} else if len(colors.LightVibrant) > 0 {
-		trip.Color = colors.LightVibrant
-	} else if len(colors.LightMuted) > 0 {
-		trip.Color = colors.LightMuted
-	} else if len(colors.DarkVibrant) > 0 {
-		trip.Color = colors.DarkVibrant 
-	} else if len(colors.DarkMuted) > 0 {
-		trip.Color = colors.DarkMuted
-	}*/
+	go func(id string){
+		parent, err := triposo.GetLocation(id)
+		if err != nil {
+			errorChannel <- err
+		}
+		parentParam := *parent
+		destination := places.FromTriposoPlace(parentParam[0],parentParam[0].Type);
+		colors, err := places.GetColor(destination.Image)
+		if err != nil {
+			errorChannel <- err
+		}
+
+		destinationChannel <- map[string]interface{}{
+			"colors": colors,
+			"destination": destination,
+		}
+		
+
+	}(itinerary.Destination)
 	
 	var days []Day
 	iter := client.Collection("itineraries").Doc(itineraryID).Collection("days").Documents(ctx)
@@ -170,7 +173,9 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 				break
 			}
 			i10ItemsDoc.DataTo(&itineraryItem)
-			itineraryItem.Image = itineraryItem.Poi.Images[0].Sizes.Medium.Url
+			if len(itineraryItem.Poi.Images) > 0 {
+				itineraryItem.Image = itineraryItem.Poi.Images[0].Sizes.Medium.Url 
+			}
 			itineraryItems = append(itineraryItems,itineraryItem);
 			
 		}
@@ -179,8 +184,35 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 	}
 	itinerary.Days = days
 
+	var destination triposo.InternalPlace
+	var color string
+	for i := 0; i < 1; i++ {
+		select{
+		case res := <- destinationChannel:
+			destination = res["destination"].(triposo.InternalPlace)
+			colors := res["colors"].(*places.Colors)
+			if len(colors.Vibrant) > 0 {
+				color = colors.Vibrant
+			} else if len(colors.Muted) > 0 {
+				color = colors.Muted
+			} else if len(colors.LightVibrant) > 0 {
+				color = colors.LightVibrant
+			} else if len(colors.LightMuted) > 0 {
+				color = colors.LightMuted
+			} else if len(colors.DarkVibrant) > 0 {
+				color = colors.DarkVibrant 
+			} else if len(colors.DarkMuted) > 0 {
+				color = colors.DarkMuted
+			}
+		case err := <- errorChannel:
+			return nil, err
+		}
+	}
+
 	itineraryData := map[string]interface{}{
 		"itinerary": itinerary,
+		"destination": destination,
+		"color": color,
 	}
 	return itineraryData, err
 }

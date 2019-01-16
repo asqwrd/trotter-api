@@ -36,12 +36,13 @@ type ItineraryItem struct {
 	Poi         triposo.Place `json:"poi" firestore:"poi"`
 	Title       string        `json:"title" firestore:"title"`
 	Time        Time          `json:"time" firestore:"time"`
+	Image       string        `json:"image" firestore:"image"`
 }
 
 //Time struct
 type Time struct {
 	Unit  string `json:"unit" firestore:"unit"`
-	value string `json:"value" firestore:"value"`
+	Value string `json:"value" firestore:"value"`
 }
 
 // DaysChannel for routines

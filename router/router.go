@@ -88,6 +88,9 @@ var routes = Routes{
 	Route{
 		"GetItineraries", "GET", "/api/itineraries/all/", itineraries.GetItineraries,
 	},
+	Route{
+		"GetItinerary", "GET", "/api/itineraries/get/{itineraryId}", itineraries.GetItinerary,
+	},
 }
 
 // NewRouter configures a new router to the API

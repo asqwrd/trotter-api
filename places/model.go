@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	_ "image/gif"
+	"strings"
 	_ "image/jpeg"
 	_ "image/png"
 	"net/http"
@@ -13,7 +14,11 @@ import (
 	"github.com/asqwrd/trotter-api/triposo"
 	"github.com/generaltso/vibrant"
 	"github.com/grokify/html-strip-tags-go"
+	"googlemaps.github.io/maps"
 )
+
+var GoogleApi = "AIzaSyDjkQw21rnh9QfJIh2YD-Fl4NEteIBn7L8"
+
 
 // Place represents the normalized + filtered data for a sygic.Place
 type Place struct {
@@ -120,6 +125,94 @@ func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 		Original_name: sp.Original_name,
 		Location:      sp.Location,
 		Bounding_box:  sp.Bounding_box,
+	}
+
+	return p
+}
+
+func FromGooglePlace(sp maps.PlaceDetailsResult, level string) (p triposo.InternalPlace) {
+	length := len(sp.Photos)
+	var image = ""
+	if length > 0 {
+		image = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference="+sp.Photos[0].PhotoReference+"&key="+GoogleApi
+	}
+	var images []triposo.Image
+
+	for  i := 0; i < len(sp.Photos); i++ {
+		images = append(images,triposo.Image{
+			Sizes:	triposo.ImageSizes{
+				Medium: triposo.MediumSize{
+					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference="+sp.Photos[i].PhotoReference+"&key="+GoogleApi,
+				},
+			},
+		})
+	}
+	description := ""
+	if len(sp.AdrAddress) > 0 {
+		description = strip.StripTags(sp.AdrAddress)
+	}
+	if len(level) == 0 {
+		level = "poi"
+	}
+
+	var hours string
+	var openNow bool
+	if sp.OpeningHours !=nil && sp.OpeningHours.WeekdayText != nil{
+		hours = strings.Join(sp.OpeningHours.WeekdayText,"\n");
+
+	}
+
+	if sp.OpeningHours !=nil && sp.OpeningHours.OpenNow != nil{
+		openNow = *sp.OpeningHours.OpenNow
+	}
+
+
+	var properties  = []triposo.Property{
+		triposo.Property{
+			Ordinal: 0,
+			Value: sp.FormattedAddress,
+			Name: "Address",
+			Key: "address",
+		},
+	}
+
+	if len(sp.InternationalPhoneNumber) > 0 {
+		properties = append(properties, triposo.Property{
+			Ordinal: 1,
+			Value: sp.InternationalPhoneNumber,
+			Name: "Phone",
+			Key: "phone",
+		},)
+	}
+
+	if len(hours) > 0 {
+		properties = append(properties, triposo.Property{
+			Ordinal: 1,
+			Value: hours,
+			Name: "Hours",
+			Key: "hours",
+		},)
+	}
+
+	var vicinity = ""
+	if len(sp.Vicinity) > 0 {
+		vicinity = "Near " + sp.Vicinity
+	}
+	
+
+	p = triposo.InternalPlace{
+		ID:                	sp.PlaceID,
+		Type:              	level,
+		Image:             	image,
+		Images:            	images,
+		Description:       	description,
+		DescriptionShort:		vicinity,
+		Name:              	sp.Name,
+		Level:             	level,
+		Location:          	triposo.Location{Lat: sp.Geometry.Location.Lat, Lng: sp.Geometry.Location.Lng},
+		Score:             	sp.Rating * 2,
+		OpeningHours:     	&triposo.OpeningHours{OpenNow: openNow},
+		Properties:        	properties,
 	}
 
 	return p

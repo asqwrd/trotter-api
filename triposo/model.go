@@ -13,13 +13,13 @@ type placesResponse struct {
 }
 
 type Location struct {
-	Lat float32 `json:"lat"`
-	Lng float32 `json:"lng"`
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
 }
 
 type Coordinates struct {
-	Latitude  float32 `json:"latitude"`
-	Longitude float32 `json:"longitude"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
 
 type Object struct {
@@ -72,6 +72,7 @@ type Place struct {
 	ParentID      string        `json:"parent_id,omitempty"`
 	CountryID     string        `json:"country_id,omitempty"`
 	Trigram       float32       `json:"trigram"`
+	GooglePlace   bool          `json:"google_place" firestore:"googe_place"`
 }
 
 //BestFor struct
@@ -168,6 +169,7 @@ type InternalPlace struct {
 	CountryName      string        `json:"country_name,omitempty"`
 	CountryID        string        `json:"country_id,omitempty"`
 	Trigram          float32       `json:"trigram"`
+	GooglePlace      *bool         `json:"google_place" firestore:"googe_place"`
 }
 
 //PoiInfo struct

@@ -18,7 +18,14 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"googlemaps.github.io/maps"
 )
+
+
+func initGoogle() (*maps.Client, error){
+	googleClient, err := maps.NewClient(maps.WithAPIKey(GoogleApi)) 
+	return googleClient, err
+}
 
 func initializeQueryParams(level string) *url.Values {
 	qp := &url.Values{}
@@ -446,38 +453,79 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 //GetPoi func
 func GetPoi(w http.ResponseWriter, r *http.Request) {
 	poiID := mux.Vars(r)["poiID"]
+	googlePlace := r.URL.Query().Get("googlePlace")
+	locationId := r.URL.Query().Get("locationId")
 	poiChannel := make(chan triposo.InternalPlace)
 	colorChannel := make(chan Colors)
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
 	var poiColor string
 	var poi *triposo.InternalPlace
+	ctx := context.Background()
 
-	go func() {
-		poi, err := triposo.GetPoi(poiID)
-		if err != nil {
-			errorChannel <- err
-			return
-		}
-		poiParam := *poi
-		poiRes := FromTriposoPlace(poiParam[0], "poi")
 
-		go func(image string) {
-			if len(image) == 0 {
-				var colors Colors
-				colors.Vibrant = "#c27949"
-				colorChannel <- colors
-			} else {
-				colors, err := GetColor(image)
-				if err != nil {
-					errorChannel <- err
-				}
-				colorChannel <- *colors
+	if googlePlace == "true" {
+		go func() {
+			googleClient, err := initGoogle()
+			if err != nil  {
+				errorChannel <- err
 			}
-		}(poiRes.Image)
-		poiChannel <- poiRes
+			r := &maps.PlaceDetailsRequest{
+				PlaceID:      poiID,
+			}
 
-	}()
+			place,err := googleClient.PlaceDetails(ctx,r)
+			if err != nil {
+				errorChannel <- err
+			}
+			photo := "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference="+place.Photos[0].PhotoReference+"&key="+GoogleApi
+			go func(image string) {
+				if len(image) == 0 {
+					var colors Colors
+					colors.Vibrant = "#c27949"
+					colorChannel <- colors
+				} else {
+					colors, err := GetColor(image)
+					if err != nil {
+						errorChannel <- err
+					}
+					colorChannel <- *colors
+				}
+			}(photo)
+			//poiChannel <- poiRes
+			poiChannel <- FromGooglePlace(place, "poi")
+			
+		}()
+
+		
+	} else {
+		go func() {
+			poi, err := triposo.GetPoi(poiID)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+			poiParam := *poi
+			poiRes := FromTriposoPlace(poiParam[0], "poi")
+	
+			go func(image string) {
+				if len(image) == 0 {
+					var colors Colors
+					colors.Vibrant = "#c27949"
+					colorChannel <- colors
+				} else {
+					colors, err := GetColor(image)
+					if err != nil {
+						errorChannel <- err
+					}
+					colorChannel <- *colors
+				}
+			}(poiRes.Image)
+			poiChannel <- poiRes
+	
+		}()
+	}
+	
 
 	go func() {
 		time.Sleep(10 * time.Second)
@@ -488,6 +536,9 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 		select {
 		case poiRes := <-poiChannel:
 			poi = &poiRes
+			if googlePlace == "true" {
+				poi.LocationID = locationId
+			}
 		case color := <-colorChannel:
 			if len(color.Vibrant) > 0 {
 				poiColor = color.Vibrant

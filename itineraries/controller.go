@@ -2,13 +2,14 @@ package itineraries
 
 import (
 	//"encoding/json" //"sort"
-	//"time"
+	"encoding/json"
 	"fmt"
+	"time"
 	"net/http" //"net/url"
 	"github.com/asqwrd/trotter-api/triposo"
 	firebase "firebase.google.com/go" 
 	"github.com/asqwrd/trotter-api/places"
-	//"cloud.google.com/go/firestore"
+	"cloud.google.com/go/firestore"
 	"github.com/asqwrd/trotter-api/response" 
 	"github.com/gorilla/mux"
 	"golang.org/x/net/context"
@@ -39,7 +40,7 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 
-	iter := client.Collection("itineraries").Documents(ctx)
+	iter := client.Collection("itineraries").Where("public", "==", true).Documents(ctx)
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
@@ -227,6 +228,111 @@ func GetItinerary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	response.Write(w, itineraryData, http.StatusOK)
+	return
+}
+
+//CreateItinerary func
+func CreateItinerary(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var itinerary ItineraryRes
+	dayChannel := make(chan string)
+	err := decoder.Decode(&itinerary)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	doc, _, errCreate := client.Collection("itineraries").Add(ctx, itinerary.Itinerary)
+	if errCreate != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(errCreate)
+		response.WriteErrorResponse(w, errCreate)
+	}
+
+	_, err2 := client.Collection("itineraries").Doc(doc.ID).Set(ctx, map[string]interface{}{
+		"id": doc.ID,
+		"public": false,
+	},firestore.MergeAll)
+	if err2 != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		response.WriteErrorResponse(w, err2)
+	}
+
+	_, errTrip := client.Collection("trips").Doc(itinerary.Itinerary.TripID).Collection("destinations").Doc(itinerary.TripDestinationID).Set(ctx, map[string]interface{}{
+		"itinerary_id": doc.ID,
+	},firestore.MergeAll) 
+	if errTrip != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		response.WriteErrorResponse(w, err2)
+	}
+
+	//Adding days
+	var daysCount = 0
+	
+	endtm := time.Unix(itinerary.Itinerary.EndDate, 0)
+	starttm := time.Unix(itinerary.Itinerary.StartDate, 0)
+
+	diff := endtm.Sub(starttm)
+	daysCount = int(diff.Hours()/24) + 1 //include first day
+
+
+	for i:=0; i < daysCount; i++ {
+		go func(index int, itineraryID string){
+			id := fmt.Sprintf("day_%d", index)
+			_, errCreate := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Set(ctx, map[string]interface{}{
+				"day": index, 
+				"id": id,
+			})
+			if errCreate != nil {
+				// Handle any errors in an appropriate way, such as returning them.
+				fmt.Println(errCreate)
+				response.WriteErrorResponse(w, errCreate)
+			}
+
+			/*var itineraryItem ItineraryItem
+
+			_, _, err2 := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Collection("itinerary_items").Add(ctx, itineraryItem)
+			if err2 != nil {
+				// Handle any errors in an appropriate way, such as returning them.
+				response.WriteErrorResponse(w, err2)
+				return
+			}*/
+
+			dayChannel <- id
+		}(i, doc.ID)
+	}
+	var dayIDS []string
+	for i:=0; i < daysCount; i++ {
+		select{
+		case res := <- dayChannel:
+			dayIDS = append(dayIDS,res)
+		}
+	}
+	
+	id := doc.ID
+	itineraryData := map[string]interface{}{
+		"id": id,
+	}
+
 	response.Write(w, itineraryData, http.StatusOK)
 	return
 }

@@ -14,6 +14,10 @@ type Itinerary struct {
 	DestinationCountry     string   `json:"destination_country" firestore:"destination_country"`
 	DestinationCountryName string   `json:"destination_country_name" firestore:"destination_country_name"`
 	ID                     string   `json:"id" firestore:"id"`
+	Public                 bool     `json:"public" firestore:"public"`
+	StartDate              int64    `json:"start_date" firestore:"start_date"`
+	EndDate                int64    `json:"end_date" firestore:"end_date"`
+	TripID                 string   `json:"trip_id" firestore:"trip_id"`
 }
 
 //Day struct
@@ -26,8 +30,8 @@ type Day struct {
 
 //Location struct
 type Location struct {
-	Latitude  float32 `json:"lat"`
-	Longitude float32 `json:"lng"`
+	Latitude  float64 `json:"lat"`
+	Longitude float64 `json:"lng"`
 }
 
 //ItineraryItem struct
@@ -50,4 +54,10 @@ type DaysChannel struct {
 	Days  []Day
 	Index int
 	Error error
+}
+
+// ItineraryRes Struct for post
+type ItineraryRes struct {
+	Itinerary         Itinerary
+	TripDestinationID string `json:"trip_destination_id" firestore:"trip_destination_id"`
 }

@@ -9,7 +9,6 @@ type Trip struct {
 	Image        string        `json:"image" firestore:"image"`
 	Name         string        `json:"name" firestore:"name"`
 	Group        []string      `json:"group" firestore:"group"`
-	ItineraryID  string        `json:"itinerary_id" firestore:"itinerary_id"`
 	OwnerID      string        `json:"owner_id" firestore:"owner_id"`
 	ID           string        `json:"id" firestore:"id"`
 	Color        string        `json:"color" firestore:"color"`
@@ -35,6 +34,7 @@ type Destination struct {
 	StartDate       int              `json:"start_date" firestore:"start_date"`
 	EndDate         int              `json:"end_date" firestore:"end_date"`
 	ID              string           `json:"id" firestore:"id"`
+	ItineraryID     string           `json:"itinerary_id" firestore:"itinerary_id"`
 }
 
 // DestinationChannel for routines

@@ -36,12 +36,12 @@ type Location struct {
 
 //ItineraryItem struct
 type ItineraryItem struct {
-	Description string        `json:"description" firestore:"description"`
-	Poi         triposo.Place `json:"poi" firestore:"poi"`
-	Title       string        `json:"title" firestore:"title"`
-	Time        Time          `json:"time" firestore:"time"`
-	Image       string        `json:"image" firestore:"image"`
-	ID          string        `json:"id" firestore:"id"`
+	Description string         `json:"description" firestore:"description"`
+	Poi         *triposo.Place `json:"poi" firestore:"poi"`
+	Title       string         `json:"title" firestore:"title"`
+	Time        Time           `json:"time" firestore:"time"`
+	Image       string         `json:"image" firestore:"image"`
+	ID          string         `json:"id" firestore:"id"`
 }
 
 //Time struct

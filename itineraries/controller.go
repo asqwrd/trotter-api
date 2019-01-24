@@ -164,7 +164,6 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 			break
 		}
 		var day Day
-		var itineraryItem ItineraryItem
 		var itineraryItems []ItineraryItem
 		doc.DataTo(&day)
 		iterItems := doc.Ref.Collection("itinerary_items").Documents(ctx)
@@ -173,8 +172,10 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 			if err == iterator.Done {
 				break
 			}
+			var itineraryItem ItineraryItem
 			i10ItemsDoc.DataTo(&itineraryItem)
-			if len(itineraryItem.Poi.Images) > 0 {
+			if itineraryItem.Poi != nil && len(itineraryItem.Poi.Images) > 0 {
+				fmt.Println(itineraryItem.ID)
 				itineraryItem.Image = itineraryItem.Poi.Images[0].Sizes.Medium.Url 
 			}
 			itineraryItems = append(itineraryItems,itineraryItem);

@@ -13,13 +13,13 @@ type placesResponse struct {
 }
 
 type Location struct {
-	Lat float64 `json:"lat"`
-	Lng float64 `json:"lng"`
+	Lat float64 `json:"lat" firestore:"lat"`
+	Lng float64 `json:"lng" firestore:"lng"`
 }
 
 type Coordinates struct {
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
+	Latitude  float64 `json:"latitude" firestore:"latitude"`
+	Longitude float64 `json:"longitude" firestore:"longitude"`
 }
 
 type Object struct {
@@ -27,65 +27,65 @@ type Object struct {
 }
 
 type Sections struct {
-	Body string `json:"body"`
+	Body string `json:"body" firestore:"body"`
 }
 
 type Content struct {
-	Sections []Sections `json:"sections"`
+	Sections []Sections `json:"sections" firestore:"sections"`
 }
 
 type MediumSize struct {
-	Url string `json:"url"`
+	Url string `json:"url" firestore:"url"`
 }
 
 type ImageSizes struct {
-	Medium MediumSize `json:"medium"`
+	Medium MediumSize `json:"medium" firestore:"medium"`
 }
 
 //Image struct
 type Image struct {
-	OwnerURL string     `json:"owner_url"`
-	Sizes    ImageSizes `json:"sizes"`
+	OwnerURL string     `json:"owner_url" firestore:"owner_url"`
+	Sizes    ImageSizes `json:"sizes" firestore:"sizes"`
 }
 
 //Place struct
 type Place struct {
-	Name          string        `json:"name"`
-	ID            string        `json:"id"`
-	Type          string        `json:"type"`
-	Coordinates   Coordinates   `json:"coordinates"`
-	Content       Content       `json:"content"`
-	Images        []Image       `json:"images"`
-	Snippet       string        `json:"snippet"`
-	Score         float32       `json:"score"`
-	LocationID    string        `json:"location_id"`
-	FacebookID    string        `json:"facebook_id"`
-	FoursquareID  string        `json:"foursquare_id"`
-	GooglePlaceID string        `json:"google_place_id"`
-	TripadvisorID string        `json:"tripadvisor_id"`
-	PriceTier     int           `json:"price_tier"`
-	BookingInfo   *BookingInfo  `json:"booking_info,omitempty"`
-	BestFor       []BestFor     `json:"best_for,omitempty"`
-	Intro         string        `json:"intro"`
-	OpeningHours  *OpeningHours `json:"opening_hours,omitempty"`
-	Properties    []Property    `json:"properties,omitempty"`
-	ParentID      string        `json:"parent_id,omitempty"`
-	CountryID     string        `json:"country_id,omitempty"`
-	Trigram       float32       `json:"trigram"`
+	Name          string        `json:"name" firestore:"name"`
+	ID            string        `json:"id" firestore:"id"`
+	Type          string        `json:"type" firestore:"type"`
+	Coordinates   Coordinates   `json:"coordinates" firestore:"coordinates"`
+	Content       Content       `json:"content" firestore:"content"`
+	Images        []Image       `json:"images" firestore:"images"`
+	Snippet       string        `json:"snippet" firestore:"snippet"`
+	Score         float32       `json:"score" firestore:"score"`
+	LocationID    string        `json:"location_id" firestore:"location_id"`
+	FacebookID    string        `json:"facebook_id" firestore:"facebook_id"`
+	FoursquareID  string        `json:"foursquare_id" firestore:"foursquare_id"`
+	GooglePlaceID string        `json:"google_place_id" firestore:"google_place_id"`
+	TripadvisorID string        `json:"tripadvisor_id" firestore:"tripadvisor_id"`
+	PriceTier     int           `json:"price_tier" firestore:"price_tier"`
+	BookingInfo   *BookingInfo  `json:"booking_info,omitempty" firestore:"booking_info"`
+	BestFor       []BestFor     `json:"best_for,omitempty" firestore:"best_for"`
+	Intro         string        `json:"intro" firestore:"intro"`
+	OpeningHours  *OpeningHours `json:"opening_hours,omitempty" firestore:"opening_hours"`
+	Properties    []Property    `json:"properties,omitempty" firestore:"properties"`
+	ParentID      string        `json:"parent_id,omitempty" firestore:"parent_id"`
+	CountryID     string        `json:"country_id,omitempty" firestore:"country_id"`
+	Trigram       float32       `json:"trigram" firestore:"trigram"`
 	GooglePlace   bool          `json:"google_place" firestore:"googe_place"`
 }
 
 //BestFor struct
 type BestFor struct {
-	Label     string `json:"label"`
-	Name      string `json:"name"`
-	ShortName string `json:"short_name"`
-	Snippet   string `json:"snippet"`
+	Label     string `json:"label" firestore:"label"`
+	Name      string `json:"name" firestore:"name"`
+	ShortName string `json:"short_name" firestore:"short_name"`
+	Snippet   string `json:"snippet" firestore:"snippet"`
 }
 
 //OpeningHours struct
 type OpeningHours struct {
-	Days    *TimeRangesByDay `json:"days,omitempty"`
+	Days    *TimeRangesByDay `json:"days,omitempty" firestore:"days,omitempty"`
 	OpenNow bool             `json:"open_now" firestore:"open_now"`
 }
 
@@ -114,10 +114,10 @@ type DayTime struct {
 
 //Property struct
 type Property struct {
-	Ordinal int    `json:"ordinal"`
-	Value   string `json:"value"`
-	Name    string `json:"name"`
-	Key     string `json:"key"`
+	Ordinal int    `json:"ordinal" firestore:"ordinal"`
+	Value   string `json:"value" firestore:"value"`
+	Name    string `json:"name" firestore:"name"`
+	Key     string `json:"key" firestore:"key"`
 }
 
 //BookingInfo struct

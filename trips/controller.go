@@ -2,14 +2,16 @@ package trips
 
 import (
 	"encoding/json" //"sort"
-	//"time"
+	"time"
 	"fmt"
 	"net/http" //"net/url"
 	//"github.com/asqwrd/trotter-api/triposo"
 	firebase "firebase.google.com/go"
 	"github.com/asqwrd/trotter-api/places" 
-	"cloud.google.com/go/firestore"
+	"cloud.google.com/go/firestore" 
 	"github.com/asqwrd/trotter-api/response"
+	"github.com/asqwrd/trotter-api/itineraries"
+	"github.com/asqwrd/trotter-api/types/trips"
 	"github.com/gorilla/mux"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
@@ -21,9 +23,9 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
-	var trips []Trip
+	var trips []triptypes.Trip
 	colorChannel := make(chan places.ColorChannel)
-	destinationChannel := make(chan DestinationChannel)
+	destinationChannel := make(chan triptypes.DestinationChannel)
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
@@ -49,12 +51,13 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 			response.WriteErrorResponse(w, err)
 			return
 		}
-		var trip Trip
+		var trip triptypes.Trip
 		doc.DataTo(&trip)
 		trips = append(trips, trip)
 	}
 	for i := 0; i < len(trips); i++ {
 		go func(index int) {
+
 			colors, err := places.GetColor(trips[index].Image)
 				if err != nil {
 					response.WriteErrorResponse(w, err);
@@ -67,7 +70,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 				
 		}(i)
 		go func(index int){
-			var dest []Destination
+			var dest []triptypes.Destination
 			iter := client.Collection("trips").Doc(trips[index].ID).Collection("destinations").Documents(ctx)
 			for {
 				doc, err := iter.Next()
@@ -78,11 +81,11 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 					response.WriteErrorResponse(w, err)
 					return
 				}
-				var destination Destination
+				var destination triptypes.Destination
 				doc.DataTo(&destination)
 				dest = append(dest, destination)
 			}
-			res := new(DestinationChannel)
+			res := new(triptypes.DestinationChannel)
 			res.Destinations = dest
 			res.Index = index
 			destinationChannel <- *res
@@ -122,7 +125,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 // CreateTrip function
 func CreateTrip(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	var trip TripRes
+	var trip triptypes.TripRes
 	destinationChannel := make(chan string)
 	err := decoder.Decode(&trip)
 	if err != nil {
@@ -225,7 +228,7 @@ func getTrip(tripID string) (map[string]interface{}, error){
 	if err != nil {
 		return nil, err
 	}
-	var trip Trip
+	var trip triptypes.Trip
 	snap.DataTo(&trip)
 	
 
@@ -247,7 +250,7 @@ func getTrip(tripID string) (map[string]interface{}, error){
 		trip.Color = colors.DarkMuted
 	}
 
-	var dest []Destination
+	var dest []triptypes.Destination
 	iter := client.Collection("trips").Doc(tripID).Collection("destinations").Documents(ctx)
 	for {
 		doc, err := iter.Next()
@@ -257,7 +260,7 @@ func getTrip(tripID string) (map[string]interface{}, error){
 		if err != nil {
 			return nil, err
 		}
-		var destination Destination
+		var destination triptypes.Destination
 		doc.DataTo(&destination)
 		dest = append(dest, destination)
 	}
@@ -366,6 +369,111 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, err2)	
 		return
 	}
+	 itineraryID := destination["itinerary_id"].(string)
+	if len(itineraryID) > 0 {
+		_,errUpdateI10 := client.Collection("itineraries").Doc(itineraryID).Set(ctx,map[string]interface{}{
+			"end_date": destination["end_date"],
+			"start_date": destination["start_date"],
+		},firestore.MergeAll)
+
+		if errUpdateI10 != nil {
+			response.WriteErrorResponse(w, err2)	
+			return
+		}
+		var daysCount = 0	
+		endtm := time.Unix(int64(destination["end_date"].(float64)), 0)
+		starttm := time.Unix(int64(destination["start_date"].(float64)), 0)
+
+		diff := endtm.Sub(starttm)
+		daysCount = int(diff.Hours()/24) + 1 //include first day
+		var itinerariesItems []itineraries.ItineraryItem
+		var days []itineraries.Day
+		iter := client.Collection("itineraries").Doc(itineraryID).Collection("days").OrderBy("day", firestore.Asc).Documents(ctx)
+		for {
+			dayDoc, err := iter.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				response.WriteErrorResponse(w, err)
+				break
+			}
+			var day itineraries.Day
+			dayDoc.DataTo(&day)
+			days = append(days, day)
+		}
+		if daysCount < len(days) {
+			daysRemaining := days[0:daysCount]
+			numRemoved := len(days) - len(daysRemaining)
+			daysRemoved := days[len(days) - numRemoved:]
+			for i := 0; i < len(daysRemoved); i++ {
+				id := daysRemoved[i].ID
+				itemsItr := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Collection("itinerary_items").Documents(ctx)
+				for {
+					doc, err := itemsItr.Next()
+					if err == iterator.Done {
+						break
+					}
+					if err != nil {
+						response.WriteErrorResponse(w, err)
+						break
+					}
+					var itineraryItem itineraries.ItineraryItem
+					doc.DataTo(&itineraryItem)
+					itinerariesItems = append(itinerariesItems, itineraryItem)
+					_, errItems := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Collection("itinerary_items").Doc(itineraryItem.ID).Delete(ctx)
+					if errItems != nil {
+						response.WriteErrorResponse(w, errItems)
+						break
+					}
+
+				}
+
+				_, errDays := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Delete(ctx)
+				if errDays != nil {
+					response.WriteErrorResponse(w, errDays)
+					break
+				}
+
+			}
+			
+			if len(itinerariesItems) > 0 {
+				id := daysRemaining[len(daysRemaining)-1].ID
+				for i:=0; i < len(itinerariesItems); i++ {
+					_, errAdd := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Collection("itinerary_items").Doc(itinerariesItems[i].ID).Set(ctx,itinerariesItems[i])
+					if errAdd != nil {
+						fmt.Println(errAdd)
+						//response.WriteErrorResponse(w, errAdd)
+						break
+					}
+				}
+			}
+
+		} else if daysCount > len(days) {
+			lastIndex := len(days)
+			daysAdded := daysCount - len(days)
+			for i:=0; i < daysAdded; i++ {
+				daydoc, _, errCreate := client.Collection("itineraries").Doc(itineraryID).Collection("days").Add(ctx, map[string]interface{}{
+					"day": lastIndex + i,
+				})
+				if errCreate != nil {
+					// Handle any errors in an appropriate way, such as returning them.
+					fmt.Println(errCreate)
+					response.WriteErrorResponse(w, errCreate)
+				}
+	
+				_, errCrUp := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(daydoc.ID).Set(ctx, map[string]interface{}{
+					"id": daydoc.ID,
+				},firestore.MergeAll)
+				if errCrUp != nil {
+					// Handle any errors in an appropriate way, such as returning them.
+					fmt.Println(errCrUp)
+					response.WriteErrorResponse(w, errCrUp)
+				}
+			}
+		}
+		
+	}
 
 	destinationData := map[string]interface{}{
 		"success": true,
@@ -382,7 +490,7 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 	exists := false
 	decoder := json.NewDecoder(r.Body)
 	destinationChannel := make(chan firestore.DocumentRef)
-	var destination Destination
+	var destination triptypes.Destination
 	err := decoder.Decode(&destination)
 	if err != nil {
 		fmt.Println(err)
@@ -433,7 +541,7 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 		}, http.StatusConflict)	
 		return
 	}	
-	go func(tripID string, destination Destination){
+	go func(tripID string, destination triptypes.Destination){
 		destDoc, _, errCreate := client.Collection("trips").Doc(tripID).Collection("destinations").Add(ctx, destination)
 		if errCreate != nil {
 			// Handle any errors in an appropriate way, such as returning them.
@@ -530,7 +638,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 
-	var dest []Destination
+	var dest []triptypes.Destination
 	iter := client.Collection("trips").Doc(tripID).Collection("destinations").Documents(ctx)
 	for {
 		doc, err := iter.Next()
@@ -541,13 +649,13 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 			response.WriteErrorResponse(w, err)
 			return
 		}
-		var destination Destination
+		var destination triptypes.Destination
 		doc.DataTo(&destination)
 		dest = append(dest, destination)
 	}
 
 	for i:=0; i < len(dest); i++ {
-		go func(tripID string, destination Destination) {
+		go func(tripID string, destination triptypes.Destination) {
 			deleteRes, errDelete := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destination.ID).Delete(ctx)
 			if errDelete != nil {
 				// Handle any errors in an appropriate way, such as returning them.

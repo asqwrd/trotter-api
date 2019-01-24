@@ -157,7 +157,7 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 	}(itinerary.Destination)
 	
 	var days []Day
-	iter := client.Collection("itineraries").Doc(itineraryID).Collection("days").Documents(ctx)
+	iter := client.Collection("itineraries").Doc(itineraryID).Collection("days").OrderBy("day", firestore.Asc).Documents(ctx)
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
@@ -297,10 +297,8 @@ func CreateItinerary(w http.ResponseWriter, r *http.Request) {
 
 	for i:=0; i < daysCount; i++ {
 		go func(index int, itineraryID string){
-			id := fmt.Sprintf("day_%d", index)
-			_, errCreate := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Set(ctx, map[string]interface{}{
-				"day": index, 
-				"id": id,
+			daydoc, _, errCreate := client.Collection("itineraries").Doc(itineraryID).Collection("days").Add(ctx, map[string]interface{}{
+				"day": index,
 			})
 			if errCreate != nil {
 				// Handle any errors in an appropriate way, such as returning them.
@@ -308,6 +306,15 @@ func CreateItinerary(w http.ResponseWriter, r *http.Request) {
 				response.WriteErrorResponse(w, errCreate)
 			}
 
+			_, errCrUp := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(daydoc.ID).Set(ctx, map[string]interface{}{
+				"id": daydoc.ID,
+			},firestore.MergeAll)
+			if errCrUp != nil {
+				// Handle any errors in an appropriate way, such as returning them.
+				fmt.Println(errCrUp)
+				response.WriteErrorResponse(w, errCrUp)
+			}
+			
 			/*var itineraryItem ItineraryItem
 
 			_, _, err2 := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Collection("itinerary_items").Add(ctx, itineraryItem)
@@ -317,7 +324,7 @@ func CreateItinerary(w http.ResponseWriter, r *http.Request) {
 				return
 			}*/
 
-			dayChannel <- id
+			dayChannel <- doc.ID
 		}(i, doc.ID)
 	}
 	var dayIDS []string

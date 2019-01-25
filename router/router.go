@@ -92,6 +92,12 @@ var routes = Routes{
 		"GetItinerary", "GET", "/api/itineraries/get/{itineraryId}", itineraries.GetItinerary,
 	},
 	Route{
+		"GetDay", "GET", "/api/itineraries/get/{itineraryId}/day/{dayId}", itineraries.GetDay,
+	},
+	Route{
+		"AddToDay", "POST", "/api/itineraries/add/{itineraryId}/day/{dayId}", itineraries.AddToDay,
+	},
+	Route{
 		"CreateItinerary", "POST", "/api/itineraries/create", itineraries.CreateItinerary,
 	},
 }

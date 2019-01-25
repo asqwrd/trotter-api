@@ -175,7 +175,6 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 			var itineraryItem ItineraryItem
 			i10ItemsDoc.DataTo(&itineraryItem)
 			if itineraryItem.Poi != nil && len(itineraryItem.Poi.Images) > 0 {
-				fmt.Println(itineraryItem.ID)
 				itineraryItem.Image = itineraryItem.Poi.Images[0].Sizes.Medium.Url 
 			}
 			itineraryItems = append(itineraryItems,itineraryItem);
@@ -231,6 +230,66 @@ func GetItinerary(w http.ResponseWriter, r *http.Request) {
 	
 	response.Write(w, itineraryData, http.StatusOK)
 	return
+}
+
+//GetDay func
+func GetDay(w http.ResponseWriter, r *http.Request) {
+	itineraryID := mux.Vars(r)["itineraryId"]
+	dayID := mux.Vars(r)["dayId"]
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+
+	itinerary, err := getItinerary(itineraryID)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	snap, err := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Get(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+	var day Day
+	snap.DataTo(&day)
+	var itineraryItems []ItineraryItem
+	docs := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Documents(ctx)
+	for{
+		i10ItemDocs, err := docs.Next()
+			if err == iterator.Done {
+				break
+			}
+		var itineraryItem ItineraryItem
+		i10ItemDocs.DataTo(&itineraryItem)
+		itineraryItems = append(itineraryItems, itineraryItem)
+	}
+
+	day.ItineraryItems = itineraryItems
+
+	dayData := map[string]interface{}{
+		"day": day,
+		"itinerary": itinerary,
+	}
+
+	response.Write(w, dayData, http.StatusOK)
+	return
+
 }
 
 //CreateItinerary func
@@ -343,4 +402,96 @@ func CreateItinerary(w http.ResponseWriter, r *http.Request) {
 
 	response.Write(w, itineraryData, http.StatusOK)
 	return
+}
+
+//AddToDay func
+func AddToDay(w http.ResponseWriter, r *http.Request) {
+	itineraryID := mux.Vars(r)["itineraryId"]
+	dayID := mux.Vars(r)["dayId"]
+	decoder := json.NewDecoder(r.Body)
+	var itineraryItem ItineraryItem
+	err := decoder.Decode(&itineraryItem)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	
+
+	doc, _, err2 := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Add(ctx, itineraryItem)
+	if err2 != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		response.WriteErrorResponse(w, err2)
+		return
+	}
+
+	_, errSet := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(doc.ID).Set(ctx, map[string]interface{}{
+		"id": doc.ID,
+	},firestore.MergeAll)
+	if err != nil {
+		response.WriteErrorResponse(w, errSet)
+		return
+	}
+	
+	itemGet, errGet := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(doc.ID).Get(ctx)
+	if errGet != nil {
+		response.WriteErrorResponse(w, errSet)
+		return
+	}
+	
+	var item ItineraryItem
+	itemGet.DataTo(&item)
+	if item.Poi != nil && len(item.Poi.Images) > 0 {
+		item.Image = item.Poi.Images[0].Sizes.Medium.Url
+	}
+
+	colors, err := places.GetColor(item.Image)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return 
+	}
+
+	var color string
+
+	if len(colors.Vibrant) > 0 {
+		color = colors.Vibrant
+	} else if len(colors.Muted) > 0 {
+		color = colors.Muted
+	} else if len(colors.LightVibrant) > 0 {
+		color = colors.LightVibrant
+	} else if len(colors.LightMuted) > 0 {
+		color = colors.LightMuted
+	} else if len(colors.DarkVibrant) > 0 {
+		color = colors.DarkVibrant 
+	} else if len(colors.DarkMuted) > 0 {
+		color = colors.DarkMuted
+	}
+
+	itineraryData := map[string]interface{}{
+		"itinerary_item": item,
+		"color": color,
+	}
+	
+
+	response.Write(w, itineraryData, http.StatusOK)
+	return
+
 }

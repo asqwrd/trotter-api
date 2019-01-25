@@ -337,6 +337,9 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 	tripID := mux.Vars(r)["tripId"]
 	decoder := json.NewDecoder(r.Body)
 	var destination map[string]interface{}
+	errorChannel := make(chan error)
+	dayIdsChannel := make(chan string)
+
 	err := decoder.Decode(&destination)
 	if err != nil {
 		fmt.Println(err)
@@ -406,37 +409,51 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 			daysRemaining := days[0:daysCount]
 			numRemoved := len(days) - len(daysRemaining)
 			daysRemoved := days[len(days) - numRemoved:]
+			itineraryItemsChannel := make(chan []itineraries.ItineraryItem)
+			var itineraryItemsData []itineraries.ItineraryItem
 			for i := 0; i < len(daysRemoved); i++ {
 				id := daysRemoved[i].ID
-				itemsItr := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Collection("itinerary_items").Documents(ctx)
-				for {
-					doc, err := itemsItr.Next()
-					if err == iterator.Done {
-						break
-					}
-					if err != nil {
-						response.WriteErrorResponse(w, err)
-						break
-					}
-					var itineraryItem itineraries.ItineraryItem
-					doc.DataTo(&itineraryItem)
-					itinerariesItems = append(itinerariesItems, itineraryItem)
-					_, errItems := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Collection("itinerary_items").Doc(itineraryItem.ID).Delete(ctx)
-					if errItems != nil {
-						response.WriteErrorResponse(w, errItems)
-						break
+				go func(id string){
+					itemsItr := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Collection("itinerary_items").Documents(ctx)
+					for {
+						doc, err := itemsItr.Next()
+						if err == iterator.Done {
+							break
+						}
+						if err != nil {
+							errorChannel <- err
+							break
+						}
+						var itineraryItem itineraries.ItineraryItem
+						doc.DataTo(&itineraryItem)
+						itineraryItemsData = append(itineraryItemsData, itineraryItem)
+						_, errItems := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Collection("itinerary_items").Doc(itineraryItem.ID).Delete(ctx)
+						if errItems != nil {
+							errorChannel <- errItems
+							break
+						}
+
 					}
 
-				}
-
-				_, errDays := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Delete(ctx)
-				if errDays != nil {
-					response.WriteErrorResponse(w, errDays)
-					break
-				}
+					_, errDays := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Delete(ctx)
+					if errDays != nil {
+						errorChannel <- errDays
+					}
+					itineraryItemsChannel <- itineraryItemsData
+				}(id)
 
 			}
-			
+
+			for i := 0; i < 1; i++ {
+				select{
+				case res := <- itineraryItemsChannel:
+					itinerariesItems = res
+				case err := <- errorChannel:
+					response.WriteErrorResponse(w, err)
+					return
+				}
+			}
+					
 			if len(itinerariesItems) > 0 {
 				id := daysRemaining[len(daysRemaining)-1].ID
 				for i:=0; i < len(itinerariesItems); i++ {
@@ -453,22 +470,35 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 			lastIndex := len(days)
 			daysAdded := daysCount - len(days)
 			for i:=0; i < daysAdded; i++ {
-				daydoc, _, errCreate := client.Collection("itineraries").Doc(itineraryID).Collection("days").Add(ctx, map[string]interface{}{
-					"day": lastIndex + i,
-				})
-				if errCreate != nil {
-					// Handle any errors in an appropriate way, such as returning them.
-					fmt.Println(errCreate)
-					response.WriteErrorResponse(w, errCreate)
-				}
-	
-				_, errCrUp := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(daydoc.ID).Set(ctx, map[string]interface{}{
-					"id": daydoc.ID,
-				},firestore.MergeAll)
-				if errCrUp != nil {
-					// Handle any errors in an appropriate way, such as returning them.
-					fmt.Println(errCrUp)
-					response.WriteErrorResponse(w, errCrUp)
+				go func(lastIndex int, i int){
+					daydoc, _, errCreate := client.Collection("itineraries").Doc(itineraryID).Collection("days").Add(ctx, map[string]interface{}{
+						"day": lastIndex + i,
+					})
+					if errCreate != nil {
+						// Handle any errors in an appropriate way, such as returning them.
+						fmt.Println(errCreate)
+						errorChannel <- errCreate
+					}
+		
+					_, errCrUp := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(daydoc.ID).Set(ctx, map[string]interface{}{
+						"id": daydoc.ID,
+					},firestore.MergeAll)
+					if errCrUp != nil {
+						// Handle any errors in an appropriate way, such as returning them.
+						fmt.Println(errCrUp)
+						errorChannel <- errCrUp
+					}
+					dayIdsChannel <- daydoc.ID
+				}(lastIndex, i)
+			}
+			var ids []string
+			for i:=0; i < daysAdded; i++ {
+				select{
+					case res := <- dayIdsChannel:
+						ids = append(ids, res)
+					case err := <- errorChannel:
+						response.WriteErrorResponse(w, err)
+						return
 				}
 			}
 		}

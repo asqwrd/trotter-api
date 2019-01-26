@@ -42,6 +42,7 @@ type ItineraryItem struct {
 	Time        Time           `json:"time" firestore:"time"`
 	Image       string         `json:"image" firestore:"image"`
 	ID          string         `json:"id" firestore:"id"`
+	Color       string         `json:"color" firestore:"color"`
 }
 
 //Time struct

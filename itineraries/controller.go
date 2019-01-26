@@ -237,6 +237,8 @@ func GetDay(w http.ResponseWriter, r *http.Request) {
 	itineraryID := mux.Vars(r)["itineraryId"]
 	dayID := mux.Vars(r)["dayId"]
 
+	errorChannel := make(chan error)
+
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
 
@@ -280,7 +282,46 @@ func GetDay(w http.ResponseWriter, r *http.Request) {
 		itineraryItems = append(itineraryItems, itineraryItem)
 	}
 
-	day.ItineraryItems = itineraryItems
+	var itineraryItemsChannel = make(chan ItineraryItem)
+	for i := 0; i < len(itineraryItems); i++ {
+		go func(item ItineraryItem){
+			if item.Poi != nil && len(item.Poi.Images) > 0 {
+				item.Image = item.Poi.Images[0].Sizes.Medium.Url
+			
+
+				colors, err := places.GetColor(item.Image)
+				if err != nil {
+					errorChannel <- err
+					return 
+				}
+
+				if len(colors.Vibrant) > 0 {
+					item.Color = colors.Vibrant
+				} else if len(colors.Muted) > 0 {
+					item.Color = colors.Muted
+				} else if len(colors.LightVibrant) > 0 {
+					item.Color = colors.LightVibrant
+				} else if len(colors.LightMuted) > 0 {
+					item.Color = colors.LightMuted
+				} else if len(colors.DarkVibrant) > 0 {
+					item.Color = colors.DarkVibrant 
+				} else if len(colors.DarkMuted) > 0 {
+					item.Color = colors.DarkMuted
+				}
+			}
+			itineraryItemsChannel <- item
+		}(itineraryItems[i])
+	}
+
+	for i:=0; i < len(itineraryItems); i++ {
+		select{
+		case item := <- itineraryItemsChannel:
+			day.ItineraryItems = append(day.ItineraryItems, item)
+		case err := <- errorChannel:
+			response.WriteErrorResponse(w, err)
+			return
+		}
+	}
 
 	dayData := map[string]interface{}{
 		"day": day,
@@ -469,25 +510,23 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 		return 
 	}
 
-	var color string
 
 	if len(colors.Vibrant) > 0 {
-		color = colors.Vibrant
+		item.Color = colors.Vibrant
 	} else if len(colors.Muted) > 0 {
-		color = colors.Muted
+		item.Color = colors.Muted
 	} else if len(colors.LightVibrant) > 0 {
-		color = colors.LightVibrant
+		item.Color = colors.LightVibrant
 	} else if len(colors.LightMuted) > 0 {
-		color = colors.LightMuted
+		item.Color = colors.LightMuted
 	} else if len(colors.DarkVibrant) > 0 {
-		color = colors.DarkVibrant 
+		item.Color = colors.DarkVibrant 
 	} else if len(colors.DarkMuted) > 0 {
-		color = colors.DarkMuted
+		item.Color = colors.DarkMuted
 	}
 
 	itineraryData := map[string]interface{}{
 		"itinerary_item": item,
-		"color": color,
 	}
 	
 

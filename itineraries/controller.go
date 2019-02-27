@@ -268,7 +268,7 @@ func GetDay(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, err)
 		return
 	}
-	var day Day
+	day := Day{ItineraryItems: []ItineraryItem{}}
 	snap.DataTo(&day)
 	var itineraryItems []ItineraryItem
 	docs := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Documents(ctx)
@@ -312,6 +312,7 @@ func GetDay(w http.ResponseWriter, r *http.Request) {
 			itineraryItemsChannel <- item
 		}(itineraryItems[i])
 	}
+
 
 	for i:=0; i < len(itineraryItems); i++ {
 		select{

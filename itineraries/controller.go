@@ -498,33 +498,36 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, errSet)
 		return
 	}
-	
 	var item ItineraryItem
 	itemGet.DataTo(&item)
 	if item.Poi != nil && len(item.Poi.Images) > 0 {
 		item.Image = item.Poi.Images[0].Sizes.Medium.Url
+	
+
+		colors, err := places.GetColor(item.Image)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return 
+		}
+
+
+		if len(colors.Vibrant) > 0 {
+			item.Color = colors.Vibrant
+		} else if len(colors.Muted) > 0 {
+			item.Color = colors.Muted
+		} else if len(colors.LightVibrant) > 0 {
+			item.Color = colors.LightVibrant
+		} else if len(colors.LightMuted) > 0 {
+			item.Color = colors.LightMuted
+		} else if len(colors.DarkVibrant) > 0 {
+			item.Color = colors.DarkVibrant 
+		} else if len(colors.DarkMuted) > 0 {
+			item.Color = colors.DarkMuted
+		}
 	}
 
-	colors, err := places.GetColor(item.Image)
-	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return 
-	}
+	fmt.Println("added")
 
-
-	if len(colors.Vibrant) > 0 {
-		item.Color = colors.Vibrant
-	} else if len(colors.Muted) > 0 {
-		item.Color = colors.Muted
-	} else if len(colors.LightVibrant) > 0 {
-		item.Color = colors.LightVibrant
-	} else if len(colors.LightMuted) > 0 {
-		item.Color = colors.LightMuted
-	} else if len(colors.DarkVibrant) > 0 {
-		item.Color = colors.DarkVibrant 
-	} else if len(colors.DarkMuted) > 0 {
-		item.Color = colors.DarkMuted
-	}
 
 	itineraryData := map[string]interface{}{
 		"itinerary_item": item,

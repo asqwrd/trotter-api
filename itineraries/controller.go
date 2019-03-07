@@ -270,6 +270,7 @@ func GetDay(w http.ResponseWriter, r *http.Request) {
 	}
 	day := Day{ItineraryItems: []ItineraryItem{}}
 	snap.DataTo(&day)
+	day.ItineraryItems = []ItineraryItem{}
 	var itineraryItems []ItineraryItem
 	docs := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Documents(ctx)
 	for{

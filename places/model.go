@@ -99,6 +99,11 @@ func FromSygicPlace(sp *sygic.Place) (p *Place) {
 
 	return p
 }
+//Init Google Maps Client
+func InitGoogle() (*maps.Client, error){
+	googleClient, err := maps.NewClient(maps.WithAPIKey(GoogleApi)) 
+	return googleClient, err
+}
 
 func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 	re := regexp.MustCompile(`\{[^\]]*?\}`)

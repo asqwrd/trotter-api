@@ -166,6 +166,7 @@ type InternalPlace struct {
 	Name             string        `json:"name" firestore:"name"`
 	Level            string        `json:"level" firestore:"level"`
 	Location         Location      `json:"location" firestore:"location"`
+	Coordinates      *Coordinates  `json:"coordinates" firestore:"coordinates"`
 	LocationID       string        `json:"location_id" firestore:"location_id"`
 	FacebookID       string        `json:"facebook_id,omitempty" firestore:"facebook_id,omitempty"`
 	FoursquareID     string        `json:"foursquare_id,omitempty" firestore:"foursquare_id,omitempty"`

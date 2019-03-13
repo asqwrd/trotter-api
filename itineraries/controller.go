@@ -15,6 +15,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"googlemaps.github.io/maps"
 )
 
 // GetItineraries function
@@ -232,12 +233,77 @@ func GetItinerary(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func optimizeItinerary(itineraryItems []ItineraryItem, matrix maps.DistanceMatrixResponse) ([]ItineraryItem){
+	var rows = matrix.Rows
+	var slice []map[string]interface{}
+	var visited = make(map[string]interface{})
+	
+	for i := 0; i < len(itineraryItems); i++ {
+
+		var colSlice []map[string]interface{}
+		for j := 0; j < len(rows[i].Elements); j++ {
+			colSlice = append(colSlice, map[string]interface{}{
+				"element": rows[i].Elements[j],
+				"item" : itineraryItems[j],
+			})
+		}
+		slice = append(slice, map[string]interface{}{
+			"columns": colSlice,
+			"item" : itineraryItems[i],
+			"index": i,
+		})
+		
+	}
+	var queue []map[string]interface{}
+	queue = append(queue,slice[0])
+	visited[slice[0]["item"].(ItineraryItem).ID] = true
+	var output []ItineraryItem
+	for (len(queue) > 0 ) {
+		var read = queue[0]
+		queue = queue[1:]
+		output = append(output,read["item"].(ItineraryItem))
+		var min int
+		var next map[string]interface{}
+		var nextID string
+		var elements = read["columns"].([]map[string]interface{})
+		var travel *maps.DistanceMatrixElement
+
+		for k := 0; k < len(elements); k++ {
+			var columnDistance = elements[k]["element"].(*maps.DistanceMatrixElement).Distance.Meters
+			var col = elements[k]["item"].(ItineraryItem)
+			if (min == 0  || min > columnDistance) && visited[col.ID] == nil {
+				min = columnDistance
+				nextID = col.ID
+				travel = elements[k]["element"].(*maps.DistanceMatrixElement)
+			}
+		}
+		if visited[nextID] == nil {
+			for i:=0; i < len(slice); i++ {
+				if slice[i]["item"].(ItineraryItem).ID == nextID {
+					var item = slice[i]["item"].(ItineraryItem)
+					item.Travel = *travel
+					next = slice[i]
+					next["item"] = item
+				
+					visited[nextID] = true
+					queue = append(queue,next)
+					break;
+				}
+			}
+		}
+		
+	}
+	return output
+
+}
+
 //GetDay func
 func GetDay(w http.ResponseWriter, r *http.Request) {
 	itineraryID := mux.Vars(r)["itineraryId"]
 	dayID := mux.Vars(r)["dayId"]
 
 	errorChannel := make(chan error)
+	matrixChannel := make(chan maps.DistanceMatrixResponse)
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
@@ -283,42 +349,65 @@ func GetDay(w http.ResponseWriter, r *http.Request) {
 		itineraryItems = append(itineraryItems, itineraryItem)
 	}
 
-	var itineraryItemsChannel = make(chan ItineraryItem)
-	for i := 0; i < len(itineraryItems); i++ {
-		go func(item ItineraryItem){
-			if item.Poi != nil && len(item.Poi.Images) > 0 {
-				item.Image = item.Poi.Images[0].Sizes.Medium.Url
+	googleClient, err := places.InitGoogle()
+	if err != nil  {
+		response.WriteErrorResponse(w, err)
+	}
+
+	go func(itinerary interface{}) {
+		var locations []string
+		locations = append(locations,fmt.Sprintf("%g,%g",itinerary.(Itinerary).Location.Latitude , itinerary.(Itinerary).Location.Longitude))
+		for i:=0; i < len(itineraryItems); i++ {
+			location := fmt.Sprintf("%g,%g", itineraryItems[i].Poi.Location.Lat,itineraryItems[i].Poi.Location.Lng)
+			if(itineraryItems[i].Poi.Coordinates != nil){
+				location = fmt.Sprintf("%g,%g", itineraryItems[i].Poi.Coordinates.Latitude,itineraryItems[i].Poi.Coordinates.Longitude)
+			}
+			locations = append(locations,location);
+			if itineraryItems[i].Poi != nil && len(itineraryItems[i].Poi.Images) > 0 {
+				itineraryItems[i].Image = itineraryItems[i].Poi.Images[0].Sizes.Medium.Url
 			
 
-				colors, err := places.GetColor(item.Image)
+				colors, err := places.GetColor(itineraryItems[i].Image)
 				if err != nil {
 					errorChannel <- err
 					return 
 				}
 
 				if len(colors.Vibrant) > 0 {
-					item.Color = colors.Vibrant
+					itineraryItems[i].Color = colors.Vibrant
 				} else if len(colors.Muted) > 0 {
-					item.Color = colors.Muted
+					itineraryItems[i].Color = colors.Muted
 				} else if len(colors.LightVibrant) > 0 {
-					item.Color = colors.LightVibrant
+					itineraryItems[i].Color = colors.LightVibrant
 				} else if len(colors.LightMuted) > 0 {
-					item.Color = colors.LightMuted
+					itineraryItems[i].Color = colors.LightMuted
 				} else if len(colors.DarkVibrant) > 0 {
-					item.Color = colors.DarkVibrant 
+					itineraryItems[i].Color = colors.DarkVibrant 
 				} else if len(colors.DarkMuted) > 0 {
-					item.Color = colors.DarkMuted
+					itineraryItems[i].Color = colors.DarkMuted
 				}
 			}
-			itineraryItemsChannel <- item
-		}(itineraryItems[i])
-	}
+		}
+		r := &maps.DistanceMatrixRequest{
+			Origins:      locations,
+			Destinations: locations,
+		}
+		matrix,err := googleClient.DistanceMatrix(ctx,r)
+		if err != nil {
+			errorChannel <- err
+		}
 
+		matrixChannel <- *matrix
+		
+	}(itinerary["itinerary"])
 
-	for i:=0; i < len(itineraryItems); i++ {
+	for i:=0; i < 1; i++ {
 		select{
-		case item := <- itineraryItemsChannel:
-			day.ItineraryItems = append(day.ItineraryItems, item)
+		case matrix := <- matrixChannel:
+			var head ItineraryItem
+			itineraryItems = append([]ItineraryItem{head}, itineraryItems...)
+			day.ItineraryItems = optimizeItinerary(itineraryItems,matrix)
+			
 		case err := <- errorChannel:
 			response.WriteErrorResponse(w, err)
 			return

@@ -21,12 +21,6 @@ import (
 	"googlemaps.github.io/maps"
 )
 
-
-func initGoogle() (*maps.Client, error){
-	googleClient, err := maps.NewClient(maps.WithAPIKey(GoogleApi)) 
-	return googleClient, err
-}
-
 func initializeQueryParams(level string) *url.Values {
 	qp := &url.Values{}
 	qp.Set("level", level)
@@ -466,14 +460,13 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 
 	if googlePlace == "true" {
 		go func() {
-			googleClient, err := initGoogle()
+			googleClient, err := InitGoogle()
 			if err != nil  {
 				errorChannel <- err
 			}
 			r := &maps.PlaceDetailsRequest{
 				PlaceID:      poiID,
 			}
-
 			place,err := googleClient.PlaceDetails(ctx,r)
 			if err != nil {
 				errorChannel <- err

@@ -36,6 +36,7 @@ type Destination struct {
 	EndDate         int              `json:"end_date" firestore:"end_date"`
 	ID              string           `json:"id" firestore:"id"`
 	ItineraryID     string           `json:"itinerary_id" firestore:"itinerary_id"`
+	Image           string           `json:"image" firestore:"image"`
 }
 
 // DestinationChannel for routines

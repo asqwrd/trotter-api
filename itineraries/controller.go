@@ -297,8 +297,7 @@ func optimizeItinerary(itineraryItems []ItineraryItem, matrix maps.DistanceMatri
 
 }
 
-//GetDay func
-func GetDay(w http.ResponseWriter, r *http.Request) {
+func getDay(w http.ResponseWriter, r *http.Request, justAdded *string){
 	itineraryID := mux.Vars(r)["itineraryId"]
 	dayID := mux.Vars(r)["dayId"]
 
@@ -417,9 +416,16 @@ func GetDay(w http.ResponseWriter, r *http.Request) {
 	dayData := map[string]interface{}{
 		"day": day,
 		"itinerary": itinerary,
+		"justAdded": justAdded,
 	}
 
 	response.Write(w, dayData, http.StatusOK)
+	return
+}
+
+//GetDay func
+func GetDay(w http.ResponseWriter, r *http.Request) {
+	getDay(w,r,nil)
 	return
 
 }
@@ -506,15 +512,6 @@ func CreateItinerary(w http.ResponseWriter, r *http.Request) {
 				fmt.Println(errCrUp)
 				response.WriteErrorResponse(w, errCrUp)
 			}
-			
-			/*var itineraryItem ItineraryItem
-
-			_, _, err2 := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Collection("itinerary_items").Add(ctx, itineraryItem)
-			if err2 != nil {
-				// Handle any errors in an appropriate way, such as returning them.
-				response.WriteErrorResponse(w, err2)
-				return
-			}*/
 
 			dayChannel <- doc.ID
 		}(i, doc.ID)
@@ -583,48 +580,11 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	itemGet, errGet := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(doc.ID).Get(ctx)
-	if errGet != nil {
-		response.WriteErrorResponse(w, errSet)
-		return
-	}
-	var item ItineraryItem
-	itemGet.DataTo(&item)
-	if item.Poi != nil && len(item.Poi.Images) > 0 {
-		item.Image = item.Poi.Images[0].Sizes.Medium.Url
-	
-
-		colors, err := places.GetColor(item.Image)
-		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return 
-		}
-
-
-		if len(colors.Vibrant) > 0 {
-			item.Color = colors.Vibrant
-		} else if len(colors.Muted) > 0 {
-			item.Color = colors.Muted
-		} else if len(colors.LightVibrant) > 0 {
-			item.Color = colors.LightVibrant
-		} else if len(colors.LightMuted) > 0 {
-			item.Color = colors.LightMuted
-		} else if len(colors.DarkVibrant) > 0 {
-			item.Color = colors.DarkVibrant 
-		} else if len(colors.DarkMuted) > 0 {
-			item.Color = colors.DarkMuted
-		}
-	}
-
 	fmt.Println("added")
 
+	id := &doc.ID
+	getDay(w,r,id)
+	return 
 
-	itineraryData := map[string]interface{}{
-		"itinerary_item": item,
-	}
-	
-
-	response.Write(w, itineraryData, http.StatusOK)
-	return
 
 }

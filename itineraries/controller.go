@@ -430,40 +430,29 @@ func GetDay(w http.ResponseWriter, r *http.Request) {
 
 }
 
-//CreateItinerary func
-func CreateItinerary(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	var itinerary ItineraryRes
+// CreateItineraryHelper function
+func CreateItineraryHelper(tripID string, destinationID string, itinerary Itinerary) (map[string]interface{}, error){
 	dayChannel := make(chan string)
-	err := decoder.Decode(&itinerary)
-	if err != nil {
-		fmt.Println(err)
-		response.WriteErrorResponse(w, err)
-		return
-	}
-
+	errorChannel := make(chan error)
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
+		return nil, err
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
+		return nil, err
 	}
 
 	defer client.Close()
 
-	doc, _, errCreate := client.Collection("itineraries").Add(ctx, itinerary.Itinerary)
+	doc, _, errCreate := client.Collection("itineraries").Add(ctx, itinerary)
 	if errCreate != nil {
 		// Handle any errors in an appropriate way, such as returning them.
-		fmt.Println(errCreate)
-		response.WriteErrorResponse(w, errCreate)
+		return nil, errCreate
 	}
 
 	_, err2 := client.Collection("itineraries").Doc(doc.ID).Set(ctx, map[string]interface{}{
@@ -472,22 +461,22 @@ func CreateItinerary(w http.ResponseWriter, r *http.Request) {
 	},firestore.MergeAll)
 	if err2 != nil {
 		// Handle any errors in an appropriate way, such as returning them.
-		response.WriteErrorResponse(w, err2)
+		return nil, err2
 	}
 
-	_, errTrip := client.Collection("trips").Doc(itinerary.Itinerary.TripID).Collection("destinations").Doc(itinerary.TripDestinationID).Set(ctx, map[string]interface{}{
+	_, errTrip := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destinationID).Set(ctx, map[string]interface{}{
 		"itinerary_id": doc.ID,
 	},firestore.MergeAll) 
 	if errTrip != nil {
 		// Handle any errors in an appropriate way, such as returning them.
-		response.WriteErrorResponse(w, err2)
+		return nil, errTrip
 	}
 
 	//Adding days
 	var daysCount = 0
 	
-	endtm := time.Unix(itinerary.Itinerary.EndDate, 0)
-	starttm := time.Unix(itinerary.Itinerary.StartDate, 0)
+	endtm := time.Unix(itinerary.EndDate, 0)
+	starttm := time.Unix(itinerary.StartDate, 0)
 
 	diff := endtm.Sub(starttm)
 	daysCount = int(diff.Hours()/24) + 1 //include first day
@@ -500,8 +489,7 @@ func CreateItinerary(w http.ResponseWriter, r *http.Request) {
 			})
 			if errCreate != nil {
 				// Handle any errors in an appropriate way, such as returning them.
-				fmt.Println(errCreate)
-				response.WriteErrorResponse(w, errCreate)
+				errorChannel <- errCreate
 			}
 
 			_, errCrUp := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(daydoc.ID).Set(ctx, map[string]interface{}{
@@ -509,8 +497,7 @@ func CreateItinerary(w http.ResponseWriter, r *http.Request) {
 			},firestore.MergeAll)
 			if errCrUp != nil {
 				// Handle any errors in an appropriate way, such as returning them.
-				fmt.Println(errCrUp)
-				response.WriteErrorResponse(w, errCrUp)
+				errorChannel <- errCrUp
 			}
 
 			dayChannel <- doc.ID
@@ -521,14 +508,32 @@ func CreateItinerary(w http.ResponseWriter, r *http.Request) {
 		select{
 		case res := <- dayChannel:
 			dayIDS = append(dayIDS,res)
+		case err := <-errorChannel:
+			return nil, err
 		}
 	}
 	
 	id := doc.ID
-	itineraryData := map[string]interface{}{
+	return map[string]interface{}{
 		"id": id,
+	}, nil
+}
+//CreateItinerary func
+func CreateItinerary(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var itinerary ItineraryRes
+	err := decoder.Decode(&itinerary)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
 	}
 
+	itineraryData, err := CreateItineraryHelper(itinerary.Itinerary.TripID, itinerary.TripDestinationID, itinerary.Itinerary)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
 	response.Write(w, itineraryData, http.StatusOK)
 	return
 }

@@ -170,6 +170,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 
 	for i:=0; i < len(trip.Destinations); i++ {
 		go func(index int, tripID string){
+			
 			destDoc, _, errCreate := client.Collection("trips").Doc(tripID).Collection("destinations").Add(ctx, trip.Destinations[index])
 			if errCreate != nil {
 				// Handle any errors in an appropriate way, such as returning them.
@@ -184,6 +185,22 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 				// Handle any errors in an appropriate way, such as returning them.
 				response.WriteErrorResponse(w, err2)
 				return
+			}
+			var itinerary = itineraries.Itinerary{
+				DestinationCountry: trip.Destinations[index].CountryID,
+				DestinationCountryName: trip.Destinations[index].CountryName,
+				DestinationName: trip.Destinations[index].DestinationName,
+				Destination: trip.Destinations[index].DestinationID,
+				StartDate: trip.Destinations[index].StartDate,
+				EndDate: trip.Destinations[index].EndDate,
+				Name: trip.Trip.Name,
+				Location: itineraries.Location{Latitude: trip.Destinations[index].Location.Lat, Longitude: trip.Destinations[index].Location.Lng},
+				TripID: tripID,
+			}
+
+			_, errDays := itineraries.CreateItineraryHelper(tripID, destDoc.ID, itinerary)
+			if errDays != nil {
+				response.WriteErrorResponse(w, errDays)
 			}
 			destinationChannel <- destDoc.ID
 		}(i, doc.ID)

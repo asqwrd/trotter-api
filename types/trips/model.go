@@ -32,8 +32,8 @@ type Destination struct {
 	Level           string           `json:"level" firestore:"level"`
 	CountryID       string           `json:"country_id" firestore:"country_id"`
 	CountryName     string           `json:"country_name" firestore:"country_name"`
-	StartDate       int              `json:"start_date" firestore:"start_date"`
-	EndDate         int              `json:"end_date" firestore:"end_date"`
+	StartDate       int64            `json:"start_date" firestore:"start_date"`
+	EndDate         int64            `json:"end_date" firestore:"end_date"`
 	ID              string           `json:"id" firestore:"id"`
 	ItineraryID     string           `json:"itinerary_id" firestore:"itinerary_id"`
 	Image           string           `json:"image" firestore:"image"`

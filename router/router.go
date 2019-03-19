@@ -100,6 +100,9 @@ var routes = Routes{
 	Route{
 		"CreateItinerary", "POST", "/api/itineraries/create", itineraries.CreateItinerary,
 	},
+	Route{
+		"DeleteItineraryItem", "DELETE", "/api/itineraries/delete/{itineraryId}/day/{dayId}/place/{placeId}", itineraries.DeleteItineraryItem,
+	},
 }
 
 // NewRouter configures a new router to the API

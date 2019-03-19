@@ -588,3 +588,42 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 
 
 }
+
+// DeleteItineraryItem function 
+func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
+	itineraryID := mux.Vars(r)["itineraryId"]
+	dayID := mux.Vars(r)["dayId"]
+	place := mux.Vars(r)["placeId"]
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+	
+	_, errDelete := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(place).Delete(ctx)
+	if errDelete != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(errDelete)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+	
+	deleteData := map[string]interface{}{
+		"success": true,
+	}
+
+	response.Write(w, deleteData, http.StatusOK)	
+	return
+}

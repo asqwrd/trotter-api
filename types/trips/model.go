@@ -1,6 +1,8 @@
 package triptypes
 
 import (
+	"time"
+
 	"github.com/asqwrd/trotter-api/triposo"
 )
 
@@ -14,6 +16,7 @@ type Trip struct {
 	Color        string        `json:"color" firestore:"color"`
 	Destinations []Destination `json:"destinations" firestore:"destinations"`
 	ItineraryIDS []string      `json:"itinerary_ids" firestore:"itinerary_ids"`
+	UpdateAt     time.Time     `json:"update_at" firestore:"update_at"`
 }
 
 // TripRes Struct for post

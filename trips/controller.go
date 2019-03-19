@@ -160,6 +160,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 
 	_, err2 := client.Collection("trips").Doc(doc.ID).Set(ctx, map[string]interface{}{
 		"id": doc.ID,
+		"updatedAt": firestore.ServerTimestamp,
 	},firestore.MergeAll)
 	if err2 != nil {
 		// Handle any errors in an appropriate way, such as returning them.
@@ -330,8 +331,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
-	fmt.Println(trip)
-
+	trip["updateAt"] = firestore.ServerTimestamp
 	_, err2 := client.Collection("trips").Doc(tripID).Set(ctx, trip,firestore.MergeAll)
 
 	if err2 != nil {

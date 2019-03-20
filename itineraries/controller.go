@@ -11,45 +11,28 @@ import (
 	"github.com/asqwrd/trotter-api/places"
 	"cloud.google.com/go/firestore"
 	"github.com/asqwrd/trotter-api/response" 
+	"github.com/asqwrd/trotter-api/utils" 
 	"github.com/gorilla/mux"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"googlemaps.github.io/maps"
+	"net/url"
+	"strconv"
+
 )
 
-// GetItineraries function
-func GetItineraries(w http.ResponseWriter, r *http.Request) {
-
-	sa := option.WithCredentialsFile("serviceAccountKey.json")
+func collectionHandler(iter *firestore.DocumentIterator, client *firestore.Client) (map[string]interface{}, error){
 	ctx := context.Background()
 	var itineraries []Itinerary
-	//colorChannel := make(chan places.ColorChannel)
 	daysChannel := make(chan DaysChannel)
-
-	app, err := firebase.NewApp(ctx, nil, sa)
-	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
-	}
-
-	client, err := app.Firestore(ctx)
-	if err != nil {
-		response.WriteErrorResponse(w, err)
-		return
-	}
-
-	defer client.Close()
-
-	iter := client.Collection("itineraries").Where("public", "==", true).Documents(ctx)
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
 			break
 		}
 		if err != nil {
-			response.WriteErrorResponse(w, err)
-			return
+			return nil, err
 		}
 		var itinerary Itinerary
 		doc.DataTo(&itinerary)
@@ -59,7 +42,7 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 	for i := 0; i < len(itineraries); i++ {
 		go func(index int) {
 			var days []Day
-			iter := client.Collection("itineraries").Doc(itineraries[index].ID).Collection("days").Documents(ctx)
+			iter := client.Collection("itineraries").Doc(itineraries[index].ID).Collection("days").OrderBy("day",firestore.Asc).Documents(ctx)
 			for {
 				doc, err := iter.Next()
 				if err == iterator.Done {
@@ -67,7 +50,7 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 				}
 				var day Day
 				var itineraryItem ItineraryItem
-				var itineraryItems []ItineraryItem
+				var itineraryItems = make([]ItineraryItem,0)
 				doc.DataTo(&day)
 				iterItems := doc.Ref.Collection("itinerary_items").Documents(ctx)
 				for {
@@ -76,6 +59,9 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 					i10ItemsDoc.DataTo(&itineraryItem)
+					if itineraryItem.Poi != nil && len(itineraryItem.Poi.Images) > 0 {
+						itineraryItem.Image = itineraryItem.Poi.Images[0].Sizes.Medium.Url
+					}
 					itineraryItems = append(itineraryItems,itineraryItem);
 					
 				}
@@ -93,20 +79,84 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 		select {
 		case res := <-daysChannel:
 			if res.Error != nil {
-				response.WriteErrorResponse(w, err)
-				return
+				return nil, res.Error
 			}
 			itineraries[res.Index].Days = res.Days
 		}
 	}
+	
 
 
 
-	tripsData := map[string]interface{}{
+	return map[string]interface{}{
 		"itineraries": itineraries,
+	}, nil
+}
+// GetItineraries function
+func GetItineraries(w http.ResponseWriter, r *http.Request) {
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+	//colorChannel := make(chan places.ColorChannel)
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
+	
+
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
 	}
 
-	fmt.Print("Got Itineraries")
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	itinerariesCollection := client.Collection("itineraries")
+	var queries firestore.Query
+	var itr *firestore.DocumentIterator
+	var public *bool
+	result, errPublic := strconv.ParseBool(q.Get("public"))
+	if errPublic != nil {
+		public = nil
+	}
+	public = &result
+	if len(q.Get("public")) == 0 {
+		public = nil
+	}
+	if public != nil  {
+		queries = itinerariesCollection.Where("public", "==", public)	
+	}
+
+	if len(q.Get("destination")) > 0 {
+		notNil := utils.CheckFirestoreQueryResults(ctx, queries)
+		if notNil ==  true {
+			queries = queries.Where("destination", "==", q.Get("destination"))
+		} else {
+			queries = itinerariesCollection.Where("destination", "==", q.Get("destination"))
+		}
+	}
+
+	notNil := utils.CheckFirestoreQueryResults(ctx, queries)
+
+	if notNil == true {
+		itr = queries.Documents(ctx)
+	} else {
+		itr = itinerariesCollection.Documents(ctx)
+	}
+
+	tripsData,errData := collectionHandler(itr,client)
+	if errData != nil {
+		response.WriteErrorResponse(w, errData)
+	}
+
+	fmt.Print("Got Itineraries\n")
 
 	response.Write(w, tripsData, http.StatusOK)
 	return

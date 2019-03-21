@@ -215,7 +215,7 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 			break
 		}
 		var day Day
-		var itineraryItems []ItineraryItem
+		var itineraryItems = make([]ItineraryItem,0)
 		doc.DataTo(&day)
 		iterItems := doc.Ref.Collection("itinerary_items").Documents(ctx)
 		for {
@@ -385,8 +385,8 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string){
 	}
 	day := Day{ItineraryItems: []ItineraryItem{}}
 	snap.DataTo(&day)
-	day.ItineraryItems = []ItineraryItem{}
-	var itineraryItems []ItineraryItem
+	day.ItineraryItems = make([]ItineraryItem,0)
+	var itineraryItems = make([]ItineraryItem,0)
 	docs := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Documents(ctx)
 	for{
 		i10ItemDocs, err := docs.Next()

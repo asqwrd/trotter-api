@@ -347,7 +347,7 @@ func optimizeItinerary(itineraryItems []ItineraryItem, matrix maps.DistanceMatri
 
 }
 
-func getDay(w http.ResponseWriter, r *http.Request, justAdded *string){
+func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize bool){
 	itineraryID := mux.Vars(r)["itineraryId"]
 	dayID := mux.Vars(r)["dayId"]
 
@@ -403,64 +403,68 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string){
 		response.WriteErrorResponse(w, err)
 	}
 
-	go func(itinerary interface{}) {
-		var locations []string
-		locations = append(locations,fmt.Sprintf("%g,%g",itinerary.(Itinerary).Location.Latitude , itinerary.(Itinerary).Location.Longitude))
-		for i:=0; i < len(itineraryItems); i++ {
-			location := fmt.Sprintf("%g,%g", itineraryItems[i].Poi.Location.Lat,itineraryItems[i].Poi.Location.Lng)
-			if(itineraryItems[i].Poi.Coordinates != nil){
-				location = fmt.Sprintf("%g,%g", itineraryItems[i].Poi.Coordinates.Latitude,itineraryItems[i].Poi.Coordinates.Longitude)
-			}
-			locations = append(locations,location);
-			if itineraryItems[i].Poi != nil && len(itineraryItems[i].Poi.Images) > 0 {
-				itineraryItems[i].Image = itineraryItems[i].Poi.Images[0].Sizes.Medium.Url
-			
-
-				colors, err := places.GetColor(itineraryItems[i].Image)
-				if err != nil {
-					errorChannel <- err
-					return 
+	if optimize == false {
+		go func(itinerary interface{}) {
+			var locations []string
+			locations = append(locations,fmt.Sprintf("%g,%g",itinerary.(Itinerary).Location.Latitude , itinerary.(Itinerary).Location.Longitude))
+			for i:=0; i < len(itineraryItems); i++ {
+				location := fmt.Sprintf("%g,%g", itineraryItems[i].Poi.Location.Lat,itineraryItems[i].Poi.Location.Lng)
+				if(itineraryItems[i].Poi.Coordinates != nil){
+					location = fmt.Sprintf("%g,%g", itineraryItems[i].Poi.Coordinates.Latitude,itineraryItems[i].Poi.Coordinates.Longitude)
 				}
+				locations = append(locations,location);
+				if itineraryItems[i].Poi != nil && len(itineraryItems[i].Poi.Images) > 0 {
+					itineraryItems[i].Image = itineraryItems[i].Poi.Images[0].Sizes.Medium.Url
+				
 
-				if len(colors.Vibrant) > 0 {
-					itineraryItems[i].Color = colors.Vibrant
-				} else if len(colors.Muted) > 0 {
-					itineraryItems[i].Color = colors.Muted
-				} else if len(colors.LightVibrant) > 0 {
-					itineraryItems[i].Color = colors.LightVibrant
-				} else if len(colors.LightMuted) > 0 {
-					itineraryItems[i].Color = colors.LightMuted
-				} else if len(colors.DarkVibrant) > 0 {
-					itineraryItems[i].Color = colors.DarkVibrant 
-				} else if len(colors.DarkMuted) > 0 {
-					itineraryItems[i].Color = colors.DarkMuted
+					colors, err := places.GetColor(itineraryItems[i].Image)
+					if err != nil {
+						errorChannel <- err
+						return 
+					}
+
+					if len(colors.Vibrant) > 0 {
+						itineraryItems[i].Color = colors.Vibrant
+					} else if len(colors.Muted) > 0 {
+						itineraryItems[i].Color = colors.Muted
+					} else if len(colors.LightVibrant) > 0 {
+						itineraryItems[i].Color = colors.LightVibrant
+					} else if len(colors.LightMuted) > 0 {
+						itineraryItems[i].Color = colors.LightMuted
+					} else if len(colors.DarkVibrant) > 0 {
+						itineraryItems[i].Color = colors.DarkVibrant 
+					} else if len(colors.DarkMuted) > 0 {
+						itineraryItems[i].Color = colors.DarkMuted
+					}
 				}
 			}
-		}
-		r := &maps.DistanceMatrixRequest{
-			Origins:      locations,
-			Destinations: locations,
-		}
-		matrix,err := googleClient.DistanceMatrix(ctx,r)
-		if err != nil {
-			errorChannel <- err
-		}
+			r := &maps.DistanceMatrixRequest{
+				Origins:      locations,
+				Destinations: locations,
+			}
+			matrix,err := googleClient.DistanceMatrix(ctx,r)
+			if err != nil {
+				errorChannel <- err
+			}
 
-		matrixChannel <- *matrix
-		
-	}(itinerary["itinerary"])
-
-	for i:=0; i < 1; i++ {
-		select{
-		case matrix := <- matrixChannel:
-			var head ItineraryItem
-			itineraryItems = append([]ItineraryItem{head}, itineraryItems...)
-			day.ItineraryItems = optimizeItinerary(itineraryItems,matrix)
+			matrixChannel <- *matrix
 			
-		case err := <- errorChannel:
-			response.WriteErrorResponse(w, err)
-			return
+			
+		}(itinerary["itinerary"])
+
+		for i:=0; i < 1; i++ {
+			select{
+			case matrix := <- matrixChannel:
+				var head ItineraryItem
+				itineraryItems = append([]ItineraryItem{head}, itineraryItems...)
+				day.ItineraryItems = optimizeItinerary(itineraryItems,matrix)
+			case err := <- errorChannel:
+				response.WriteErrorResponse(w, err)
+				return
+			}
 		}
+	} else {
+		day.ItineraryItems = itineraryItems
 	}
 
 	dayData := map[string]interface{}{
@@ -475,7 +479,8 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string){
 
 //GetDay func
 func GetDay(w http.ResponseWriter, r *http.Request) {
-	getDay(w,r,nil)
+
+	getDay(w,r,nil, false)
 	return
 
 }
@@ -635,10 +640,9 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	fmt.Println("added")
-
 	id := &doc.ID
-	getDay(w,r,id)
+	getDay(w,r,id,true)
+	fmt.Println("added")
 	return 
 
 

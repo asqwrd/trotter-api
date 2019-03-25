@@ -200,6 +200,13 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 
 		cityParam := *city
 		cityRes := FromTriposoPlace(cityParam[0], "city")
+		country, err := triposo.GetLocation(cityRes.CountryID);
+		if err != nil {
+			errorChannel <- err
+		}
+
+		countryParam := *country
+		cityRes.CountryName = countryParam[0].Name
 
 		go func(image string) {
 			if len(image) == 0 {

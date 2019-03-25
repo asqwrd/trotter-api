@@ -340,6 +340,25 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if trip["name"] != nil {
+		iter := client.Collection("itineraries").Where("trip_id", "==", tripID).Documents(ctx)
+		for {
+			doc, err := iter.Next()
+			if err == iterator.Done {
+				break
+			}
+			var itinerary itineraries.Itinerary
+			doc.DataTo(&itinerary)
+			_, err3 := client.Collection("itineraries").Doc(itinerary.ID).Set(ctx, map[string]interface{}{"name":trip["name"],},firestore.MergeAll)
+			if err3 != nil {
+				// Handle any errors in an appropriate way, such as returning them.
+				response.WriteErrorResponse(w, err3)	
+				return
+			}
+		}
+	}
+
+
 	tripData := map[string]interface{}{
 		"success": true,
 	}

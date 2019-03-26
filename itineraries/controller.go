@@ -464,6 +464,32 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 			}
 		}
 	} else {
+		for i:=0; i < len(itineraryItems); i++ {
+			if itineraryItems[i].Poi != nil && len(itineraryItems[i].Poi.Images) > 0 {
+				itineraryItems[i].Image = itineraryItems[i].Poi.Images[0].Sizes.Medium.Url
+			
+
+				colors, err := places.GetColor(itineraryItems[i].Image)
+				if err != nil {
+					errorChannel <- err
+					return 
+				}
+
+				if len(colors.Vibrant) > 0 {
+					itineraryItems[i].Color = colors.Vibrant
+				} else if len(colors.Muted) > 0 {
+					itineraryItems[i].Color = colors.Muted
+				} else if len(colors.LightVibrant) > 0 {
+					itineraryItems[i].Color = colors.LightVibrant
+				} else if len(colors.LightMuted) > 0 {
+					itineraryItems[i].Color = colors.LightMuted
+				} else if len(colors.DarkVibrant) > 0 {
+					itineraryItems[i].Color = colors.DarkVibrant 
+				} else if len(colors.DarkMuted) > 0 {
+					itineraryItems[i].Color = colors.DarkMuted
+				}
+			}
+		}
 		day.ItineraryItems = itineraryItems
 	}
 
@@ -599,6 +625,7 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 	dayID := mux.Vars(r)["dayId"]
 	decoder := json.NewDecoder(r.Body)
 	var itineraryItem ItineraryItem
+	q := r.URL.Query()
 	err := decoder.Decode(&itineraryItem)
 	if err != nil {
 		fmt.Println(err)
@@ -641,7 +668,14 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	id := &doc.ID
-	getDay(w,r,id,true)
+	if q.Get("optimize") == "true" {
+		print("optimize \n")
+		getDay(w,r,id,true)
+	} else {
+		print("full \n")
+		getDay(w,r,id,false)
+	}
+	
 	fmt.Println("added")
 	return 
 

@@ -351,7 +351,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 					response.WriteErrorResponse(w, err)
 					return
 				}
-				rating := float32(ratingRes)
+				rating := float64(ratingRes)
 				safety = Safety{Advice: *FormatSafety(rating), Rating: rating}
 			case "numbers":
 				emergencyNumbers = res["result"].(EmergencyNumbers)
@@ -402,7 +402,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 					response.WriteErrorResponse(w, err)
 					return
 				}
-				rating := float32(ratingRes)
+				rating := float64(ratingRes)
 				safety = Safety{Advice: *FormatSafety(rating), Rating: rating}
 			case "numbers":
 				emergencyNumbers = res["result"].(EmergencyNumbers)

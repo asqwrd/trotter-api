@@ -6,18 +6,12 @@ This repo will act as the backend for trotter. All api will be maintained here
 
 # Prereqs:
 1. Set the environment variables `PORT_TROTTER` to what ever port desired.  We typically use 3002.
-2. Set the environment variable `SYGIC_API_KEY` to the api key for sygic.
 
 # To run:
 
 1. `go run main.go`
 
 API we are using to get Country Info
-
-# Sygic Travel API - For continent, country, city info and media
-
-https://www.sygic.com/developers/sygic-travel/sygic-travel-api/get-started
-Auth-token: FncICCs1xe5u0DSDQCiYT3nDi8k8gaXH32xw0xjG
 
 # Triposo - for city info, tour info
 

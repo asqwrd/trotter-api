@@ -6,6 +6,7 @@ This repo will act as the backend for trotter. All api will be maintained here
 
 # Prereqs:
 1. Set the environment variables `PORT_TROTTER` to what ever port desired.  We typically use 3002.
+  - This link https://www.computerhope.com/issues/ch000549.htm#windows10 shows you how to do it in windows
 
 # To run:
 

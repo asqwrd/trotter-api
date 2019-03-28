@@ -24,7 +24,7 @@ import (
 
 func collectionHandler(iter *firestore.DocumentIterator, client *firestore.Client) (map[string]interface{}, error){
 	ctx := context.Background()
-	var itineraries []Itinerary
+	var itineraries = make([]Itinerary,0)
 	daysChannel := make(chan DaysChannel)
 	for {
 		doc, err := iter.Next()
@@ -121,16 +121,15 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 	itinerariesCollection := client.Collection("itineraries")
 	var queries firestore.Query
 	var itr *firestore.DocumentIterator
-	var public *bool
+	var public bool
 	result, errPublic := strconv.ParseBool(q.Get("public"))
 	if errPublic != nil {
-		public = nil
+		public = true
 	}
-	public = &result
+	public = result
 	if len(q.Get("public")) == 0 {
-		public = nil
-	}
-	if public != nil  {
+		queries = itinerariesCollection.Where("public", "==", true)	
+	} else {
 		queries = itinerariesCollection.Where("public", "==", public)	
 	}
 
@@ -141,6 +140,12 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 		} else {
 			queries = itinerariesCollection.Where("destination", "==", q.Get("destination"))
 		}
+	}
+	if len(q.Get("owner_id")) > 0 {
+		queries = queries.Where("owner_id", "==", q.Get("owner_id"))
+
+	} else {
+		queries = queries.Where("owner_id", "==", "")
 	}
 
 	notNil := utils.CheckFirestoreQueryResults(ctx, queries)

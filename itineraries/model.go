@@ -19,6 +19,7 @@ type Itinerary struct {
 	StartDate              int64    `json:"start_date" firestore:"start_date"`
 	EndDate                int64    `json:"end_date" firestore:"end_date"`
 	TripID                 string   `json:"trip_id" firestore:"trip_id"`
+	OwnerID                string   `json:"owner_id" firestore:"owner_id"`
 }
 
 //Day struct

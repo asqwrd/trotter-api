@@ -16,6 +16,8 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"net/url"
+
 )
 
 // GetTrips function
@@ -23,9 +25,12 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
-	var trips []triptypes.Trip
+	var trips = make([]triptypes.Trip,0)
 	colorChannel := make(chan places.ColorChannel)
 	destinationChannel := make(chan triptypes.DestinationChannel)
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
@@ -41,7 +46,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 
-	iter := client.Collection("trips").Documents(ctx)
+	iter := client.Collection("trips").Where("owner_id", "==",q.Get("owner_id")).Documents(ctx)
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
@@ -150,6 +155,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
+	fmt.Println(trip.Trip.OwnerID)
 
 	doc, _, errCreate := client.Collection("trips").Add(ctx, trip.Trip)
 	if errCreate != nil {
@@ -197,6 +203,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 				Name: trip.Trip.Name,
 				Location: itineraries.Location{Latitude: trip.Destinations[index].Location.Lat, Longitude: trip.Destinations[index].Location.Lng},
 				TripID: tripID,
+				OwnerID: trip.Trip.OwnerID,
 			}
 
 			_, errDays := itineraries.CreateItineraryHelper(tripID, destDoc.ID, itinerary)
@@ -728,8 +735,58 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 				fmt.Println(errDelete)
 				errorChannel <- errDelete
 			}
+			
 			destDeleteChannel <- deleteRes
 		}(tripID,dest[i])
+	}
+
+	iterI10 := client.Collection("itineraries").Where("trip_id", "==", tripID).Documents(ctx)
+	for {
+		doc, err := iterI10.Next()
+		if err == iterator.Done {
+			break
+		}
+		var itinerary itineraries.Itinerary
+		doc.DataTo(&itinerary)
+
+		iterDays := client.Collection("itineraries").Doc(itinerary.ID).Collection("days").Documents(ctx)
+		for {
+			doc, err := iterDays.Next()
+			if err == iterator.Done {
+				break
+			}
+			var day itineraries.Day
+			doc.DataTo(&day)
+
+			iterItems := client.Collection("itineraries").Doc(itinerary.ID).Collection("days").Doc(day.ID).Collection("itinerary_items").Documents(ctx)
+			for {
+				doc, err := iterItems.Next()
+				if err == iterator.Done {
+					break
+				}
+				var item itineraries.ItineraryItem
+				doc.DataTo(&item)
+				_, errItem := client.Collection("itineraries").Doc(itinerary.ID).Collection("days").Doc(day.ID).Collection("itinerary_items").Doc(item.ID).Delete(ctx)
+				if errItem != nil {
+					// Handle any errors in an appropriate way, such as returning them.
+					response.WriteErrorResponse(w, errItem)	
+					return
+				}
+			}
+
+			_, errDay := client.Collection("itineraries").Doc(itinerary.ID).Collection("days").Doc(day.ID).Delete(ctx)
+			if errDay != nil {
+				// Handle any errors in an appropriate way, such as returning them.
+				response.WriteErrorResponse(w, errDay)	
+				return
+			}
+		}
+		_, err3 := client.Collection("itineraries").Doc(itinerary.ID).Delete(ctx)
+		if err3 != nil {
+			// Handle any errors in an appropriate way, such as returning them.
+			response.WriteErrorResponse(w, err3)	
+			return
+		}
 	}
 
 	count := 0

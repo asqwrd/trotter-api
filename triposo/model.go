@@ -13,13 +13,13 @@ type placesResponse struct {
 }
 
 type Location struct {
-	Lat float32 `json:"lat"`
-	Lng float32 `json:"lng"`
+	Lat float64 `json:"lat" firestore:"lat"`
+	Lng float64 `json:"lng" firestore:"lng"`
 }
 
 type Coordinates struct {
-	Latitude  float32 `json:"latitude"`
-	Longitude float32 `json:"longitude"`
+	Latitude  float64 `json:"latitude" firestore:"latitude"`
+	Longitude float64 `json:"longitude" firestore:"longitude"`
 }
 
 type Object struct {
@@ -27,61 +27,83 @@ type Object struct {
 }
 
 type Sections struct {
-	Body string `json:"body"`
+	Body string `json:"body" firestore:"body"`
 }
 
 type Content struct {
-	Sections []Sections `json:"sections"`
+	Sections []Sections `json:"sections" firestore:"sections"`
 }
 
 type MediumSize struct {
-	Url string `json:"url"`
+	Url string `json:"url" firestore:"url"`
 }
 
 type ImageSizes struct {
-	Medium MediumSize `json:"medium"`
+	Medium MediumSize `json:"medium" firestore:"medium"`
 }
 
+//Image struct
 type Image struct {
-	Owner_url string     `json:"owner_url"`
-	Sizes     ImageSizes `json:"sizes"`
+	OwnerURL string     `json:"owner_url" firestore:"owner_url"`
+	Sizes    ImageSizes `json:"sizes" firestore:"sizes"`
 }
 
+//Place struct
 type Place struct {
-	Name            string        `json:"name"`
-	Id              string        `json:"id"`
-	Type            string        `json:"type"`
-	Coordinates     Coordinates   `json:"coordinates"`
-	Content         Content       `json:"content"`
-	Images          []Image       `json:"images"`
-	Snippet         string        `json:"snippet"`
-	Score           float32       `json:"score"`
-	Location_Id     string        `json:"location_id"`
-	Facebook_id     string        `json:"facebook_id"`
-	Foursquare_id   string        `json:"foursquare_id"`
-	Google_place_id string        `json:"google_place_id"`
-	Tripadvisor_id  string        `json:"tripadvisor_id"`
-	Price_tier      int           `json:"price_tier"`
-	Booking_info    *Booking_info `json:"booking_info,omitempty"`
-	Best_for        []BestFor     `json:"best_for,omitempty"`
-	Intro           string        `json:"intro"`
-	Opening_hours   *OpeningHours `json:"opening_hours,omitempty"`
-	Properties      []Property    `json:"properties,omitempty"`
-	Parent_Id       string        `json:"parent_id,omitempty"`
-	Country_Id      string        `json:"country_id,omitempty"`
+	Name          string        `json:"name" firestore:"name"`
+	ID            string        `json:"id" firestore:"id"`
+	Type          string        `json:"type" firestore:"type"`
+	Coordinates   Coordinates   `json:"coordinates" firestore:"coordinates"`
+	Content       Content       `json:"content" firestore:"content"`
+	Images        []Image       `json:"images" firestore:"images"`
+	Snippet       string        `json:"snippet" firestore:"snippet"`
+	Score         float32       `json:"score" firestore:"score"`
+	LocationID    string        `json:"location_id" firestore:"location_id"`
+	FacebookID    string        `json:"facebook_id" firestore:"facebook_id"`
+	FoursquareID  string        `json:"foursquare_id" firestore:"foursquare_id"`
+	GooglePlaceID string        `json:"google_place_id" firestore:"google_place_id"`
+	TripadvisorID string        `json:"tripadvisor_id" firestore:"tripadvisor_id"`
+	PriceTier     int           `json:"price_tier" firestore:"price_tier"`
+	BookingInfo   *BookingInfo  `json:"booking_info,omitempty" firestore:"booking_info"`
+	BestFor       []BestFor     `json:"best_for,omitempty" firestore:"best_for"`
+	Intro         string        `json:"intro" firestore:"intro"`
+	OpeningHours  *OpeningHours `json:"opening_hours,omitempty" firestore:"opening_hours"`
+	Properties    []Property    `json:"properties,omitempty" firestore:"properties"`
+	ParentID      string        `json:"parent_id,omitempty" firestore:"parent_id"`
+	CountryID     string        `json:"country_id,omitempty" firestore:"country_id"`
+	Trigram       float32       `json:"trigram" firestore:"trigram"`
+	GooglePlace   bool          `json:"google_place" firestore:"googe_place"`
+	Tags          []Tags        `json:"tags" firestore:"tags"`
 }
 
-type BestFor struct {
-	Label      string `json:"label"`
+// Tag struct
+type Tag struct {
 	Name       string `json:"name"`
-	Short_name string `json:"short_name"`
-	Snippet    string `json:"snippet"`
+	ShortName  string `json:"short_name"`
+	LocationID string `json:"location_id"`
+	Label      string `json:"label"`
 }
 
+//Tags Struct
+type Tags struct {
+	Tags Tag `json:"tag" firestore:"tag"`
+}
+
+//BestFor struct
+type BestFor struct {
+	Label     string `json:"label" firestore:"label"`
+	Name      string `json:"name" firestore:"name"`
+	ShortName string `json:"short_name" firestore:"short_name"`
+	Snippet   string `json:"snippet" firestore:"snippet"`
+}
+
+//OpeningHours struct
 type OpeningHours struct {
-	Days *TimeRangesByDay `json:"days,omitempty"`
+	Days    *TimeRangesByDay `json:"days,omitempty" firestore:"days,omitempty"`
+	OpenNow bool             `json:"open_now" firestore:"open_now"`
 }
 
+//TimeRangesByDay struct
 type TimeRangesByDay struct {
 	Mon []TimeRange `json:"mon"`
 	Tue []TimeRange `json:"tue"`
@@ -92,30 +114,35 @@ type TimeRangesByDay struct {
 	Sun []TimeRange `json:"sun"`
 }
 
+//TimeRange struct
 type TimeRange struct {
 	End   DayTime `json:"end"`
 	Start DayTime `json:"start"`
 }
 
+//DayTime struct
 type DayTime struct {
 	Hour   int `json:"hour,omitempty"`
 	Minute int `json:"minute"`
 }
 
+//Property struct
 type Property struct {
-	Ordinal int    `json:"ordinal"`
-	Value   string `json:"value"`
-	Name    string `json:"name"`
-	Key     string `json:"key"`
+	Ordinal int    `json:"ordinal" firestore:"ordinal"`
+	Value   string `json:"value" firestore:"value"`
+	Name    string `json:"name" firestore:"name"`
+	Key     string `json:"key" firestore:"key"`
 }
 
-type Booking_info struct {
-	Price             *Price `json:"price,omitempty"`
-	Vendor            string `json:"vendor,omitempty"`
-	Vendor_object_id  string `json:"vendor_object_id,omitempty"`
-	Vendor_object_url string `json:"vendor_object_url,omitempty"`
+//BookingInfo struct
+type BookingInfo struct {
+	Price           *Price `json:"price,omitempty"`
+	Vendor          string `json:"vendor,omitempty"`
+	VendorObjectID  string `json:"vendor_object_id,omitempty"`
+	VendorObjectURL string `json:"vendor_object_url,omitempty"`
 }
 
+// Price struct
 type Price struct {
 	Amount   string `json:"amount,omitempty"`
 	Currency string `json:"currency,omitempty"`
@@ -129,37 +156,43 @@ type poiInfoResponse struct {
 	Results []PoiInfo
 }
 
+//InternalPlace struct
 type InternalPlace struct {
-	Id                string        `json:"id"`
-	Type              string        `json:"type"`
-	Image             string        `json:"image,omitempty"`
-	Description       string        `json:"description" json:"intro"`
-	Description_short string        `json:"description_short,omitempty"`
-	Name              string        `json:"name"`
-	Level             string        `json:"level"`
-	Location          Location      `json:"location"`
-	Location_Id       string        `json:"location_id"`
-	Facebook_id       string        `json:"facebook_id,omitempty"`
-	Foursquare_id     string        `json:"foursquare_id,omitempty"`
-	Google_place_id   string        `json:"google_place_id,omitempty"`
-	Tripadvisor_id    string        `json:"tripadvisor_id,omitempty"`
-	Price_tier        int           `json:"price_tier,omitempty"`
-	Booking_info      *Booking_info `json:"booking_info,omitempty"`
-	Best_for          []BestFor     `json:"best_for"`
-	Images            []Image       `json:"images"`
-	Score             float32       `json:"score"`
-	Opening_hours     *OpeningHours `json:"opening_hours,omitempty"`
-	Properties        []Property    `json:"properties"`
-	Parent_Id         string        `json:"parent_id,omitempty"`
-	Parent_Name       string        `json:"parent_name,omitempty"`
-	Country_Name      string        `json:"country_name,omitempty"`
-	Country_Id        string        `json:"country_id,omitempty"`
+	ID               string        `json:"id" firestore:"id"`
+	Type             string        `json:"type" firestore:"type"`
+	Image            string        `json:"image,omitempty" firestore:"image,omitempty"`
+	Description      string        `json:"description" json:"intro" firestore:"intro" firestore:"description"`
+	DescriptionShort string        `json:"description_short,omitempty" firestore:"description_short,omitempty"`
+	Name             string        `json:"name" firestore:"name"`
+	Level            string        `json:"level" firestore:"level"`
+	Location         Location      `json:"location" firestore:"location"`
+	Coordinates      *Coordinates  `json:"coordinates" firestore:"coordinates"`
+	LocationID       string        `json:"location_id" firestore:"location_id"`
+	FacebookID       string        `json:"facebook_id,omitempty" firestore:"facebook_id,omitempty"`
+	FoursquareID     string        `json:"foursquare_id,omitempty" firestore:"foursquare_id,omitempty"`
+	GooglePlaceID    string        `json:"google_place_id,omitempty" firestore:"google_place_id,omitempty"`
+	TripadvisorID    string        `json:"tripadvisor_id,omitempty" firestore:"tripadvisor_id,omitempty"`
+	PriceTier        int           `json:"price_tier,omitempty" firestore:"price_tier,omitempty"`
+	BookingInfo      *BookingInfo  `json:"booking_info,omitempty" firestore:"booking_info,omitempty"`
+	BestFor          []BestFor     `json:"best_for" firestore:"best_for"`
+	Images           []Image       `json:"images" firestore:"images"`
+	Score            float32       `json:"score" firestore:"score"`
+	OpeningHours     *OpeningHours `json:"opening_hours,omitempty" firestore:"opening_hours,omitempty"`
+	Properties       []Property    `json:"properties" firestore:"properties"`
+	ParentID         string        `json:"parent_id,omitempty" firestore:"parent_id,omitempty"`
+	ParentName       string        `json:"parent_name,omitempty" firestore:"parent_name,omitempty"`
+	CountryName      string        `json:"country_name,omitempty" firestore:"country_name,omitempty"`
+	CountryID        string        `json:"country_id,omitempty" firestore:"country_id,omitempty"`
+	Trigram          float32       `json:"trigram" firestore:"trigram"`
+	GooglePlace      *bool         `json:"google_place" firestore:"googe_place"`
+	Tags             []Tags        `json:"tags" firestore:"tags"`
 }
 
+//PoiInfo struct
 type PoiInfo struct {
-	Country_id string  `json:"country_id"`
-	Id         string  `json:"id"`
-	Trigram    float32 `json:"trigram"`
+	CountryID string  `json:"country_id"`
+	ID        string  `json:"id"`
+	Trigram   float32 `json:"trigram"`
 }
 
 type TriposoChannel struct {
@@ -207,7 +240,7 @@ func Search(query string, typeParam string, location_id string) (*[]Place, error
 	client := http.Client{Timeout: time.Second * 20}
 	url := baseTriposoAPI + "location.json?type=" + typeParam + "&order_by=-trigram&fields=name,parent_id,score,images,id,type,coordinates,country_id,snippet,content,properties,intro&annotate=trigram:" + query + "&trigram=>=0.3&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
 	if typeParam == "poi" {
-		url = baseTriposoAPI + "poi.json?location_id=" + location_id + "&fields=intro,images,location_id,id,content,opening_hours,coordinates,snippet,score,facebook_id,attribution,best_for,properties,price_tier,name,booking_info&annotate=trigram:" + query + "&trigram=>=0.3&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
+		url = baseTriposoAPI + "poi.json?location_id=" + location_id + "&fields=intro,images,location_id,id,content,opening_hours,coordinates,snippet,score,facebook_id,attribution,best_for,tags,properties,price_tier,name,booking_info&annotate=trigram:" + query + "&trigram=>=0.3&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
 	}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -335,7 +368,7 @@ func GetPoiFromLocation(id string, count string, tag_labels string, index int) (
 func GetLocation(id string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 10}
 
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?id="+id+"&order_by=-score&fields=coordinates,parent_id,images,content,name,id,snippet,type&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?id="+id+"&order_by=-score&fields=coordinates,parent_id,country_id,images,content,name,id,snippet,type&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("Failed to access the Triposo API.")

@@ -21,15 +21,15 @@ type placesData struct {
 }
 
 type Location struct {
-	Lat float32 `json:"lat"`
-	Lng float32 `json:"lng"`
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
 }
 
 type BoundingBox struct {
-	South float32 `json:"south"`
-	West  float32 `json:"west"`
-	North float32 `json:"north"`
-	East  float32 `json:"east"`
+	South float64 `json:"south"`
+	West  float64 `json:"west"`
+	North float64 `json:"north"`
+	East  float64 `json:"east"`
 }
 
 type Object struct {

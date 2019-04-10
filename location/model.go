@@ -12,8 +12,8 @@ type Location struct {
 
 	// These are direct
 	BoundingBox sygic.BoundingBox `json:"bounding_box"`
-	Lat         float32           `json:"lat"`
-	Lng         float32           `json:"lng"`
+	Lat         float64           `json:"lat"`
+	Lng         float64           `json:"lng"`
 }
 
 func fromSygicPlace(p *sygic.Place) Location {

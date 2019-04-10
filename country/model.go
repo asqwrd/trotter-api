@@ -137,7 +137,7 @@ type SafetyData struct {
 
 type Safety struct {
 	Advice string  `json:"advice"`
-	Rating float32 `json:"rating"`
+	Rating float64 `json:"rating"`
 }
 
 type SafetyCode struct {
@@ -181,7 +181,7 @@ func FormatEmergencyNumbers(numbers EmergencyNumbers) (e *EmergencyNumbers) {
 
 func GetCountriesCurrenciesApi() (map[string]interface{}, error) {
 	client := http.Client{Timeout: time.Second * 10}
-	req, err := http.NewRequest(http.MethodGet, "https://free.currencyconverterapi.com/api/v6/countries", nil)
+	req, err := http.NewRequest(http.MethodGet, "https://free.currencyconverterapi.com/api/v6/countries?apiKey=e2f487a9577429d44774", nil)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("Failed to access the Currencies API.")
@@ -207,7 +207,7 @@ func GetCountriesCurrenciesApi() (map[string]interface{}, error) {
 
 func ConvertCurrency(to string, from string) (map[string]interface{}, error) {
 	client := http.Client{Timeout: time.Second * 10}
-	req, err := http.NewRequest(http.MethodGet, "https://free.currencyconverterapi.com/api/v6/convert?q="+from+"_"+to+"&compact=n", nil)
+	req, err := http.NewRequest(http.MethodGet, "https://free.currencyconverterapi.com/api/v6/convert?q="+from+"_"+to+"&compact=n&apiKey=e2f487a9577429d44774", nil)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("Failed to access the Currency converter API.")
@@ -226,7 +226,6 @@ func ConvertCurrency(to string, from string) (map[string]interface{}, error) {
 		log.Println(req.URL.String())
 		return nil, errors.New("Server experienced an error while parsing Currency converter API response.")
 	}
-
 	return resp.Results[from+"_"+to].(map[string]interface{}), nil
 
 }
@@ -317,9 +316,9 @@ func GetSafety(countryCode string) (*SafetyData, error) {
 
 }
 
-func FormatSafety(rating float32) *string {
+func FormatSafety(rating float64) *string {
 	advice := "No safety information is available for this country."
-	if rating >= 0 && rating < 1 {
+	if rating >= 0.0 && rating < 1.0 {
 		advice = "Travelling in this country is relatively safe."
 	} else if rating >= 1 && rating < 2.5 {
 		advice =

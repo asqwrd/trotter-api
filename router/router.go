@@ -8,6 +8,7 @@ import (
 	"github.com/asqwrd/trotter-api/country"
 	"github.com/asqwrd/trotter-api/places"
 	"github.com/asqwrd/trotter-api/trips"
+	"github.com/asqwrd/trotter-api/itineraries"
 	"github.com/gorilla/mux"
 )
 
@@ -83,6 +84,24 @@ var routes = Routes{
 	},
 	Route{
 		"GetTrips", "GET", "/api/trips/all/", trips.GetTrips,
+	},
+	Route{
+		"GetItineraries", "GET", "/api/itineraries/all/", itineraries.GetItineraries,
+	},
+	Route{
+		"GetItinerary", "GET", "/api/itineraries/get/{itineraryId}", itineraries.GetItinerary,
+	},
+	Route{
+		"GetDay", "GET", "/api/itineraries/get/{itineraryId}/day/{dayId}", itineraries.GetDay,
+	},
+	Route{
+		"AddToDay", "POST", "/api/itineraries/add/{itineraryId}/day/{dayId}", itineraries.AddToDay,
+	},
+	Route{
+		"CreateItinerary", "POST", "/api/itineraries/create", itineraries.CreateItinerary,
+	},
+	Route{
+		"DeleteItineraryItem", "DELETE", "/api/itineraries/delete/{itineraryId}/day/{dayId}/place/{placeId}", itineraries.DeleteItineraryItem,
 	},
 }
 

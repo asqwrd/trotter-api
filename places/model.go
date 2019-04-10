@@ -8,12 +8,16 @@ import (
 	_ "image/png"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/asqwrd/trotter-api/sygic"
 	"github.com/asqwrd/trotter-api/triposo"
 	"github.com/generaltso/vibrant"
 	"github.com/grokify/html-strip-tags-go"
+	"googlemaps.github.io/maps"
 )
+
+var GoogleApi = "AIzaSyDjkQw21rnh9QfJIh2YD-Fl4NEteIBn7L8"
 
 // Place represents the normalized + filtered data for a sygic.Place
 type Place struct {
@@ -36,6 +40,7 @@ type Place struct {
 	Bounding_box  sygic.BoundingBox `json:"bounding_box"`
 	Colors        Colors            `json:"colors"`
 	Color         interface{}       `json:"color"`
+	Tags          []triposo.Tags    `json:"tags"`
 }
 
 type PlaceChannel struct {
@@ -94,6 +99,11 @@ func FromSygicPlace(sp *sygic.Place) (p *Place) {
 
 	return p
 }
+//Init Google Maps Client
+func InitGoogle() (*maps.Client, error){
+	googleClient, err := maps.NewClient(maps.WithAPIKey(GoogleApi)) 
+	return googleClient, err
+}
 
 func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 	re := regexp.MustCompile(`\{[^\]]*?\}`)
@@ -125,6 +135,92 @@ func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 	return p
 }
 
+func FromGooglePlace(sp maps.PlaceDetailsResult, level string) (p triposo.InternalPlace) {
+	length := len(sp.Photos)
+	var image = ""
+	if length > 0 {
+		image = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + GoogleApi
+	}
+	var images []triposo.Image
+
+	for i := 0; i < len(sp.Photos); i++ {
+		images = append(images, triposo.Image{
+			Sizes: triposo.ImageSizes{
+				Medium: triposo.MediumSize{
+					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
+				},
+			},
+		})
+	}
+	description := ""
+	if len(sp.AdrAddress) > 0 {
+		description = strip.StripTags(sp.AdrAddress)
+	}
+	if len(level) == 0 {
+		level = "poi"
+	}
+
+	var hours string
+	var openNow bool
+	if sp.OpeningHours != nil && sp.OpeningHours.WeekdayText != nil {
+		hours = strings.Join(sp.OpeningHours.WeekdayText, "\n")
+
+	}
+
+	if sp.OpeningHours != nil && sp.OpeningHours.OpenNow != nil {
+		openNow = *sp.OpeningHours.OpenNow
+	}
+
+	var properties = []triposo.Property{
+		triposo.Property{
+			Ordinal: 0,
+			Value:   sp.FormattedAddress,
+			Name:    "Address",
+			Key:     "address",
+		},
+	}
+
+	if len(sp.InternationalPhoneNumber) > 0 {
+		properties = append(properties, triposo.Property{
+			Ordinal: 1,
+			Value:   sp.InternationalPhoneNumber,
+			Name:    "Phone",
+			Key:     "phone",
+		})
+	}
+
+	if len(hours) > 0 {
+		properties = append(properties, triposo.Property{
+			Ordinal: 1,
+			Value:   hours,
+			Name:    "Hours",
+			Key:     "hours",
+		})
+	}
+
+	var vicinity = ""
+	if len(sp.Vicinity) > 0 {
+		vicinity = "Near " + sp.Vicinity
+	}
+
+	p = triposo.InternalPlace{
+		ID:               sp.PlaceID,
+		Type:             level,
+		Image:            image,
+		Images:           images,
+		Description:      description,
+		DescriptionShort: vicinity,
+		Name:             sp.Name,
+		Level:            level,
+		Location:         triposo.Location{Lat: sp.Geometry.Location.Lat, Lng: sp.Geometry.Location.Lng},
+		Score:            sp.Rating * 2,
+		OpeningHours:     &triposo.OpeningHours{OpenNow: openNow},
+		Properties:       properties,
+	}
+
+	return p
+}
+
 func FromTriposoPlace(sp triposo.Place, level string) (p triposo.InternalPlace) {
 	length := len(sp.Images)
 	var image = ""
@@ -140,33 +236,36 @@ func FromTriposoPlace(sp triposo.Place, level string) (p triposo.InternalPlace) 
 	}
 
 	p = triposo.InternalPlace{
-		Id:                sp.Id,
-		Type:              sp.Type,
-		Image:             image,
-		Images:            sp.Images,
-		Description:       description,
-		Description_short: sp.Snippet,
-		Name:              sp.Name,
-		Level:             level,
-		Location:          triposo.Location{Lat: sp.Coordinates.Latitude, Lng: sp.Coordinates.Longitude},
-		Best_for:          sp.Best_for,
-		Price_tier:        sp.Price_tier,
-		Facebook_id:       sp.Facebook_id,
-		Foursquare_id:     sp.Foursquare_id,
-		Tripadvisor_id:    sp.Tripadvisor_id,
-		Google_place_id:   sp.Google_place_id,
-		Booking_info:      sp.Booking_info,
-		Score:             sp.Score,
-		Opening_hours:     sp.Opening_hours,
-		Properties:        sp.Properties,
-		Parent_Id:         sp.Parent_Id,
-		Country_Id:        sp.Country_Id,
-		Location_Id:       sp.Location_Id,
+		ID:               sp.ID,
+		Type:             sp.Type,
+		Image:            image,
+		Images:           sp.Images,
+		Description:      description,
+		DescriptionShort: sp.Snippet,
+		Name:             sp.Name,
+		Level:            level,
+		Location:         triposo.Location{Lat: sp.Coordinates.Latitude, Lng: sp.Coordinates.Longitude},
+		BestFor:          sp.BestFor,
+		PriceTier:        sp.PriceTier,
+		FacebookID:       sp.FacebookID,
+		FoursquareID:     sp.FoursquareID,
+		TripadvisorID:    sp.TripadvisorID,
+		GooglePlaceID:    sp.GooglePlaceID,
+		BookingInfo:      sp.BookingInfo,
+		Score:            sp.Score,
+		OpeningHours:     sp.OpeningHours,
+		Properties:       sp.Properties,
+		ParentID:         sp.ParentID,
+		CountryID:        sp.CountryID,
+		LocationID:       sp.LocationID,
+		Trigram:          sp.Trigram,
+		Tags:             sp.Tags,
 	}
 
 	return p
 }
 
+//FromTriposoPlaces func
 func FromTriposoPlaces(sourcePlaces []triposo.Place, level string) (internalPlaces []triposo.InternalPlace) {
 	internalPlaces = []triposo.InternalPlace{}
 	for _, sourcePlace := range sourcePlaces {

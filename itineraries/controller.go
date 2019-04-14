@@ -118,7 +118,7 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 
-	itinerariesCollection := client.Collection("itineraries")
+	itinerariesCollection := client.Collection("itineraries").Limit(10)
 	var queries firestore.Query
 	var itr *firestore.DocumentIterator
 	var public bool

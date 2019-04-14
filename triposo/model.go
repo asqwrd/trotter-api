@@ -201,7 +201,7 @@ type TriposoChannel struct {
 	Error  error
 }
 
-const baseTriposoAPI = "https://www.triposo.com/api/20181213/"
+const baseTriposoAPI = "https://www.triposo.com/api/latest/"
 
 const TRIPOSO_ACCOUNT = "2ZWR5MHH"
 const TRIPOSO_TOKEN = "yan4ujbhzepr66ttsqxiqwcl38k3lx0w"

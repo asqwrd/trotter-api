@@ -13,7 +13,7 @@ import (
 	"github.com/asqwrd/trotter-api/sygic"
 	"github.com/asqwrd/trotter-api/triposo"
 	"github.com/generaltso/vibrant"
-	"github.com/grokify/html-strip-tags-go"
+	strip "github.com/grokify/html-strip-tags-go"
 	"googlemaps.github.io/maps"
 )
 
@@ -99,9 +99,10 @@ func FromSygicPlace(sp *sygic.Place) (p *Place) {
 
 	return p
 }
+
 //Init Google Maps Client
-func InitGoogle() (*maps.Client, error){
-	googleClient, err := maps.NewClient(maps.WithAPIKey(GoogleApi)) 
+func InitGoogle() (*maps.Client, error) {
+	googleClient, err := maps.NewClient(maps.WithAPIKey(GoogleApi))
 	return googleClient, err
 }
 
@@ -146,7 +147,10 @@ func FromGooglePlace(sp maps.PlaceDetailsResult, level string) (p triposo.Intern
 	for i := 0; i < len(sp.Photos); i++ {
 		images = append(images, triposo.Image{
 			Sizes: triposo.ImageSizes{
-				Medium: triposo.MediumSize{
+				Medium: triposo.ImageSize{
+					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
+				},
+				Original: triposo.ImageSize{
 					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
 				},
 			},
@@ -221,12 +225,29 @@ func FromGooglePlace(sp maps.PlaceDetailsResult, level string) (p triposo.Intern
 	return p
 }
 
-func FromTriposoPlace(sp triposo.Place, level string) (p triposo.InternalPlace) {
+func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p triposo.InternalPlace) {
 	length := len(sp.Images)
 	var image = ""
+	var areaIndex = 0
+	var area = 0
+
 	if length > 0 {
-		image = sp.Images[0].Sizes.Medium.Url
+		for i := 0; i < length; i++ {
+			var a = sp.Images[i].Sizes.Original.Width * sp.Images[i].Sizes.Original.Height
+			if area < a {
+				area = a
+				areaIndex = i
+			}
+		}
+	
+
+		if (len(thumbnail) > 0 && thumbnail[0] == true) {
+			image = sp.Images[areaIndex].Sizes.Medium.Url
+		} else {
+			image = sp.Images[areaIndex].Sizes.Original.Url
+		}
 	}
+
 	description := ""
 	if len(sp.Content.Sections) > 0 {
 		description = strip.StripTags(sp.Content.Sections[0].Body)
@@ -269,7 +290,7 @@ func FromTriposoPlace(sp triposo.Place, level string) (p triposo.InternalPlace) 
 func FromTriposoPlaces(sourcePlaces []triposo.Place, level string) (internalPlaces []triposo.InternalPlace) {
 	internalPlaces = []triposo.InternalPlace{}
 	for _, sourcePlace := range sourcePlaces {
-		internalPlaces = append(internalPlaces, FromTriposoPlace(sourcePlace, level))
+		internalPlaces = append(internalPlaces, FromTriposoPlace(sourcePlace, level,true))
 	}
 
 	return internalPlaces

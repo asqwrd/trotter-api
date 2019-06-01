@@ -34,12 +34,16 @@ type Content struct {
 	Sections []Sections `json:"sections" firestore:"sections"`
 }
 
-type MediumSize struct {
+type ImageSize struct {
 	Url string `json:"url" firestore:"url"`
+	Width int `json:"width"`
+	Height int `json:"height"`
 }
 
 type ImageSizes struct {
-	Medium MediumSize `json:"medium" firestore:"medium"`
+	Medium ImageSize `json:"medium" firestore:"medium"`
+	Original ImageSize `json:"original" firestore:"original"`
+	Thumbnail ImageSize `json:"thumbnail" firestore:"thumbnail"`
 }
 
 //Image struct

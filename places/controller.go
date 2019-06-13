@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"strconv"
+
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
@@ -676,7 +678,21 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 // Search function
 func Search(w http.ResponseWriter, r *http.Request) {
 	query := mux.Vars(r)["query"]
-	id := r.URL.Query().Get("id")
+	latq :=r.URL.Query().Get("lat")
+	lngq :=r.URL.Query().Get("lng")
+	fmt.Println(latq)
+
+	lat,errlat := strconv.ParseFloat(latq,64)
+	lng, errlng := strconv.ParseFloat(lngq,64)
+	if errlng != nil {
+		response.WriteErrorResponse(w, errlng)
+		return
+	}
+	if errlat != nil {
+		response.WriteErrorResponse(w, errlat)
+		return
+	}
+	//id := r.URL.Query().Get("id")
 	//poi := r.URL.Query().Get("poi")
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
@@ -698,7 +714,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 
-	if (len(id) == 0) {
+	if (len(latq) == 0 && len(lngq) == 0) {
 		typeparams := []string{"island", "city", "city_state", "national_park", "region"}
 		placeChannel := make(chan PlaceChannel)
 
@@ -865,7 +881,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		var triposoResults []triposo.InternalPlace
-		poiChannel := make(chan []triposo.Place)
+		//poiChannel := make(chan []triposo.Place)
 
 		go func() {
 			search, err := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Get(ctx)
@@ -888,28 +904,45 @@ func Search(w http.ResponseWriter, r *http.Request) {
 
 		}()
 
-		go func() {
-			//print(id)
-			//fmt.Println(query)
-			place, err := triposo.Search(query, "poi", id)
-			if(err != nil) {
-				errorChannel <- err
-			}
-			//fmt.Println(place)
-			poiChannel <- *place
-
-			
-		}()
+		googlePlaceChannel := make(chan triposo.InternalPlace)
+		googleClient, err := InitGoogle()
+		if err != nil  {
+			errorChannel <- err
+		}
+		latlng := &maps.LatLng{Lat: lat, Lng: lng}
+		fmt.Println(latlng)
+		r := &maps.PlaceAutocompleteRequest{
+			Input: query,
+			Location: latlng,
+			Radius : 50000,
+		}
+		places,err := googleClient.PlaceAutocomplete(ctx,r)
+				if err != nil {
+					errorChannel <- err
+				}
+				fmt.Println(len(places.Predictions))
+		for i:=0; i < len(places.Predictions); i++ {
+			go func(placeID string) {
+				r := &maps.PlaceDetailsRequest{
+					PlaceID:      placeID,
+				}
+				place,err := googleClient.PlaceDetails(ctx,r)
+				googlePlaceChannel <- FromGooglePlace(place,"poi")
+				if err != nil {
+					errorChannel <- err
+				}
+			}(places.Predictions[i].PlaceID)
+		}
 
 		go func() {
 			time.Sleep(10 * time.Second)
 			timeoutChannel <- true
 		}()
 
-		for i := 0; i < 1; i++ {
+		for i := 0; i <  len(places.Predictions); i++ {
 			select {
-			case res := <-poiChannel:
-				triposoResults = FromTriposoPlaces(res, "poi")
+			case res := <-googlePlaceChannel:
+				triposoResults = append(triposoResults, res)
 			case err := <-errorChannel:
 				response.WriteErrorResponse(w, err)
 				return
@@ -942,6 +975,113 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		}, http.StatusOK)
 		return
 	}
+}
+
+// SearchGoogle function
+func SearchGoogle(w http.ResponseWriter, r *http.Request) {
+	query := mux.Vars(r)["query"]
+	latq :=r.URL.Query().Get("lat")
+	lngq :=r.URL.Query().Get("lng")
+	fmt.Println(latq)
+
+	lat,errlat := strconv.ParseFloat(latq,64)
+	lng, errlng := strconv.ParseFloat(lngq,64)
+	if errlng != nil {
+		response.WriteErrorResponse(w, errlng)
+		return
+	}
+	if errlat != nil {
+		response.WriteErrorResponse(w, errlat)
+		return
+	}
+	//id := r.URL.Query().Get("id")
+	//poi := r.URL.Query().Get("poi")
+	addQuery := make(chan bool)
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+		var triposoResults []triposo.InternalPlace
+		//poiChannel := make(chan []triposo.Place)
+
+		go func() {
+			search, err := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Get(ctx)
+			if err != nil {
+				addQuery <- true
+				return
+			}
+
+			searchData := search.Data()
+			count := searchData["count"].(int64) + 1
+			_, errSearch := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
+				"count": count,
+				"value": query,
+			})
+			if errSearch != nil {
+				// Handle any errors in an appropriate way, such as returning them.
+				response.WriteErrorResponse(w, errSearch)
+			}
+			addQuery <- false
+
+		}()
+
+		googleClient, err := InitGoogle()
+		if err != nil  {
+			response.WriteErrorResponse(w, err)
+		}
+		latlng := &maps.LatLng{Lat: lat, Lng: lng}
+		fmt.Println(latlng)
+		p := &maps.TextSearchRequest {
+			Query: query,
+			Location : latlng,
+			Radius  : 50000,
+		}
+		fmt.Println(p)
+		places,err := googleClient.TextSearch(ctx,p)
+		fmt.Println(places)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+		}
+		fmt.Println(len(places.Results))
+		for i:=0; i < len(places.Results); i++ {
+			triposoResults = append(triposoResults, FromGooglePlaceSearch(places.Results[i],"poi"))		
+		}
+
+		fmt.Println("hi2")
+
+		// for i := 0; i < 1; i++ {
+		// 	select {
+		// 	case res := <-addQuery:
+		// 		if res == true && (len(triposoResults) > 0) {
+		// 			_, err := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
+		// 				"count": 1,
+		// 				"value": query,
+		// 			})
+		// 			if err != nil {
+		// 				// Handle any errors in an appropriate way, such as returning them.
+		// 				response.WriteErrorResponse(w, err)
+		// 			}
+		// 		}
+		// 	}
+		// }
+
+		response.Write(w, map[string]interface{}{
+			"results": triposoResults,
+		}, http.StatusOK)
+		return
+	
 }
 
 // RecentSearch function

@@ -56,6 +56,9 @@ var routes = Routes{
 		"Search", "GET", "/api/search/find/{query}/", places.Search,
 	},
 	Route{
+		"SearchGoogle", "GET", "/api/search/google/{query}/", places.SearchGoogle,
+	},
+	Route{
 		"RecentSearch", "GET", "/api/search/recent/", places.RecentSearch,
 	},
 	Route{

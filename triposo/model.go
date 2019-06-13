@@ -244,7 +244,7 @@ func Search(query string, typeParam string, location_id string) (*[]Place, error
 	client := http.Client{Timeout: time.Second * 20}
 	url := baseTriposoAPI + "location.json?type=" + typeParam + "&order_by=-trigram&fields=name,parent_id,score,images,id,type,coordinates,country_id,snippet,content,properties,intro&annotate=trigram:" + query + "&trigram=>=0.3&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
 	if typeParam == "poi" {
-		url = baseTriposoAPI + "poi.json?location_id=" + location_id + "&fields=intro,images,location_id,id,content,opening_hours,coordinates,snippet,score,facebook_id,attribution,best_for,tags,properties,price_tier,name,booking_info&annotate=trigram:" + query + "&trigram=>=0.3&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
+		url = baseTriposoAPI + "poi.json?location_id=" + location_id + "&fields=intro,images,location_id,id,content,opening_hours,coordinates,snippet,score,facebook_id,attribution,best_for,tags,properties,price_tier,name,booking_info&annotate=trigram:" + query + "&trigram=>=0.2&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
 	}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)

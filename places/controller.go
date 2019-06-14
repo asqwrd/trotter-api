@@ -466,7 +466,6 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 	var poi *triposo.InternalPlace
 	ctx := context.Background()
 
-
 	if googlePlace == "true" {
 		go func() {
 			googleClient, err := InitGoogle()
@@ -682,16 +681,9 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	lngq :=r.URL.Query().Get("lng")
 	fmt.Println(latq)
 
-	lat,errlat := strconv.ParseFloat(latq,64)
-	lng, errlng := strconv.ParseFloat(lngq,64)
-	if errlng != nil {
-		response.WriteErrorResponse(w, errlng)
-		return
-	}
-	if errlat != nil {
-		response.WriteErrorResponse(w, errlat)
-		return
-	}
+	lat,_ := strconv.ParseFloat(latq,64)
+	lng, _ := strconv.ParseFloat(lngq,64)
+
 	//id := r.URL.Query().Get("id")
 	//poi := r.URL.Query().Get("poi")
 	errorChannel := make(chan error)
@@ -910,7 +902,6 @@ func Search(w http.ResponseWriter, r *http.Request) {
 			errorChannel <- err
 		}
 		latlng := &maps.LatLng{Lat: lat, Lng: lng}
-		fmt.Println(latlng)
 		r := &maps.PlaceAutocompleteRequest{
 			Input: query,
 			Location: latlng,
@@ -994,8 +985,7 @@ func SearchGoogle(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, errlat)
 		return
 	}
-	//id := r.URL.Query().Get("id")
-	//poi := r.URL.Query().Get("poi")
+
 	addQuery := make(chan bool)
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
@@ -1014,7 +1004,6 @@ func SearchGoogle(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 		var triposoResults []triposo.InternalPlace
-		//poiChannel := make(chan []triposo.Place)
 
 		go func() {
 			search, err := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Get(ctx)
@@ -1042,40 +1031,35 @@ func SearchGoogle(w http.ResponseWriter, r *http.Request) {
 			response.WriteErrorResponse(w, err)
 		}
 		latlng := &maps.LatLng{Lat: lat, Lng: lng}
-		fmt.Println(latlng)
 		p := &maps.TextSearchRequest {
 			Query: query,
 			Location : latlng,
 			Radius  : 50000,
 		}
-		fmt.Println(p)
 		places,err := googleClient.TextSearch(ctx,p)
-		fmt.Println(places)
 		if err != nil {
 			response.WriteErrorResponse(w, err)
 		}
-		fmt.Println(len(places.Results))
 		for i:=0; i < len(places.Results); i++ {
 			triposoResults = append(triposoResults, FromGooglePlaceSearch(places.Results[i],"poi"))		
 		}
 
-		fmt.Println("hi2")
 
-		// for i := 0; i < 1; i++ {
-		// 	select {
-		// 	case res := <-addQuery:
-		// 		if res == true && (len(triposoResults) > 0) {
-		// 			_, err := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
-		// 				"count": 1,
-		// 				"value": query,
-		// 			})
-		// 			if err != nil {
-		// 				// Handle any errors in an appropriate way, such as returning them.
-		// 				response.WriteErrorResponse(w, err)
-		// 			}
-		// 		}
-		// 	}
-		// }
+		for i := 0; i < 1; i++ {
+			select {
+			case res := <-addQuery:
+				if res == true && (len(triposoResults) > 0) {
+					_, err := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
+						"count": 1,
+						"value": query,
+					})
+					if err != nil {
+						// Handle any errors in an appropriate way, such as returning them.
+						response.WriteErrorResponse(w, err)
+					}
+				}
+			}
+		}
 
 		response.Write(w, map[string]interface{}{
 			"results": triposoResults,

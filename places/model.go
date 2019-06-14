@@ -197,6 +197,7 @@ func FromGooglePlaceSearch(sp maps.PlacesSearchResult, level string) (p triposo.
 	if len(sp.Vicinity) > 0 {
 		vicinity = "Near " + sp.Vicinity
 	}
+	var gplace = true
 
 	p = triposo.InternalPlace{
 		ID:               sp.PlaceID,
@@ -211,6 +212,7 @@ func FromGooglePlaceSearch(sp maps.PlacesSearchResult, level string) (p triposo.
 		Score:            sp.Rating * 2,
 		OpeningHours:     &triposo.OpeningHours{OpenNow: openNow},
 		Properties:       properties,
+		GooglePlace: &gplace,
 	}
 
 	return p

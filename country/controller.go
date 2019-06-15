@@ -190,10 +190,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 		return
 	}
-
 	countryCodeData := code.Data()
 	countryCode := countryCodeData["abbreviation"].(string)
-
 	/*
 		*
 		*

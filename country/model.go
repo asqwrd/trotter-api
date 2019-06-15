@@ -107,11 +107,11 @@ type TextualPassport struct {
 }
 
 type Visa struct {
-	Allowed_stay string   `json:"allowed_stay"`
-	Notes        []string `json:"notes"`
-	Requirement  string   `json:"requirement"`
-	Type         string   `json:"type"`
-	Textual      Textual  `json:"textual"`
+	AllowedStay string   `json:"allowed_stay"`
+	Notes       []string `json:"notes"`
+	Requirement string   `json:"requirement"`
+	Type        string   `json:"type"`
+	Textual     Textual  `json:"textual"`
 }
 
 type visaResponse struct {

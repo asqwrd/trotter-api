@@ -911,7 +911,6 @@ func Search(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					errorChannel <- err
 				}
-				fmt.Println(len(places.Predictions))
 		for i:=0; i < len(places.Predictions); i++ {
 			go func(placeID string) {
 				r := &maps.PlaceDetailsRequest{
@@ -973,7 +972,6 @@ func SearchGoogle(w http.ResponseWriter, r *http.Request) {
 	query := mux.Vars(r)["query"]
 	latq :=r.URL.Query().Get("lat")
 	lngq :=r.URL.Query().Get("lng")
-	fmt.Println(latq)
 
 	lat,errlat := strconv.ParseFloat(latq,64)
 	lng, errlng := strconv.ParseFloat(lngq,64)

@@ -46,7 +46,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 
-	iter := client.Collection("trips").Where("owner_id", "==",q.Get("owner_id")).Documents(ctx)
+	iter := client.Collection("trips").Where("group", "array-contains",q.Get("owner_id")).Documents(ctx)
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
@@ -171,6 +171,21 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 	if err2 != nil {
 		// Handle any errors in an appropriate way, such as returning them.
 		response.WriteErrorResponse(w, err2)
+	}
+	userDoc, _, errUserCreate := client.Collection("trips").Doc(doc.ID).Collection("travelers").Add(ctx, trip.User)
+	if errUserCreate != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(errUserCreate)
+		response.WriteErrorResponse(w, errUserCreate)
+	}
+
+	_, errUser2 := client.Collection("trips").Doc(doc.ID).Collection("travelers").Doc(userDoc.ID).Set(ctx, map[string]interface{}{
+		"id": userDoc.ID,
+	},firestore.MergeAll)
+	if errUser2 != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		response.WriteErrorResponse(w, err2)
+		return
 	}
 
 	//Adding destinations

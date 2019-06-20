@@ -3,6 +3,7 @@ package triptypes
 import (
 	"time"
 
+	"firebase.google.com/go/auth"
 	"github.com/asqwrd/trotter-api/triposo"
 )
 
@@ -23,6 +24,7 @@ type Trip struct {
 type TripRes struct {
 	Trip         Trip
 	Destinations []Destination
+	User         auth.UserInfo
 }
 
 // Destination struct

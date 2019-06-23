@@ -310,6 +310,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 
 func GetHome(w http.ResponseWriter, r *http.Request) {
 	typeparams := []string{"island", "city"}
+	fmt.Println("Got Home")
 
 	placeChannel := make(chan PlaceChannel)
 

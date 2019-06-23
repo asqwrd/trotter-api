@@ -121,7 +121,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 		"trips": trips,
 	}
 
-	fmt.Print("Got trips");
+	fmt.Println("Got trips");
 
 	response.Write(w, tripsData, http.StatusOK)
 	return
@@ -251,7 +251,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 func getTrip(tripID string) (map[string]interface{}, error){
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
-	fmt.Println("Got Trips")
+	fmt.Println("Got Trip")
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
 		return nil, err

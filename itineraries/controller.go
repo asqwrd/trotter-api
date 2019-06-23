@@ -122,14 +122,13 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 	var queries firestore.Query
 	var itr *firestore.DocumentIterator
 	var public bool
-	result, errPublic := strconv.ParseBool(q.Get("public"))
-	if errPublic != nil {
-		public = true
-	}
-	public = result
-	if len(q.Get("public")) == 0 {
-		queries = itinerariesCollection.Where("public", "==", true)	
-	} else {
+	
+	if len(q.Get("public")) > 0  {
+		result, errPublic := strconv.ParseBool(q.Get("public"))
+		if errPublic != nil {
+			public = true
+		}
+		public = result
 		queries = itinerariesCollection.Where("public", "==", public)	
 	}
 
@@ -138,6 +137,7 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 		if notNil ==  true {
 			queries = queries.Where("destination", "==", q.Get("destination"))
 		} else {
+			fmt.Println("here")
 			queries = itinerariesCollection.Where("destination", "==", q.Get("destination"))
 		}
 	}
@@ -161,7 +161,7 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, errData)
 	}
 
-	fmt.Print("Got Itineraries\n")
+	fmt.Println("Got Itineraries")
 
 	response.Write(w, tripsData, http.StatusOK)
 	return
@@ -174,6 +174,7 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 	errorChannel := make(chan error)
 	destinationChannel := make(chan map[string]interface{})
 	app, err := firebase.NewApp(ctx, nil, sa)
+	fmt.Println("Got Itinerary")
 	if err != nil {
 		return nil, err
 	}
@@ -198,12 +199,17 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 			errorChannel <- err
 		}
 		parentParam := *parent
-		destination := places.FromTriposoPlace(parentParam[0],parentParam[0].Type);
-		colors, err := places.GetColor(destination.Image)
-		if err != nil {
-			errorChannel <- err
+		var destination triposo.InternalPlace
+		var colors *places.Colors
+		if len(parentParam)>0 {
+			destination = places.FromTriposoPlace(parentParam[0],parentParam[0].Type);
+			colorsRes, err := places.GetColor(destination.Image)
+			if err != nil {
+				errorChannel <- err
+			}
+			colors = colorsRes
 		}
-
+		
 		destinationChannel <- map[string]interface{}{
 			"colors": colors,
 			"destination": destination,
@@ -510,7 +516,7 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 
 //GetDay func
 func GetDay(w http.ResponseWriter, r *http.Request) {
-
+	fmt.Println("Got day")
 	getDay(w,r,nil, false)
 	return
 

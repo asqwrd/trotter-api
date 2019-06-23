@@ -310,10 +310,11 @@ func FromGooglePlace(sp maps.PlaceDetailsResult, level string) (p triposo.Intern
 	return p
 }
 
-// function that converts response
+// FromTriposoPlace function that converts response
 func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p triposo.InternalPlace) {
 	length := len(sp.Images)
 	var image = ""
+	var image_hd = ""
 	var areaIndex = 0
 	var area = 0
 
@@ -328,8 +329,10 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 
 		if len(thumbnail) > 0 && thumbnail[0] == true {
 			image = sp.Images[areaIndex].Sizes.Medium.Url
+			image_hd = sp.Images[areaIndex].Sizes.Original.Url
 		} else {
 			image = sp.Images[areaIndex].Sizes.Original.Url
+			image_hd = sp.Images[areaIndex].Sizes.Original.Url
 		}
 	}
 
@@ -345,6 +348,7 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 		ID:               sp.ID,
 		Type:             sp.Type,
 		Image:            image,
+		ImageHD:          image_hd,
 		Images:           sp.Images,
 		Description:      description,
 		DescriptionShort: sp.Snippet,

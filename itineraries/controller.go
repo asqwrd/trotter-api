@@ -416,6 +416,7 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 
 	if optimize == false {
 		go func(itinerary interface{}) {
+			//fmt.Println(itinerary)
 			var locations []string
 			locations = append(locations,fmt.Sprintf("%g,%g",itinerary.(Itinerary).Location.Latitude , itinerary.(Itinerary).Location.Longitude))
 			for i:=0; i < len(itineraryItems); i++ {
@@ -449,12 +450,14 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 					}
 				}
 			}
+			
 			r := &maps.DistanceMatrixRequest{
 				Origins:      locations,
 				Destinations: locations,
 			}
 			matrix,err := googleClient.DistanceMatrix(ctx,r)
 			if err != nil {
+				fmt.Println(locations)
 				errorChannel <- err
 			}
 
@@ -698,6 +701,7 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 	itineraryID := mux.Vars(r)["itineraryId"]
 	dayID := mux.Vars(r)["dayId"]
 	place := mux.Vars(r)["placeId"]
+	fmt.Println("Delete Itinerary Item")
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()

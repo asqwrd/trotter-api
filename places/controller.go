@@ -205,6 +205,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		country, err := triposo.GetLocation(cityRes.CountryID);
 		if err != nil {
 			errorChannel <- err
+			return
 		}
 
 		countryParam := *country
@@ -219,6 +220,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 				colors, err := GetColor(image)
 				if err != nil {
 					errorChannel <- err
+					return
 				}
 				colorChannel <- *colors
 			}
@@ -472,6 +474,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 			googleClient, err := InitGoogle()
 			if err != nil  {
 				errorChannel <- err
+				return
 			}
 			r := &maps.PlaceDetailsRequest{
 				PlaceID:      poiID,
@@ -479,6 +482,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 			place,err := googleClient.PlaceDetails(ctx,r)
 			if err != nil {
 				errorChannel <- err
+				return
 			}
 			photo := "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference="+place.Photos[0].PhotoReference+"&key="+GoogleApi
 			go func(image string) {
@@ -490,6 +494,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 					colors, err := GetColor(image)
 					if err != nil {
 						errorChannel <- err
+						return
 					}
 					colorChannel <- *colors
 				}
@@ -519,6 +524,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 					colors, err := GetColor(image)
 					if err != nil {
 						errorChannel <- err
+						return
 					}
 					colorChannel <- *colors
 				}
@@ -595,6 +601,7 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 		place, err := triposo.GetPoiFromLocation(parkID, "20", "", 0)
 		if err != nil {
 			errorChannel <- err
+			return
 		}
 		poiChannel <- *place
 	}()
@@ -618,6 +625,7 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 				colors, err := GetColor(image)
 				if err != nil {
 					errorChannel <- err
+					return
 				}
 				colorChannel <- *colors
 			}
@@ -901,6 +909,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		googleClient, err := InitGoogle()
 		if err != nil  {
 			errorChannel <- err
+			return
 		}
 		latlng := &maps.LatLng{Lat: lat, Lng: lng}
 		r := &maps.PlaceAutocompleteRequest{
@@ -911,6 +920,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		places,err := googleClient.PlaceAutocomplete(ctx,r)
 				if err != nil {
 					errorChannel <- err
+					return
 				}
 		for i:=0; i < len(places.Predictions); i++ {
 			go func(placeID string) {
@@ -921,6 +931,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 				googlePlaceChannel <- FromGooglePlace(place,"poi")
 				if err != nil {
 					errorChannel <- err
+					return
 				}
 			}(places.Predictions[i].PlaceID)
 		}
@@ -1163,6 +1174,7 @@ func GetPopularLocations(w http.ResponseWriter, r *http.Request) {
 		places, err := triposo.GetLocations("10")
 		if err != nil {
 			errorChannel <- err
+			return
 		}
 		placeChannel <- *places
 

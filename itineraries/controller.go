@@ -206,6 +206,7 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 			colorsRes, err := places.GetColor(destination.Image)
 			if err != nil {
 				errorChannel <- err
+				return
 			}
 			colors = colorsRes
 		}
@@ -456,9 +457,10 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 				Destinations: locations,
 			}
 			matrix,err := googleClient.DistanceMatrix(ctx,r)
+			fmt.Println(err)
 			if err != nil {
-				fmt.Println(locations)
 				errorChannel <- err
+				return
 			}
 
 			matrixChannel <- *matrix
@@ -585,6 +587,7 @@ func CreateItineraryHelper(tripID string, destinationID string, itinerary Itiner
 			if errCreate != nil {
 				// Handle any errors in an appropriate way, such as returning them.
 				errorChannel <- errCreate
+				return
 			}
 
 			_, errCrUp := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(daydoc.ID).Set(ctx, map[string]interface{}{
@@ -593,6 +596,7 @@ func CreateItineraryHelper(tripID string, destinationID string, itinerary Itiner
 			if errCrUp != nil {
 				// Handle any errors in an appropriate way, such as returning them.
 				errorChannel <- errCrUp
+				return
 			}
 
 			dayChannel <- doc.ID

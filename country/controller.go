@@ -40,6 +40,7 @@ func getCurrencies() (map[string]interface{}, error) {
 		res, err := GetCountriesCurrenciesApi()
 		if err != nil {
 			errorChannel <- err
+			return
 		}
 		currencyChannel <- res
 	}()

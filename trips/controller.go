@@ -496,6 +496,7 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 					_, errDays := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Delete(ctx)
 					if errDays != nil {
 						errorChannel <- errDays
+						return
 					}
 					itineraryItemsChannel <- itineraryItemsData
 				}(id)
@@ -534,8 +535,8 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 					})
 					if errCreate != nil {
 						// Handle any errors in an appropriate way, such as returning them.
-						fmt.Println(errCreate)
 						errorChannel <- errCreate
+						return
 					}
 		
 					_, errCrUp := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(daydoc.ID).Set(ctx, map[string]interface{}{
@@ -543,8 +544,8 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 					},firestore.MergeAll)
 					if errCrUp != nil {
 						// Handle any errors in an appropriate way, such as returning them.
-						fmt.Println(errCrUp)
 						errorChannel <- errCrUp
+						return
 					}
 					dayIdsChannel <- daydoc.ID
 				}(lastIndex, i)
@@ -747,8 +748,8 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 			deleteRes, errDelete := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destination.ID).Delete(ctx)
 			if errDelete != nil {
 				// Handle any errors in an appropriate way, such as returning them.
-				fmt.Println(errDelete)
 				errorChannel <- errDelete
+				return
 			}
 			
 			destDeleteChannel <- deleteRes

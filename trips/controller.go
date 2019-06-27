@@ -709,6 +709,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 	tripID := mux.Vars(r)["tripId"]
 	var errorChannel = make(chan error)
 	var destDeleteChannel = make(chan interface{})
+	var travelDeleteChannel = make(chan interface{})
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
@@ -754,6 +755,34 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 			
 			destDeleteChannel <- deleteRes
 		}(tripID,dest[i])
+	}
+
+	var travelers []string
+	iterTrav := client.Collection("trips").Doc(tripID).Collection("travelers").Documents(ctx)
+	for {
+		doc, err := iterTrav.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		dataMap := doc.Ref.ID
+		travelers = append(travelers, dataMap)
+	}
+
+	for i:=0; i < len(travelers); i++ {
+		go func(tripID string, travelerID string) {
+			deleteRes, errDelete := client.Collection("trips").Doc(tripID).Collection("travelers").Doc(travelerID).Delete(ctx)
+			if errDelete != nil {
+				// Handle any errors in an appropriate way, such as returning them.
+				errorChannel <- errDelete
+				return
+			}
+			
+			travelDeleteChannel <- deleteRes
+		}(tripID,travelers[i])
 	}
 
 	iterI10 := client.Collection("itineraries").Where("trip_id", "==", tripID).Documents(ctx)
@@ -806,6 +835,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	count := 0
+	travCount := 0
 
 	_, errDelete := client.Collection("trips").Doc(tripID).Delete(ctx)
 	if errDelete != nil {
@@ -815,10 +845,14 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i:=0; i < len(dest); i++ {
+	total := len(dest) + len(travelers)
+
+	for i:=0; i < total; i++ {
 		select{
 		case <- destDeleteChannel:
 			count = count + 1
+		case <- travelDeleteChannel:
+			travCount = travCount + 1
 		case err := <- errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
@@ -830,6 +864,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 	
 	deleteData := map[string]interface{}{
 		"destinations_deleted": count,
+		"travelers_deleted": travCount,
 		"success": true,
 	}
 

@@ -25,6 +25,7 @@ type TripRes struct {
 	Trip         Trip
 	Destinations []Destination
 	User         auth.UserInfo
+	Travelers    []auth.UserInfo
 }
 
 // Destination struct

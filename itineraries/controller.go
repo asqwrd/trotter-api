@@ -419,6 +419,7 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 		go func(itinerary interface{}) {
 			//fmt.Println(itinerary)
 			var locations []string
+			var chunks [][]string
 			locations = append(locations,fmt.Sprintf("%g,%g",itinerary.(Itinerary).Location.Latitude , itinerary.(Itinerary).Location.Longitude))
 			for i:=0; i < len(itineraryItems); i++ {
 				location := fmt.Sprintf("%g,%g", itineraryItems[i].Poi.Location.Lat,itineraryItems[i].Poi.Location.Lng)
@@ -451,19 +452,36 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 					}
 				}
 			}
-			
-			r := &maps.DistanceMatrixRequest{
-				Origins:      locations,
-				Destinations: locations,
-			}
-			matrix,err := googleClient.DistanceMatrix(ctx,r)
-			fmt.Println(err)
-			if err != nil {
-				errorChannel <- err
-				return
-			}
 
+			batchSize := 10
+
+			for batchSize < len(locations) {
+					locations, chunks = locations[batchSize:], append(chunks, locations[0:batchSize:batchSize])
+			}
+			chunks = append(chunks, locations)
+
+			var matrix *maps.DistanceMatrixResponse
+			for i:=0; i < len(chunks); i++ {
+
+				r := &maps.DistanceMatrixRequest{
+					Origins:      chunks[i],
+					Destinations: chunks[i],
+				}
+				res,err := googleClient.DistanceMatrix(ctx,r)
+				if err != nil {
+					fmt.Println(err)
+					errorChannel <- err
+					return
+				}
+				if matrix == nil {
+					matrix = res
+				} else {
+					matrix.Rows = append(matrix.Rows, res.Rows...)
+				}
+
+			}
 			matrixChannel <- *matrix
+			
 			
 			
 		}(itinerary["itinerary"])

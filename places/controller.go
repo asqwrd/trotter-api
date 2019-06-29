@@ -308,8 +308,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-//Get Home
-
+//GetHome
 func GetHome(w http.ResponseWriter, r *http.Request) {
 	typeparams := []string{"island", "city"}
 	fmt.Println("Got Home")
@@ -536,7 +535,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 	
 
 	go func() {
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 		timeoutChannel <- true
 	}()
 

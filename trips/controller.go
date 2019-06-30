@@ -46,7 +46,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 
-	iter := client.Collection("trips").Where("group", "array-contains",q.Get("owner_id")).Documents(ctx)
+	iter := client.Collection("trips").Where("group", "array-contains",q.Get("user_id")).Documents(ctx)
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
@@ -172,19 +172,11 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 		// Handle any errors in an appropriate way, such as returning them.
 		response.WriteErrorResponse(w, err2)
 	}
-	userDoc, _, errUserCreate := client.Collection("trips").Doc(doc.ID).Collection("travelers").Add(ctx, trip.User)
+	_, errUserCreate := client.Collection("trips").Doc(doc.ID).Collection("travelers").Doc(trip.User.UID).Set(ctx, trip.User)
 	if errUserCreate != nil {
 		// Handle any errors in an appropriate way, such as returning them.
 		fmt.Println(errUserCreate)
 		response.WriteErrorResponse(w, errUserCreate)
-	}
-
-	_, errUser2 := client.Collection("trips").Doc(doc.ID).Collection("travelers").Doc(userDoc.ID).Set(ctx, map[string]interface{}{
-		"id": userDoc.ID,
-	},firestore.MergeAll)
-	if errUser2 != nil {
-		// Handle any errors in an appropriate way, such as returning them.
-		response.WriteErrorResponse(w, err2)
 		return
 	}
 
@@ -325,6 +317,7 @@ func GetTrip(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+
 // UpdateTrip function
 func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 	tripID := mux.Vars(r)["tripId"]
@@ -388,6 +381,85 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 	response.Write(w, tripData, http.StatusOK)	
 	return
 }
+
+// AddTraveler function
+func AddTraveler(w http.ResponseWriter, r *http.Request) {
+	tripID := mux.Vars(r)["tripId"]
+	decoder := json.NewDecoder(r.Body)
+	var trip triptypes.TripRes
+	err := decoder.Decode(&trip)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+	
+	//Check Destination
+	docSnap, _ := client.Collection("trips").Doc(tripID).Collection("travelers").Doc(trip.User.UID).Get(ctx)
+
+	if docSnap.Exists() == false {
+		tripSnap, errTrip := client.Collection("trips").Doc(tripID).Get(ctx)
+		if errTrip != nil {
+			response.WriteErrorResponse(w, errTrip)
+			return 
+		}
+		var tripDoc triptypes.Trip
+		tripSnap.DataTo(&tripDoc)
+		fmt.Println(tripDoc.Group)
+		var group = append(tripDoc.Group,trip.User.UID)
+		_, errUpdateGroup := client.Collection("trips").Doc(tripID).Set(ctx,map[string]interface{}{
+			"group": group,
+			"updatedAt": firestore.ServerTimestamp,
+		},firestore.MergeAll)
+	
+		if errUpdateGroup != nil {
+			fmt.Println("update group failed")
+			response.WriteErrorResponse(w, errUpdateGroup)
+			return
+		}
+		_, errUserCreate := client.Collection("trips").Doc(tripID).Collection("travelers").Doc(trip.User.UID).Set(ctx, trip.User)
+		if errUserCreate != nil {
+			// Handle any errors in an appropriate way, such as returning them.
+			fmt.Println(errUserCreate)
+			response.WriteErrorResponse(w, errUserCreate)
+			return
+		}
+	} else {
+		response.Write(w, map[string]interface{}{
+			"success": true,
+			"exists" : true,
+		}, http.StatusOK)	
+		return
+	}
+
+	fmt.Println("Traveler Added")
+
+	tripData := map[string]interface{}{
+		"success": true,
+		"exists": false,
+	}
+
+	response.Write(w, tripData, http.StatusOK)	
+	return
+}
+
 
 // UpdateDestination function
 func UpdateDestination(w http.ResponseWriter, r *http.Request) {

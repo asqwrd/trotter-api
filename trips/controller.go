@@ -17,7 +17,6 @@ import (
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"net/url"
-
 )
 
 // GetTrips function
@@ -58,6 +57,20 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 		}
 		var trip triptypes.Trip
 		doc.DataTo(&trip)
+		iterTravelers := client.Collection("trips").Doc(trip.ID).Collection("travelers").Documents(ctx)
+		for {
+			travelersDoc, errTravelers := iterTravelers.Next()
+			if errTravelers == iterator.Done {
+				break
+			}
+			if errTravelers != nil {
+				response.WriteErrorResponse(w, err)
+				return
+			}
+			var traveler triptypes.User
+			travelersDoc.DataTo(&traveler)
+			trip.Travelers = append(trip.Travelers, traveler)
+		}
 		trips = append(trips, trip)
 	}
 	for i := 0; i < len(trips); i++ {
@@ -346,7 +359,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
-	trip["updateAt"] = firestore.ServerTimestamp
+	trip["updatedAt"] = firestore.ServerTimestamp
 	_, err2 := client.Collection("trips").Doc(tripID).Set(ctx, trip,firestore.MergeAll)
 
 	if err2 != nil {

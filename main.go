@@ -12,11 +12,12 @@ import (
 
 func main() {
 	// Get the "PORT" env variable
-	port := os.Getenv("PORT_TROTTER")
+	port := os.Getenv("PORT")
 	if port == "" {
-		log.Fatal("$PORT must be set")
+		port = "3002"
+		fmt.Fatal("$PORT not be set using dev port")
 	} else {
-		log.Println("Running on port: " + port)
+		print("Running on port: " + port)
 	}
 
 	sygicAPIKey := os.Getenv("SYGIC_API_KEY")

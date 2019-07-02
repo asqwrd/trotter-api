@@ -15,7 +15,7 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "3002"
-		fmt.Fatal("$PORT not be set using dev port")
+		print("$PORT not be set using dev port")
 	} else {
 		print("Running on port: " + port)
 	}

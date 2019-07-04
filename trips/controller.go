@@ -309,9 +309,26 @@ func getTrip(tripID string) (map[string]interface{}, error){
 		doc.DataTo(&destination)
 		dest = append(dest, destination)
 	}
+
+	var trav []triptypes.User
+	iterTravelers := client.Collection("trips").Doc(tripID).Collection("travelers").Documents(ctx)
+	for {
+		docTravelers, errTravelers := iterTravelers.Next()
+		if errTravelers == iterator.Done {
+			break
+		}
+		if errTravelers != nil {
+			return nil, errTravelers
+		}
+		var traveler triptypes.User
+		docTravelers.DataTo(&traveler)
+		trav = append(trav, traveler)
+	}
+
 	tripData := map[string]interface{}{
 		"trip": trip,
 		"destinations": dest,
+		"travelers": trav,
 	}
 	return tripData, err
 }

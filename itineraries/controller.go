@@ -122,14 +122,13 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 	var queries firestore.Query
 	var itr *firestore.DocumentIterator
 	var public bool
-	result, errPublic := strconv.ParseBool(q.Get("public"))
-	if errPublic != nil {
-		public = true
-	}
-	public = result
-	if len(q.Get("public")) == 0 {
-		queries = itinerariesCollection.Where("public", "==", true)	
-	} else {
+	
+	if len(q.Get("public")) > 0  {
+		result, errPublic := strconv.ParseBool(q.Get("public"))
+		if errPublic != nil {
+			public = true
+		}
+		public = result
 		queries = itinerariesCollection.Where("public", "==", public)	
 	}
 
@@ -138,6 +137,7 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 		if notNil ==  true {
 			queries = queries.Where("destination", "==", q.Get("destination"))
 		} else {
+			fmt.Println("here")
 			queries = itinerariesCollection.Where("destination", "==", q.Get("destination"))
 		}
 	}
@@ -161,7 +161,7 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, errData)
 	}
 
-	fmt.Print("Got Itineraries\n")
+	fmt.Println("Got Itineraries")
 
 	response.Write(w, tripsData, http.StatusOK)
 	return
@@ -174,6 +174,7 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 	errorChannel := make(chan error)
 	destinationChannel := make(chan map[string]interface{})
 	app, err := firebase.NewApp(ctx, nil, sa)
+	fmt.Println("Got Itinerary")
 	if err != nil {
 		return nil, err
 	}
@@ -198,12 +199,18 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 			errorChannel <- err
 		}
 		parentParam := *parent
-		destination := places.FromTriposoPlace(parentParam[0],parentParam[0].Type);
-		colors, err := places.GetColor(destination.Image)
-		if err != nil {
-			errorChannel <- err
+		var destination triposo.InternalPlace
+		var colors *places.Colors
+		if len(parentParam)>0 {
+			destination = places.FromTriposoPlace(parentParam[0],parentParam[0].Type);
+			colorsRes, err := places.GetColor(destination.Image)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+			colors = colorsRes
 		}
-
+		
 		destinationChannel <- map[string]interface{}{
 			"colors": colors,
 			"destination": destination,
@@ -410,7 +417,9 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 
 	if optimize == false {
 		go func(itinerary interface{}) {
+			//fmt.Println(itinerary)
 			var locations []string
+			var chunks [][]string
 			locations = append(locations,fmt.Sprintf("%g,%g",itinerary.(Itinerary).Location.Latitude , itinerary.(Itinerary).Location.Longitude))
 			for i:=0; i < len(itineraryItems); i++ {
 				location := fmt.Sprintf("%g,%g", itineraryItems[i].Poi.Location.Lat,itineraryItems[i].Poi.Location.Lng)
@@ -443,16 +452,36 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 					}
 				}
 			}
-			r := &maps.DistanceMatrixRequest{
-				Origins:      locations,
-				Destinations: locations,
-			}
-			matrix,err := googleClient.DistanceMatrix(ctx,r)
-			if err != nil {
-				errorChannel <- err
-			}
 
+			batchSize := 10
+
+			for batchSize < len(locations) {
+					locations, chunks = locations[batchSize:], append(chunks, locations[0:batchSize:batchSize])
+			}
+			chunks = append(chunks, locations)
+
+			var matrix *maps.DistanceMatrixResponse
+			for i:=0; i < len(chunks); i++ {
+
+				r := &maps.DistanceMatrixRequest{
+					Origins:      chunks[i],
+					Destinations: chunks[i],
+				}
+				res,err := googleClient.DistanceMatrix(ctx,r)
+				if err != nil {
+					fmt.Println(err)
+					errorChannel <- err
+					return
+				}
+				if matrix == nil {
+					matrix = res
+				} else {
+					matrix.Rows = append(matrix.Rows, res.Rows...)
+				}
+
+			}
 			matrixChannel <- *matrix
+			
 			
 			
 		}(itinerary["itinerary"])
@@ -510,7 +539,7 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 
 //GetDay func
 func GetDay(w http.ResponseWriter, r *http.Request) {
-
+	fmt.Println("Got day")
 	getDay(w,r,nil, false)
 	return
 
@@ -576,6 +605,7 @@ func CreateItineraryHelper(tripID string, destinationID string, itinerary Itiner
 			if errCreate != nil {
 				// Handle any errors in an appropriate way, such as returning them.
 				errorChannel <- errCreate
+				return
 			}
 
 			_, errCrUp := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(daydoc.ID).Set(ctx, map[string]interface{}{
@@ -584,6 +614,7 @@ func CreateItineraryHelper(tripID string, destinationID string, itinerary Itiner
 			if errCrUp != nil {
 				// Handle any errors in an appropriate way, such as returning them.
 				errorChannel <- errCrUp
+				return
 			}
 
 			dayChannel <- doc.ID
@@ -692,6 +723,7 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 	itineraryID := mux.Vars(r)["itineraryId"]
 	dayID := mux.Vars(r)["dayId"]
 	place := mux.Vars(r)["placeId"]
+	fmt.Println("Delete Itinerary Item")
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()

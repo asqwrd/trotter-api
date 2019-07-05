@@ -3,6 +3,7 @@ package triptypes
 import (
 	"time"
 
+	"firebase.google.com/go/auth"
 	"github.com/asqwrd/trotter-api/triposo"
 )
 
@@ -16,13 +17,28 @@ type Trip struct {
 	Color        string        `json:"color" firestore:"color"`
 	Destinations []Destination `json:"destinations" firestore:"destinations"`
 	ItineraryIDS []string      `json:"itinerary_ids" firestore:"itinerary_ids"`
-	UpdateAt     time.Time     `json:"update_at" firestore:"update_at"`
+	UpdatedAt    time.Time     `json:"updated_at" firestore:"updated_at"`
+	Travelers    []User        `json:"travelers"`
 }
 
 // TripRes Struct for post
 type TripRes struct {
 	Trip         Trip
 	Destinations []Destination
+	User         User
+	Travelers    []auth.UserInfo
+}
+
+// User struct
+type User struct {
+	DisplayName string `json:"displayName"`
+	Email       string `json:"email"`
+	PhoneNumber string `json:"phoneNumber"`
+	PhotoURL    string `json:"photoUrl"`
+	// In the ProviderUserInfo[] ProviderID can be a short domain name (e.g. google.com),
+	// or the identity of an OpenID identity provider.
+	// In UserRecord.UserInfo it will return the constant string "firebase".
+	UID string `json:"uid"`
 }
 
 // Destination struct

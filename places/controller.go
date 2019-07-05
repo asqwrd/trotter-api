@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"strconv"
+
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
@@ -203,6 +205,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		country, err := triposo.GetLocation(cityRes.CountryID);
 		if err != nil {
 			errorChannel <- err
+			return
 		}
 
 		countryParam := *country
@@ -217,6 +220,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 				colors, err := GetColor(image)
 				if err != nil {
 					errorChannel <- err
+					return
 				}
 				colorChannel <- *colors
 			}
@@ -304,10 +308,10 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-//Get Home
-
+//GetHome
 func GetHome(w http.ResponseWriter, r *http.Request) {
 	typeparams := []string{"island", "city"}
+	fmt.Println("Got Home")
 
 	placeChannel := make(chan PlaceChannel)
 
@@ -464,12 +468,12 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 	var poi *triposo.InternalPlace
 	ctx := context.Background()
 
-
 	if googlePlace == "true" {
 		go func() {
 			googleClient, err := InitGoogle()
 			if err != nil  {
 				errorChannel <- err
+				return
 			}
 			r := &maps.PlaceDetailsRequest{
 				PlaceID:      poiID,
@@ -477,6 +481,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 			place,err := googleClient.PlaceDetails(ctx,r)
 			if err != nil {
 				errorChannel <- err
+				return
 			}
 			photo := "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference="+place.Photos[0].PhotoReference+"&key="+GoogleApi
 			go func(image string) {
@@ -488,6 +493,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 					colors, err := GetColor(image)
 					if err != nil {
 						errorChannel <- err
+						return
 					}
 					colorChannel <- *colors
 				}
@@ -517,6 +523,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 					colors, err := GetColor(image)
 					if err != nil {
 						errorChannel <- err
+						return
 					}
 					colorChannel <- *colors
 				}
@@ -528,7 +535,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 	
 
 	go func() {
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 		timeoutChannel <- true
 	}()
 
@@ -593,6 +600,7 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 		place, err := triposo.GetPoiFromLocation(parkID, "20", "", 0)
 		if err != nil {
 			errorChannel <- err
+			return
 		}
 		poiChannel <- *place
 	}()
@@ -616,6 +624,7 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 				colors, err := GetColor(image)
 				if err != nil {
 					errorChannel <- err
+					return
 				}
 				colorChannel <- *colors
 			}
@@ -676,7 +685,14 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 // Search function
 func Search(w http.ResponseWriter, r *http.Request) {
 	query := mux.Vars(r)["query"]
-	id := r.URL.Query().Get("id")
+	latq :=r.URL.Query().Get("lat")
+	lngq :=r.URL.Query().Get("lng")
+	fmt.Println(latq)
+
+	lat,_ := strconv.ParseFloat(latq,64)
+	lng, _ := strconv.ParseFloat(lngq,64)
+
+	//id := r.URL.Query().Get("id")
 	//poi := r.URL.Query().Get("poi")
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
@@ -698,7 +714,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 
-	if (len(id) == 0) {
+	if (len(latq) == 0 && len(lngq) == 0) {
 		typeparams := []string{"island", "city", "city_state", "national_park", "region"}
 		placeChannel := make(chan PlaceChannel)
 
@@ -865,7 +881,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		var triposoResults []triposo.InternalPlace
-		poiChannel := make(chan []triposo.Place)
+		//poiChannel := make(chan []triposo.Place)
 
 		go func() {
 			search, err := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Get(ctx)
@@ -888,28 +904,46 @@ func Search(w http.ResponseWriter, r *http.Request) {
 
 		}()
 
-		go func() {
-			//print(id)
-			//fmt.Println(query)
-			place, err := triposo.Search(query, "poi", id)
-			if(err != nil) {
-				errorChannel <- err
-			}
-			//fmt.Println(place)
-			poiChannel <- *place
-
-			
-		}()
+		googlePlaceChannel := make(chan triposo.InternalPlace)
+		googleClient, err := InitGoogle()
+		if err != nil  {
+			errorChannel <- err
+			return
+		}
+		latlng := &maps.LatLng{Lat: lat, Lng: lng}
+		r := &maps.PlaceAutocompleteRequest{
+			Input: query,
+			Location: latlng,
+			Radius : 50000,
+		}
+		places,err := googleClient.PlaceAutocomplete(ctx,r)
+				if err != nil {
+					errorChannel <- err
+					return
+				}
+		for i:=0; i < len(places.Predictions); i++ {
+			go func(placeID string) {
+				r := &maps.PlaceDetailsRequest{
+					PlaceID:      placeID,
+				}
+				place,err := googleClient.PlaceDetails(ctx,r)
+				googlePlaceChannel <- FromGooglePlace(place,"poi")
+				if err != nil {
+					errorChannel <- err
+					return
+				}
+			}(places.Predictions[i].PlaceID)
+		}
 
 		go func() {
 			time.Sleep(10 * time.Second)
 			timeoutChannel <- true
 		}()
 
-		for i := 0; i < 1; i++ {
+		for i := 0; i <  len(places.Predictions); i++ {
 			select {
-			case res := <-poiChannel:
-				triposoResults = FromTriposoPlaces(res, "poi")
+			case res := <-googlePlaceChannel:
+				triposoResults = append(triposoResults, res)
 			case err := <-errorChannel:
 				response.WriteErrorResponse(w, err)
 				return
@@ -942,6 +976,105 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		}, http.StatusOK)
 		return
 	}
+}
+
+// SearchGoogle function
+func SearchGoogle(w http.ResponseWriter, r *http.Request) {
+	query := mux.Vars(r)["query"]
+	latq :=r.URL.Query().Get("lat")
+	lngq :=r.URL.Query().Get("lng")
+
+	lat,errlat := strconv.ParseFloat(latq,64)
+	lng, errlng := strconv.ParseFloat(lngq,64)
+	if errlng != nil {
+		response.WriteErrorResponse(w, errlng)
+		return
+	}
+	if errlat != nil {
+		response.WriteErrorResponse(w, errlat)
+		return
+	}
+
+	addQuery := make(chan bool)
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+		var triposoResults []triposo.InternalPlace
+
+		go func() {
+			search, err := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Get(ctx)
+			if err != nil {
+				addQuery <- true
+				return
+			}
+
+			searchData := search.Data()
+			count := searchData["count"].(int64) + 1
+			_, errSearch := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
+				"count": count,
+				"value": query,
+			})
+			if errSearch != nil {
+				// Handle any errors in an appropriate way, such as returning them.
+				response.WriteErrorResponse(w, errSearch)
+			}
+			addQuery <- false
+
+		}()
+
+		googleClient, err := InitGoogle()
+		if err != nil  {
+			response.WriteErrorResponse(w, err)
+		}
+		latlng := &maps.LatLng{Lat: lat, Lng: lng}
+		p := &maps.TextSearchRequest {
+			Query: query,
+			Location : latlng,
+			Radius  : 50000,
+		}
+		places,err := googleClient.TextSearch(ctx,p)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+		}
+		for i:=0; i < len(places.Results); i++ {
+			triposoResults = append(triposoResults, FromGooglePlaceSearch(places.Results[i],"poi"))		
+		}
+
+
+		for i := 0; i < 1; i++ {
+			select {
+			case res := <-addQuery:
+				if res == true && (len(triposoResults) > 0) {
+					_, err := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
+						"count": 1,
+						"value": query,
+					})
+					if err != nil {
+						// Handle any errors in an appropriate way, such as returning them.
+						response.WriteErrorResponse(w, err)
+					}
+				}
+			}
+		}
+
+		response.Write(w, map[string]interface{}{
+			"results": triposoResults,
+		}, http.StatusOK)
+		return
+	
 }
 
 // RecentSearch function
@@ -1040,6 +1173,7 @@ func GetPopularLocations(w http.ResponseWriter, r *http.Request) {
 		places, err := triposo.GetLocations("10")
 		if err != nil {
 			errorChannel <- err
+			return
 		}
 		placeChannel <- *places
 

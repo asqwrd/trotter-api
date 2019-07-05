@@ -6,9 +6,9 @@ import (
 
 	"github.com/asqwrd/trotter-api/auth"
 	"github.com/asqwrd/trotter-api/country"
+	"github.com/asqwrd/trotter-api/itineraries"
 	"github.com/asqwrd/trotter-api/places"
 	"github.com/asqwrd/trotter-api/trips"
-	"github.com/asqwrd/trotter-api/itineraries"
 	"github.com/gorilla/mux"
 )
 
@@ -56,6 +56,9 @@ var routes = Routes{
 		"Search", "GET", "/api/search/find/{query}/", places.Search,
 	},
 	Route{
+		"SearchGoogle", "GET", "/api/search/google/{query}/", places.SearchGoogle,
+	},
+	Route{
 		"RecentSearch", "GET", "/api/search/recent/", places.RecentSearch,
 	},
 	Route{
@@ -78,6 +81,9 @@ var routes = Routes{
 	},
 	Route{
 		"UpdateDestination", "PUT", "/api/trips/update/{tripId}/destination/{destinationId}", trips.UpdateDestination,
+	},
+	Route{
+		"AddTraveler", "POST", "/api/trips/{tripId}/travelers/add", trips.AddTraveler,
 	},
 	Route{
 		"GetTrip", "GET", "/api/trips/get/{tripId}", trips.GetTrip,

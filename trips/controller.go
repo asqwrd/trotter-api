@@ -17,7 +17,6 @@ import (
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"net/url"
-
 )
 
 // GetTrips function
@@ -46,7 +45,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 
-	iter := client.Collection("trips").Where("owner_id", "==",q.Get("owner_id")).Documents(ctx)
+	iter := client.Collection("trips").Where("group", "array-contains",q.Get("user_id")).Documents(ctx)
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
@@ -58,6 +57,20 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 		}
 		var trip triptypes.Trip
 		doc.DataTo(&trip)
+		iterTravelers := client.Collection("trips").Doc(trip.ID).Collection("travelers").Documents(ctx)
+		for {
+			travelersDoc, errTravelers := iterTravelers.Next()
+			if errTravelers == iterator.Done {
+				break
+			}
+			if errTravelers != nil {
+				response.WriteErrorResponse(w, err)
+				return
+			}
+			var traveler triptypes.User
+			travelersDoc.DataTo(&traveler)
+			trip.Travelers = append(trip.Travelers, traveler)
+		}
 		trips = append(trips, trip)
 	}
 	for i := 0; i < len(trips); i++ {
@@ -121,7 +134,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 		"trips": trips,
 	}
 
-	fmt.Print("Got trips");
+	fmt.Println("Got trips");
 
 	response.Write(w, tripsData, http.StatusOK)
 	return
@@ -171,6 +184,13 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 	if err2 != nil {
 		// Handle any errors in an appropriate way, such as returning them.
 		response.WriteErrorResponse(w, err2)
+	}
+	_, errUserCreate := client.Collection("trips").Doc(doc.ID).Collection("travelers").Doc(trip.User.UID).Set(ctx, trip.User)
+	if errUserCreate != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(errUserCreate)
+		response.WriteErrorResponse(w, errUserCreate)
+		return
 	}
 
 	//Adding destinations
@@ -236,7 +256,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 func getTrip(tripID string) (map[string]interface{}, error){
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
-	fmt.Println("Got Trips")
+	fmt.Println("Got Trip")
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
 		return nil, err
@@ -289,9 +309,26 @@ func getTrip(tripID string) (map[string]interface{}, error){
 		doc.DataTo(&destination)
 		dest = append(dest, destination)
 	}
+
+	var trav []triptypes.User
+	iterTravelers := client.Collection("trips").Doc(tripID).Collection("travelers").Documents(ctx)
+	for {
+		docTravelers, errTravelers := iterTravelers.Next()
+		if errTravelers == iterator.Done {
+			break
+		}
+		if errTravelers != nil {
+			return nil, errTravelers
+		}
+		var traveler triptypes.User
+		docTravelers.DataTo(&traveler)
+		trav = append(trav, traveler)
+	}
+
 	tripData := map[string]interface{}{
 		"trip": trip,
 		"destinations": dest,
+		"travelers": trav,
 	}
 	return tripData, err
 }
@@ -309,6 +346,7 @@ func GetTrip(w http.ResponseWriter, r *http.Request) {
 	response.Write(w, tripData, http.StatusOK)
 	return
 }
+
 
 // UpdateTrip function
 func UpdateTrip(w http.ResponseWriter, r *http.Request) {
@@ -338,7 +376,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
-	trip["updateAt"] = firestore.ServerTimestamp
+	trip["updatedAt"] = firestore.ServerTimestamp
 	_, err2 := client.Collection("trips").Doc(tripID).Set(ctx, trip,firestore.MergeAll)
 
 	if err2 != nil {
@@ -373,6 +411,85 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 	response.Write(w, tripData, http.StatusOK)	
 	return
 }
+
+// AddTraveler function
+func AddTraveler(w http.ResponseWriter, r *http.Request) {
+	tripID := mux.Vars(r)["tripId"]
+	decoder := json.NewDecoder(r.Body)
+	var trip triptypes.TripRes
+	err := decoder.Decode(&trip)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+	
+	//Check Destination
+	docSnap, _ := client.Collection("trips").Doc(tripID).Collection("travelers").Doc(trip.User.UID).Get(ctx)
+
+	if docSnap.Exists() == false {
+		tripSnap, errTrip := client.Collection("trips").Doc(tripID).Get(ctx)
+		if errTrip != nil {
+			response.WriteErrorResponse(w, errTrip)
+			return 
+		}
+		var tripDoc triptypes.Trip
+		tripSnap.DataTo(&tripDoc)
+		fmt.Println(tripDoc.Group)
+		var group = append(tripDoc.Group,trip.User.UID)
+		_, errUpdateGroup := client.Collection("trips").Doc(tripID).Set(ctx,map[string]interface{}{
+			"group": group,
+			"updatedAt": firestore.ServerTimestamp,
+		},firestore.MergeAll)
+	
+		if errUpdateGroup != nil {
+			fmt.Println("update group failed")
+			response.WriteErrorResponse(w, errUpdateGroup)
+			return
+		}
+		_, errUserCreate := client.Collection("trips").Doc(tripID).Collection("travelers").Doc(trip.User.UID).Set(ctx, trip.User)
+		if errUserCreate != nil {
+			// Handle any errors in an appropriate way, such as returning them.
+			fmt.Println(errUserCreate)
+			response.WriteErrorResponse(w, errUserCreate)
+			return
+		}
+	} else {
+		response.Write(w, map[string]interface{}{
+			"success": true,
+			"exists" : true,
+		}, http.StatusOK)	
+		return
+	}
+
+	fmt.Println("Traveler Added")
+
+	tripData := map[string]interface{}{
+		"success": true,
+		"exists": false,
+	}
+
+	response.Write(w, tripData, http.StatusOK)	
+	return
+}
+
 
 // UpdateDestination function
 func UpdateDestination(w http.ResponseWriter, r *http.Request) {
@@ -481,6 +598,7 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 					_, errDays := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Delete(ctx)
 					if errDays != nil {
 						errorChannel <- errDays
+						return
 					}
 					itineraryItemsChannel <- itineraryItemsData
 				}(id)
@@ -519,8 +637,8 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 					})
 					if errCreate != nil {
 						// Handle any errors in an appropriate way, such as returning them.
-						fmt.Println(errCreate)
 						errorChannel <- errCreate
+						return
 					}
 		
 					_, errCrUp := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(daydoc.ID).Set(ctx, map[string]interface{}{
@@ -528,8 +646,8 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 					},firestore.MergeAll)
 					if errCrUp != nil {
 						// Handle any errors in an appropriate way, such as returning them.
-						fmt.Println(errCrUp)
 						errorChannel <- errCrUp
+						return
 					}
 					dayIdsChannel <- daydoc.ID
 				}(lastIndex, i)
@@ -693,6 +811,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 	tripID := mux.Vars(r)["tripId"]
 	var errorChannel = make(chan error)
 	var destDeleteChannel = make(chan interface{})
+	var travelDeleteChannel = make(chan interface{})
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
@@ -732,12 +851,40 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 			deleteRes, errDelete := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destination.ID).Delete(ctx)
 			if errDelete != nil {
 				// Handle any errors in an appropriate way, such as returning them.
-				fmt.Println(errDelete)
 				errorChannel <- errDelete
+				return
 			}
 			
 			destDeleteChannel <- deleteRes
 		}(tripID,dest[i])
+	}
+
+	var travelers []string
+	iterTrav := client.Collection("trips").Doc(tripID).Collection("travelers").Documents(ctx)
+	for {
+		doc, err := iterTrav.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		dataMap := doc.Ref.ID
+		travelers = append(travelers, dataMap)
+	}
+
+	for i:=0; i < len(travelers); i++ {
+		go func(tripID string, travelerID string) {
+			deleteRes, errDelete := client.Collection("trips").Doc(tripID).Collection("travelers").Doc(travelerID).Delete(ctx)
+			if errDelete != nil {
+				// Handle any errors in an appropriate way, such as returning them.
+				errorChannel <- errDelete
+				return
+			}
+			
+			travelDeleteChannel <- deleteRes
+		}(tripID,travelers[i])
 	}
 
 	iterI10 := client.Collection("itineraries").Where("trip_id", "==", tripID).Documents(ctx)
@@ -790,6 +937,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	count := 0
+	travCount := 0
 
 	_, errDelete := client.Collection("trips").Doc(tripID).Delete(ctx)
 	if errDelete != nil {
@@ -799,10 +947,14 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i:=0; i < len(dest); i++ {
+	total := len(dest) + len(travelers)
+
+	for i:=0; i < total; i++ {
 		select{
 		case <- destDeleteChannel:
 			count = count + 1
+		case <- travelDeleteChannel:
+			travCount = travCount + 1
 		case err := <- errorChannel:
 			response.WriteErrorResponse(w, err)
 			return
@@ -814,6 +966,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 	
 	deleteData := map[string]interface{}{
 		"destinations_deleted": count,
+		"travelers_deleted": travCount,
 		"success": true,
 	}
 

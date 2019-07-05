@@ -40,6 +40,7 @@ func getCurrencies() (map[string]interface{}, error) {
 		res, err := GetCountriesCurrenciesApi()
 		if err != nil {
 			errorChannel <- err
+			return
 		}
 		currencyChannel <- res
 	}()
@@ -190,10 +191,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 		return
 	}
-
 	countryCodeData := code.Data()
 	countryCode := countryCodeData["abbreviation"].(string)
-
 	/*
 		*
 		*

@@ -165,6 +165,7 @@ type InternalPlace struct {
 	ID               string        `json:"id" firestore:"id"`
 	Type             string        `json:"type" firestore:"type"`
 	Image            string        `json:"image,omitempty" firestore:"image,omitempty"`
+	ImageHD            string        `json:"image_hd,omitempty" firestore:"image_hd,omitempty"`
 	Description      string        `json:"description" json:"intro" firestore:"intro" firestore:"description"`
 	DescriptionShort string        `json:"description_short,omitempty" firestore:"description_short,omitempty"`
 	Name             string        `json:"name" firestore:"name"`
@@ -211,7 +212,7 @@ const TRIPOSO_ACCOUNT = "2ZWR5MHH"
 const TRIPOSO_TOKEN = "yan4ujbhzepr66ttsqxiqwcl38k3lx0w"
 
 func GetPlaceByName(name string) (*PoiInfo, error) {
-	client := http.Client{Timeout: time.Second * 10}
+	client := http.Client{Timeout: time.Second * 30}
 
 	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?type=country&order_by=-trigram&count=1&fields=id,country_id&annotate=trigram:"+name+"&trigram=>=0.3&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
 	if err != nil {
@@ -244,7 +245,7 @@ func Search(query string, typeParam string, location_id string) (*[]Place, error
 	client := http.Client{Timeout: time.Second * 20}
 	url := baseTriposoAPI + "location.json?type=" + typeParam + "&order_by=-trigram&fields=name,parent_id,score,images,id,type,coordinates,country_id,snippet,content,properties,intro&annotate=trigram:" + query + "&trigram=>=0.3&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
 	if typeParam == "poi" {
-		url = baseTriposoAPI + "poi.json?location_id=" + location_id + "&fields=intro,images,location_id,id,content,opening_hours,coordinates,snippet,score,facebook_id,attribution,best_for,tags,properties,price_tier,name,booking_info&annotate=trigram:" + query + "&trigram=>=0.3&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
+		url = baseTriposoAPI + "poi.json?location_id=" + location_id + "&fields=intro,images,location_id,id,content,opening_hours,coordinates,snippet,score,facebook_id,attribution,best_for,tags,properties,price_tier,name,booking_info&annotate=trigram:" + query + "&trigram=>=0.2&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
 	}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -273,7 +274,7 @@ func Search(query string, typeParam string, location_id string) (*[]Place, error
 }
 
 func GetDestination(id string, count string) (*[]Place, error) {
-	client := http.Client{Timeout: time.Second * 10}
+	client := http.Client{Timeout: time.Second * 30}
 
 	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?part_of="+id+"&order_by=-score&count="+count+"&fields=id,score,parent_id,country_id,intro,name,images,content,coordinates&type=city&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
 	if err != nil {
@@ -332,7 +333,7 @@ func GetPoi(id string) (*[]Place, error) {
 
 func GetPoiFromLocation(id string, count string, tag_labels string, index int) (*[]Place, error) {
 
-	client := http.Client{Timeout: time.Second * 10}
+	client := http.Client{Timeout: time.Second * 30}
 	url := baseTriposoAPI + "poi.json?location_id=" + id + "&count=" + count + "&fields=id,name,coordinates,facebook_id,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
 	if len(tag_labels) > 0 {
 		url = baseTriposoAPI + "poi.json?location_id=" + id + "&tag_labels=" + tag_labels + "&count=" + count + "&fields=id,name,coordinates,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
@@ -370,7 +371,7 @@ func GetPoiFromLocation(id string, count string, tag_labels string, index int) (
 }
 
 func GetLocation(id string) (*[]Place, error) {
-	client := http.Client{Timeout: time.Second * 10}
+	client := http.Client{Timeout: time.Second * 30}
 
 	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?id="+id+"&order_by=-score&fields=coordinates,parent_id,country_id,images,content,name,id,snippet,type&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
 	if err != nil {
@@ -400,7 +401,7 @@ func GetLocation(id string) (*[]Place, error) {
 }
 
 func GetLocationType(type_id string, count string) (*[]Place, error) {
-	client := http.Client{Timeout: time.Second * 10}
+	client := http.Client{Timeout: time.Second * 30}
 
 	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?type="+type_id+"&count="+count+"&order_by=-score&fields=coordinates,parent_id,country_id,images,content,name,id,score,snippet&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
 	if err != nil {
@@ -429,7 +430,7 @@ func GetLocationType(type_id string, count string) (*[]Place, error) {
 }
 
 func GetLocations(count string) (*[]Place, error) {
-	client := http.Client{Timeout: time.Second * 10}
+	client := http.Client{Timeout: time.Second * 30}
 
 	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?count="+count+"&order_by=-score&fields=parent_id,country_id,name,id,score,coordinates,type,images&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
 	if err != nil {

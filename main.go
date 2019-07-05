@@ -20,10 +20,10 @@ func main() {
 		print("Running on port: " + port)
 	}
 
-	sygicAPIKey := os.Getenv("SYGIC_API_KEY")
-	if sygicAPIKey == "" {
-		log.Fatal("$SYGIC_API_KEY not set")
-	}
+	// sygicAPIKey := os.Getenv("SYGIC_API_KEY")
+	// if sygicAPIKey == "" {
+	// 	log.Fatal("$SYGIC_API_KEY not set")
+	// }
 
 	router := router.NewRouter()
 

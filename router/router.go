@@ -8,10 +8,12 @@ import (
 	"github.com/asqwrd/trotter-api/country"
 	"github.com/asqwrd/trotter-api/itineraries"
 	"github.com/asqwrd/trotter-api/places"
+	"github.com/asqwrd/trotter-api/traxo"
 	"github.com/asqwrd/trotter-api/trips"
 	"github.com/gorilla/mux"
 )
 
+// Route struct
 type Route struct {
 	Name        string
 	Method      string
@@ -19,6 +21,7 @@ type Route struct {
 	HandlerFunc http.HandlerFunc
 }
 
+// Routes type
 type Routes []Route
 
 var routes = Routes{
@@ -39,6 +42,9 @@ var routes = Routes{
 		"GET",
 		"/api/explore/city_states/{countryID}/",
 		country.GetCountry,
+	},
+	Route{
+		"GetConfirmations", "GET", "/api/confirmations/", traxo.GetConfirmations,
 	},
 	Route{
 		"GetCity", "GET", "/api/explore/cities/{cityID}/", places.GetCity,

@@ -1,11 +1,10 @@
 package trips
 
 import (
-	"encoding/json" //"sort"
+	"encoding/json" 
 	"time"
 	"fmt"
-	"net/http" //"net/url"
-	//"github.com/asqwrd/trotter-api/triposo"
+	"net/http"
 	firebase "firebase.google.com/go"
 	"github.com/asqwrd/trotter-api/places" 
 	"cloud.google.com/go/firestore" 

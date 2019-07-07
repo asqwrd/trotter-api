@@ -10,6 +10,7 @@ import (
 	"github.com/asqwrd/trotter-api/places"
 	"github.com/asqwrd/trotter-api/traxo"
 	"github.com/asqwrd/trotter-api/trips"
+	"github.com/asqwrd/trotter-api/users"
 	"github.com/gorilla/mux"
 )
 
@@ -90,6 +91,9 @@ var routes = Routes{
 	},
 	Route{
 		"AddTraveler", "POST", "/api/trips/{tripId}/travelers/add", trips.AddTraveler,
+	},
+	Route{
+		"SaveLogin", "POST", "/api/users/login", users.SaveLogin,
 	},
 	Route{
 		"GetTrip", "GET", "/api/trips/get/{tripId}", trips.GetTrip,

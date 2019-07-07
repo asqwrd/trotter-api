@@ -5,6 +5,7 @@ require (
 	firebase.google.com/go v3.4.0+incompatible
 	github.com/generaltso/sadbox v0.0.0-20120828195626-27893f92b8ce // indirect
 	github.com/generaltso/vibrant v0.0.0-20171030211322-563623b97aee
+	github.com/google/go-cmp v0.3.0 // indirect
 	github.com/google/uuid v1.1.0 // indirect
 	github.com/googleapis/gax-go v2.0.0+incompatible // indirect
 	github.com/gorilla/context v1.1.1 // indirect

@@ -31,14 +31,11 @@ type TripRes struct {
 
 // User struct
 type User struct {
-	DisplayName string `json:"displayName"`
-	Email       string `json:"email"`
-	PhoneNumber string `json:"phoneNumber"`
-	PhotoURL    string `json:"photoUrl"`
-	// In the ProviderUserInfo[] ProviderID can be a short domain name (e.g. google.com),
-	// or the identity of an OpenID identity provider.
-	// In UserRecord.UserInfo it will return the constant string "firebase".
-	UID string `json:"uid"`
+	DisplayName string `json:"displayName" firestore:"displayName"`
+	Email       string `json:"email" firestore:"email"`
+	PhoneNumber string `json:"phoneNumber" firestore:"phoneNumber"`
+	PhotoURL    string `json:"photoUrl" firestore:"photoUrl"`
+	UID         string `json:"uid" firestore:"uid"`
 }
 
 // Destination struct

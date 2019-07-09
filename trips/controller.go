@@ -10,7 +10,7 @@ import (
 	"cloud.google.com/go/firestore" 
 	"github.com/asqwrd/trotter-api/response"
 	"github.com/asqwrd/trotter-api/itineraries"
-	"github.com/asqwrd/trotter-api/types/trips"
+	"github.com/asqwrd/trotter-api/types"
 	"github.com/gorilla/mux"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
@@ -23,9 +23,9 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
-	var trips = make([]triptypes.Trip,0)
+	var trips = make([]types.Trip,0)
 	colorChannel := make(chan places.ColorChannel)
-	destinationChannel := make(chan triptypes.DestinationChannel)
+	destinationChannel := make(chan types.DestinationChannel)
 	var q *url.Values
 	args := r.URL.Query()
 	q = &args
@@ -54,7 +54,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 			response.WriteErrorResponse(w, err)
 			return
 		}
-		var trip triptypes.Trip
+		var trip types.Trip
 		doc.DataTo(&trip)
 		iterTravelers := client.Collection("trips").Doc(trip.ID).Collection("travelers").Documents(ctx)
 		for {
@@ -66,7 +66,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 				response.WriteErrorResponse(w, err)
 				return
 			}
-			var traveler triptypes.User
+			var traveler types.User
 			travelersDoc.DataTo(&traveler)
 			trip.Travelers = append(trip.Travelers, traveler)
 		}
@@ -87,7 +87,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 				
 		}(i)
 		go func(index int){
-			var dest []triptypes.Destination
+			var dest []types.Destination
 			iter := client.Collection("trips").Doc(trips[index].ID).Collection("destinations").Documents(ctx)
 			for {
 				doc, err := iter.Next()
@@ -98,11 +98,11 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 					response.WriteErrorResponse(w, err)
 					return
 				}
-				var destination triptypes.Destination
+				var destination types.Destination
 				doc.DataTo(&destination)
 				dest = append(dest, destination)
 			}
-			res := new(triptypes.DestinationChannel)
+			res := new(types.DestinationChannel)
 			res.Destinations = dest
 			res.Index = index
 			destinationChannel <- *res
@@ -142,7 +142,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 // CreateTrip function
 func CreateTrip(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	var trip triptypes.TripRes
+	var trip types.TripRes
 	destinationChannel := make(chan string)
 	err := decoder.Decode(&trip)
 	if err != nil {
@@ -272,7 +272,7 @@ func getTrip(tripID string) (map[string]interface{}, error){
 	if err != nil {
 		return nil, err
 	}
-	var trip triptypes.Trip
+	var trip types.Trip
 	snap.DataTo(&trip)
 	
 
@@ -294,7 +294,7 @@ func getTrip(tripID string) (map[string]interface{}, error){
 		trip.Color = colors.DarkMuted
 	}
 
-	var dest []triptypes.Destination
+	var dest []types.Destination
 	iter := client.Collection("trips").Doc(tripID).Collection("destinations").Documents(ctx)
 	for {
 		doc, err := iter.Next()
@@ -304,12 +304,12 @@ func getTrip(tripID string) (map[string]interface{}, error){
 		if err != nil {
 			return nil, err
 		}
-		var destination triptypes.Destination
+		var destination types.Destination
 		doc.DataTo(&destination)
 		dest = append(dest, destination)
 	}
 
-	var trav []triptypes.User
+	var trav []types.User
 	iterTravelers := client.Collection("trips").Doc(tripID).Collection("travelers").Documents(ctx)
 	for {
 		docTravelers, errTravelers := iterTravelers.Next()
@@ -319,7 +319,7 @@ func getTrip(tripID string) (map[string]interface{}, error){
 		if errTravelers != nil {
 			return nil, errTravelers
 		}
-		var traveler triptypes.User
+		var traveler types.User
 		docTravelers.DataTo(&traveler)
 		trav = append(trav, traveler)
 	}
@@ -415,7 +415,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 func AddTraveler(w http.ResponseWriter, r *http.Request) {
 	tripID := mux.Vars(r)["tripId"]
 	decoder := json.NewDecoder(r.Body)
-	var trip triptypes.TripRes
+	var trip types.TripRes
 	err := decoder.Decode(&trip)
 	if err != nil {
 		fmt.Println(err)
@@ -449,7 +449,7 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 			response.WriteErrorResponse(w, errTrip)
 			return 
 		}
-		var tripDoc triptypes.Trip
+		var tripDoc types.Trip
 		tripSnap.DataTo(&tripDoc)
 		fmt.Println(tripDoc.Group)
 		var group = append(tripDoc.Group,trip.User.UID)
@@ -680,7 +680,7 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 	exists := false
 	decoder := json.NewDecoder(r.Body)
 	destinationChannel := make(chan firestore.DocumentRef)
-	var destination triptypes.Destination
+	var destination types.Destination
 	err := decoder.Decode(&destination)
 	if err != nil {
 		fmt.Println(err)
@@ -731,7 +731,7 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 		}, http.StatusConflict)	
 		return
 	}	
-	go func(tripID string, destination triptypes.Destination){
+	go func(tripID string, destination types.Destination){
 		destDoc, _, errCreate := client.Collection("trips").Doc(tripID).Collection("destinations").Add(ctx, destination)
 		if errCreate != nil {
 			// Handle any errors in an appropriate way, such as returning them.
@@ -829,7 +829,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 
-	var dest []triptypes.Destination
+	var dest []types.Destination
 	iter := client.Collection("trips").Doc(tripID).Collection("destinations").Documents(ctx)
 	for {
 		doc, err := iter.Next()
@@ -840,13 +840,13 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 			response.WriteErrorResponse(w, err)
 			return
 		}
-		var destination triptypes.Destination
+		var destination types.Destination
 		doc.DataTo(&destination)
 		dest = append(dest, destination)
 	}
 
 	for i:=0; i < len(dest); i++ {
-		go func(tripID string, destination triptypes.Destination) {
+		go func(tripID string, destination types.Destination) {
 			deleteRes, errDelete := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destination.ID).Delete(ctx)
 			if errDelete != nil {
 				// Handle any errors in an appropriate way, such as returning them.

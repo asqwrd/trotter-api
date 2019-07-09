@@ -96,6 +96,9 @@ var routes = Routes{
 		"SaveLogin", "POST", "/api/users/login", users.SaveLogin,
 	},
 	Route{
+		"SaveToken", "POST", "/api/users/device", users.SaveToken,
+	},
+	Route{
 		"GetTrip", "GET", "/api/trips/get/{tripId}", trips.GetTrip,
 	},
 	Route{

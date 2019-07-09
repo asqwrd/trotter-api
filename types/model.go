@@ -1,4 +1,4 @@
-package triptypes
+package types
 
 import (
 	"time"
@@ -36,6 +36,12 @@ type User struct {
 	PhoneNumber string `json:"phoneNumber" firestore:"phoneNumber"`
 	PhotoURL    string `json:"photoUrl" firestore:"photoUrl"`
 	UID         string `json:"uid" firestore:"uid"`
+}
+
+//Token struct
+type Token struct {
+	UID   string `json:"uid" firestore:"uid"`
+	Token string `json:"token" firestore:"token"`
 }
 
 // Destination struct

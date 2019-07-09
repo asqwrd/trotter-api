@@ -9,7 +9,7 @@ import (
 	//"github.com/asqwrd/trotter-api/triposo"
 	firebase "firebase.google.com/go"
 	"github.com/asqwrd/trotter-api/response"
-	triptypes "github.com/asqwrd/trotter-api/types/trips"
+	"github.com/asqwrd/trotter-api/types"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 )
@@ -17,7 +17,7 @@ import (
 // SaveLogin function
 func SaveLogin(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	var user triptypes.User
+	var user types.User
 	err := decoder.Decode(&user)
 	if err != nil {
 		fmt.Println(err)
@@ -62,6 +62,64 @@ func SaveLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println("User Added")
+
+	userData := map[string]interface{}{
+		"success": true,
+		"exists":  false,
+	}
+
+	response.Write(w, userData, http.StatusOK)
+	return
+}
+
+// SaveToken function
+func SaveToken(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var token types.Token
+	err := decoder.Decode(&token)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	//Check User
+	docSnap, _ := client.Collection("users").Doc(token.UID).Collection("devices").Doc(token.Token).Get(ctx)
+	if docSnap.Exists() == false {
+
+		_, errDeviceCreate := client.Collection("users").Doc(token.UID).Collection("devices").Doc(token.Token).Set(ctx, token)
+		if errDeviceCreate != nil {
+			// Handle any errors in an appropriate way, such as returning them.
+			fmt.Println(errDeviceCreate)
+			response.WriteErrorResponse(w, errDeviceCreate)
+			return
+		}
+	} else {
+		response.Write(w, map[string]interface{}{
+			"success": true,
+			"exists":  true,
+		}, http.StatusOK)
+		return
+	}
+
+	fmt.Println("Device Added")
 
 	userData := map[string]interface{}{
 		"success": true,

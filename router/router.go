@@ -99,6 +99,9 @@ var routes = Routes{
 		"SaveToken", "POST", "/api/users/device", users.SaveToken,
 	},
 	Route{
+		"GetNotifications", "GET", "/api/notifications", users.GetNotifications,
+	},
+	Route{
 		"GetTrip", "GET", "/api/trips/get/{tripId}", trips.GetTrip,
 	},
 	Route{

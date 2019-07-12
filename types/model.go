@@ -38,6 +38,14 @@ type User struct {
 	UID         string `json:"uid" firestore:"uid"`
 }
 
+// Notification struct
+type Notification struct {
+	CreateAt int64       `json:"created_at" firestore:"created_at"`
+	Type     string      `json:"type" firestore:"type"`
+	Data     interface{} `json:"data" firestore:"data"`
+	Read     bool        `json:"read" firestore:"read"`
+}
+
 //Token struct
 type Token struct {
 	UID   string `json:"uid" firestore:"uid"`

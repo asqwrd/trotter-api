@@ -56,8 +56,9 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 		}
 		var trip types.Trip
 		doc.DataTo(&trip)
+		trip.Travelers = []types.User{}
 		iterTravelers := client.Collection("trips").Doc(trip.ID).Collection("travelers").Documents(ctx)
-		for {
+		for{
 			travelersDoc, errTravelers := iterTravelers.Next()
 			if errTravelers == iterator.Done {
 				break
@@ -309,7 +310,7 @@ func getTrip(tripID string) (map[string]interface{}, error){
 		dest = append(dest, destination)
 	}
 
-	var trav []types.User
+	trav := []types.User{}
 	iterTravelers := client.Collection("trips").Doc(tripID).Collection("travelers").Documents(ctx)
 	for {
 		docTravelers, errTravelers := iterTravelers.Next()

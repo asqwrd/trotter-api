@@ -768,6 +768,108 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// AddFlightsAndAccomodations function 
+func AddFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
+	tripID := mux.Vars(r)["tripId"]
+	decoder := json.NewDecoder(r.Body)
+	var flight types.FlightsAndAccomodations
+	err := decoder.Decode(&flight)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+	doc, _, errCreate := client.Collection("trips").Doc(tripID).Collection("flights_accomodations").Add(ctx, flight)
+	if errCreate != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(errCreate)
+		response.WriteErrorResponse(w, errCreate)
+	}
+
+	_, err2 := client.Collection("trips").Doc(tripID).Collection("flights_accomodations").Doc(doc.ID).Set(ctx, map[string]interface{}{
+		"id": doc.ID,
+	},firestore.MergeAll)
+	if err2 != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		response.WriteErrorResponse(w, err2)
+	}
+	flightData := map[string]interface{}{
+		"result": doc,
+		"success": true,
+	}
+
+	response.Write(w, flightData, http.StatusOK)	
+	return
+}
+
+// AddHotel function 
+func AddHotel(w http.ResponseWriter, r *http.Request) {
+	tripID := mux.Vars(r)["tripId"]
+	decoder := json.NewDecoder(r.Body)
+	var hotel types.Hotel
+	err := decoder.Decode(&hotel)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+	doc, _, errCreate := client.Collection("trips").Doc(tripID).Collection("hotels").Add(ctx, hotel)
+	if errCreate != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(errCreate)
+		response.WriteErrorResponse(w, errCreate)
+	}
+
+	_, err2 := client.Collection("trips").Doc(tripID).Collection("hotels").Doc(doc.ID).Set(ctx, map[string]interface{}{
+		"id": doc.ID,
+	},firestore.MergeAll)
+	if err2 != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		response.WriteErrorResponse(w, err2)
+	}
+	hotelData := map[string]interface{}{
+		"hotel": doc,
+	}
+
+	response.Write(w, hotelData, http.StatusOK)	
+	return
+}
+
 // DeleteDestination function 
 func DeleteDestination(w http.ResponseWriter, r *http.Request) {
 	tripID := mux.Vars(r)["tripId"]

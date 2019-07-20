@@ -154,9 +154,10 @@ type PriceDetail struct {
 
 // FlightsAndAccomodations struct
 type FlightsAndAccomodations struct {
-	Source    string    `json:"source" firestore:"source"`
-	Segments  []Segment `json:"segments" firestore:"segments"`
-	Travelers []string  `json:"travelers" firestore:"travelers"`
+	Source        string    `json:"source" firestore:"source"`
+	Segments      []Segment `json:"segments" firestore:"segments"`
+	Travelers     []string  `json:"travelers" firestore:"travelers"`
+	TravelersFull []User   `json:"travelers_full" firestore:"travelers_full"`
 }
 
 // Segment Struct

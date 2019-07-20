@@ -771,6 +771,7 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 // AddFlightsAndAccomodations function 
 func AddFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 	tripID := mux.Vars(r)["tripId"]
+	destinationID := mux.Vars(r)["destinationId"]
 	decoder := json.NewDecoder(r.Body)
 	var flight types.FlightsAndAccomodations
 	err := decoder.Decode(&flight)
@@ -796,14 +797,14 @@ func AddFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
-	doc, _, errCreate := client.Collection("trips").Doc(tripID).Collection("flights_accomodations").Add(ctx, flight)
+	doc, _, errCreate := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destinationID).Collection("flights_accomodations").Add(ctx, flight)
 	if errCreate != nil {
 		// Handle any errors in an appropriate way, such as returning them.
 		fmt.Println(errCreate)
 		response.WriteErrorResponse(w, errCreate)
 	}
 
-	_, err2 := client.Collection("trips").Doc(tripID).Collection("flights_accomodations").Doc(doc.ID).Set(ctx, map[string]interface{}{
+	_, err2 := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destinationID).Collection("flights_accomodations").Doc(doc.ID).Set(ctx, map[string]interface{}{
 		"id": doc.ID,
 	},firestore.MergeAll)
 	if err2 != nil {
@@ -812,6 +813,85 @@ func AddFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 	}
 	flightData := map[string]interface{}{
 		"result": doc,
+		"success": true,
+	}
+
+	response.Write(w, flightData, http.StatusOK)	
+	return
+}
+
+// GetFlightsAndAccomodations function 
+func GetFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
+	tripID := mux.Vars(r)["tripId"]
+	results := make([]map[string]interface{},0)
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+
+	defer client.Close()
+	itr := client.Collection("trips").Doc(tripID).Collection("destinations").Documents(ctx)
+	for {
+		dest, errDest := itr.Next()
+		if errDest == iterator.Done {
+			break
+		}
+		if errDest != nil {
+			response.WriteErrorResponse(w, errDest)
+			return
+		}
+		flightsAccomodations := []types.FlightsAndAccomodations{}
+		destination := types.Destination{}
+		dest.DataTo(&destination)
+		iter := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destination.ID).Collection("flights_accomodations").Documents(ctx)
+		for {
+			doc, err := iter.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				response.WriteErrorResponse(w, err)
+				return
+			}
+			var flightAccomodation types.FlightsAndAccomodations
+			doc.DataTo(&flightAccomodation)
+			flightAccomodation.TravelersFull = []types.User{}
+			for _, traveler := range flightAccomodation.Travelers {
+				user, errorUser := client.Collection("users").Doc(traveler).Get(ctx)
+				if errorUser != nil {
+					response.WriteErrorResponse(w, errorUser)
+					return
+				}
+
+				var traveler types.User
+				user.DataTo(&traveler)
+				flightAccomodation.TravelersFull = append(flightAccomodation.TravelersFull, traveler)
+
+			}
+			flightsAccomodations = append(flightsAccomodations, flightAccomodation)
+		}
+		data :=  map[string]interface{}{
+			"destination": destination,
+			"details": flightsAccomodations,
+		}
+
+		results = append(results, data)
+
+	}
+	flightData := map[string]interface{}{
+		"flightsAccomodations": results,
 		"success": true,
 	}
 

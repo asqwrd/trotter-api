@@ -824,6 +824,9 @@ func AddFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 func GetFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 	tripID := mux.Vars(r)["tripId"]
 	results := make([]map[string]interface{},0)
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
@@ -840,7 +843,7 @@ func GetFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
+	fmt.Println(q.Get("user_id"))
 	defer client.Close()
 	itr := client.Collection("trips").Doc(tripID).Collection("destinations").Documents(ctx)
 	for {
@@ -855,7 +858,7 @@ func GetFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 		flightsAccomodations := []types.FlightsAndAccomodations{}
 		destination := types.Destination{}
 		dest.DataTo(&destination)
-		iter := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destination.ID).Collection("flights_accomodations").Documents(ctx)
+		iter := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destination.ID).Collection("flights_accomodations").Where("travelers", "array-contains",q.Get("user_id")).Documents(ctx)
 		for {
 			doc, err := iter.Next()
 			if err == iterator.Done {

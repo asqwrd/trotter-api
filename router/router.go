@@ -96,6 +96,12 @@ var routes = Routes{
 		"UpdateDestination", "PUT", "/api/trips/update/{tripId}/destination/{destinationId}", trips.UpdateDestination,
 	},
 	Route{
+		"UpdateFlightsAndAccomodationTravelers", "PUT", "/api/trips/update/{tripId}/destination/{destinationId}/details/{detailId}", trips.UpdateFlightsAndAccomodationTravelers,
+	},
+	Route{
+		"GetFlightsAndAccomodationTravelers", "GET", "/api/trips/{tripId}/travelers", trips.GetFlightsAndAccomodationTravelers,
+	},
+	Route{
 		"AddTraveler", "POST", "/api/trips/{tripId}/travelers/add", trips.AddTraveler,
 	},
 	Route{

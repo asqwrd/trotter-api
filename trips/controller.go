@@ -902,6 +902,120 @@ func GetFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// GetFlightsAndAccomodationTravelers function 
+func GetFlightsAndAccomodationTravelers(w http.ResponseWriter, r *http.Request) {
+	tripID := mux.Vars(r)["tripId"]
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	travelers :=  []types.User{}
+	iterTravelers := client.Collection("trips").Doc(tripID).Collection("travelers").Documents(ctx)
+	for{
+		travelersDoc, errTravelers := iterTravelers.Next()
+		if errTravelers == iterator.Done {
+			break
+		}
+		if errTravelers != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		var traveler types.User
+		travelersDoc.DataTo(&traveler)
+		travelers = append(travelers, traveler)
+	}
+
+	
+	data := map[string]interface{}{
+		"travelers": travelers,
+		"success": true,
+	}
+
+	response.Write(w, data, http.StatusOK)	
+	return
+}
+
+// UpdateFlightsAndAccomodationTravelers function 
+func UpdateFlightsAndAccomodationTravelers(w http.ResponseWriter, r *http.Request) {
+	tripID := mux.Vars(r)["tripId"]
+	destinationID := mux.Vars(r)["destinationId"]
+	detailID := mux.Vars(r)["detailId"]
+
+	decoder := json.NewDecoder(r.Body)
+	var detail types.FlightsAndAccomodations
+	errDec := decoder.Decode(&detail)
+	if errDec != nil {
+		fmt.Println(errDec)
+		response.WriteErrorResponse(w, errDec)
+		return
+	}
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	_, err2 := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destinationID).Collection("flights_accomodations").Doc(detailID).Set(ctx, map[string]interface{}{
+			"travelers": detail.Travelers,
+		},firestore.MergeAll)
+	if err2 != nil {
+		fmt.Println(err2)
+		response.WriteErrorResponse(w, err2)
+		return
+	}
+	var travelersFull []types.User
+	for _, traveler := range detail.Travelers {
+		user, errorUser := client.Collection("users").Doc(traveler).Get(ctx)
+		if errorUser != nil {
+			fmt.Println(errorUser);
+			response.WriteErrorResponse(w, errorUser)
+			return
+		}
+
+		var traveler types.User
+		user.DataTo(&traveler)
+		travelersFull = append(travelersFull, traveler)
+
+	}	
+
+	
+	flightData := map[string]interface{}{
+		"travelers": travelersFull,
+		"success": true,
+	}
+
+	response.Write(w, flightData, http.StatusOK)	
+	return
+}
+
+
+
 // AddHotel function 
 func AddHotel(w http.ResponseWriter, r *http.Request) {
 	tripID := mux.Vars(r)["tripId"]

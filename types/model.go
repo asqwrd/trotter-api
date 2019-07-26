@@ -1,8 +1,6 @@
 package types
 
 import (
-	"time"
-
 	"firebase.google.com/go/auth"
 	"github.com/asqwrd/trotter-api/triposo"
 )
@@ -17,7 +15,7 @@ type Trip struct {
 	Color        string        `json:"color" firestore:"color"`
 	Destinations []Destination `json:"destinations" firestore:"destinations"`
 	ItineraryIDS []string      `json:"itinerary_ids" firestore:"itinerary_ids"`
-	UpdatedAt    time.Time     `json:"updated_at" firestore:"updated_at"`
+	UpdatedAt    interface{}   `json:"updated_at" firestore:"updated_at"`
 	Travelers    []User        `json:"travelers"`
 }
 
@@ -154,11 +152,11 @@ type PriceDetail struct {
 
 // FlightsAndAccomodations struct
 type FlightsAndAccomodations struct {
-	ID 						string 		`json:"id" firestore:"id"`
+	ID            string    `json:"id" firestore:"id"`
 	Source        string    `json:"source" firestore:"source"`
 	Segments      []Segment `json:"segments" firestore:"segments"`
 	Travelers     []string  `json:"travelers" firestore:"travelers"`
-	TravelersFull []User   	`json:"travelers_full" firestore:"travelers_full"`
+	TravelersFull []User    `json:"travelers_full" firestore:"travelers_full"`
 }
 
 // Segment Struct

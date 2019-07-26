@@ -16,6 +16,8 @@ import (
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"net/url"
+	"github.com/asqwrd/trotter-api/utils" 
+
 )
 
 // GetTrips function
@@ -376,7 +378,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
-	trip["updatedAt"] = firestore.ServerTimestamp
+	trip["updateAt"] = firestore.ServerTimestamp
 	_, err2 := client.Collection("trips").Doc(tripID).Set(ctx, trip,firestore.MergeAll)
 
 	if err2 != nil {
@@ -402,9 +404,46 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	trav := []types.User{}
+	if trip["group"] != nil {
+		group := trip["group"].([]interface{});
+		iter := client.Collection("trips").Doc(tripID).Collection("travelers").Documents(ctx)
+		for {
+			doc, err := iter.Next()
+			if err == iterator.Done {
+				break
+			}
+			var traveler types.User
+			doc.DataTo(&traveler)
+			if utils.FindInTripGroup(group, traveler) == false {
+				_, err3 := client.Collection("trips").Doc(tripID).Collection("travelers").Doc(traveler.UID).Delete(ctx)
+				if err3 != nil {
+					// Handle any errors in an appropriate way, such as returning them.
+					response.WriteErrorResponse(w, err3)	
+					return
+				}
+			}
+		}
+		
+		iterTravelers := client.Collection("trips").Doc(tripID).Collection("travelers").Documents(ctx)
+		for {
+			docTravelers, errTravelers := iterTravelers.Next()
+			if errTravelers == iterator.Done {
+				break
+			}
+			if errTravelers != nil {
+				response.WriteErrorResponse(w, errTravelers)	
+				return
+			}
+			var traveler types.User
+			docTravelers.DataTo(&traveler)
+			trav = append(trav, traveler)
+		}
+	}
 
 
 	tripData := map[string]interface{}{
+		"travelers": trav,
 		"success": true,
 	}
 

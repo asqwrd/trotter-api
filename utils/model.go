@@ -3,6 +3,8 @@ package utils
 import (
 	"cloud.google.com/go/firestore"
 	"golang.org/x/net/context"
+	"github.com/asqwrd/trotter-api/types"
+
 )
 
 // Block Type
@@ -36,7 +38,7 @@ func (tcf Block) Do() {
 	tcf.Try()
 }
 
-// CheckQuery function
+// CheckFirestoreQueryResults function
 func CheckFirestoreQueryResults(ctx context.Context, query firestore.Query) bool {
 
 	defer func() bool {
@@ -48,4 +50,15 @@ func CheckFirestoreQueryResults(ctx context.Context, query firestore.Query) bool
 	query.Documents(ctx)
 
 	return true
+}
+
+// FindInTripGroup function
+func FindInTripGroup(group []interface{}, queryUser types.User) bool {
+	for _, s := range group {
+		if s == queryUser.UID {
+			return true
+		}
+	}
+
+	return false
 }

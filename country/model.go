@@ -114,7 +114,7 @@ type Visa struct {
 	Textual     Textual  `json:"textual"`
 }
 
-type visaResponse struct {
+type VisaResponse struct {
 	Passport    Passport    `json:"passport"`
 	Visa        []Visa      `json:"visa"`
 	Vaccination Vaccination `json:"vaccination"`
@@ -230,7 +230,7 @@ func ConvertCurrency(to string, from string) (map[string]interface{}, error) {
 
 }
 
-func GetVisa(to string, from string) (*visaResponse, error) {
+func GetVisa(to string, from string) (*VisaResponse, error) {
 	client := http.Client{Timeout: time.Second * 10}
 	req, err := http.NewRequest(http.MethodGet, "https://api.joinsherpa.com/v2/entry-requirements/"+from+"-"+to, nil)
 	if err != nil {
@@ -245,7 +245,7 @@ func GetVisa(to string, from string) (*visaResponse, error) {
 		return nil, errors.New("Failed to access the Sherpa API.")
 	}
 
-	resp := &visaResponse{}
+	resp := &VisaResponse{}
 	err = json.NewDecoder(res.Body).Decode(resp)
 	if err != nil {
 		log.Println(err)
@@ -275,7 +275,7 @@ func formatPassport(passport Passport) (p *Passport) {
 	return p
 }
 
-func FormatVisa(visa visaResponse) (v *InternalVisa) {
+func FormatVisa(visa VisaResponse) (v *InternalVisa) {
 	var visaData Visa
 	if len(visa.Visa) > 0 {
 		visaData = visa.Visa[0]

@@ -321,7 +321,8 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 	if length > 0 {
 		for i := 0; i < length; i++ {
 			var a = sp.Images[i].Sizes.Original.Width * sp.Images[i].Sizes.Original.Height
-			if area < a {
+			bytes := 1000000
+			if (area < a && sp.Images[i].Sizes.Original.Bytes <= bytes) {
 				area = a
 				areaIndex = i
 			}

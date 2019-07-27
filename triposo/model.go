@@ -38,6 +38,7 @@ type ImageSize struct {
 	Url string `json:"url" firestore:"url"`
 	Width int `json:"width"`
 	Height int `json:"height"`
+	Bytes int `json:"bytes"`
 }
 
 type ImageSizes struct {

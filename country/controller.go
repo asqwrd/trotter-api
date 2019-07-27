@@ -206,7 +206,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 		visa, err := GetVisa(countryCode, citizenCode)
 		if err != nil {
-			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
+			resultsChannel <- map[string]interface{}{"result": nil, "routine": "visa"}
 			return
 		}
 		resultsChannel <- map[string]interface{}{"result": FormatVisa(*visa), "routine": "visa"}
@@ -343,7 +343,11 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			case "currency":
 				currency = res["result"].(interface{})
 			case "visa":
-				visa = res["result"].(interface{})
+				if (res["result"] != nil){
+					visa = res["result"].(interface{})
+				}else{
+					visa = res["result"]
+				}
 			case "safety":
 				ratingRes, err := strconv.ParseFloat(res["result"].(SafetyData).Situation.Rating, 32)
 				if err != nil {
@@ -394,7 +398,11 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			case "currency":
 				currency = res["result"].(interface{})
 			case "visa":
-				visa = res["result"].(interface{})
+				if (res["result"] != nil){
+					visa = res["result"].(interface{})
+				}else{
+					visa = res["result"]
+				}
 			case "safety":
 				ratingRes, err := strconv.ParseFloat(res["result"].(SafetyData).Situation.Rating, 32)
 				if err != nil {

@@ -19,6 +19,8 @@ import (
 	"googlemaps.github.io/maps"
 	"net/url"
 	"strconv"
+	"github.com/asqwrd/trotter-api/types"
+
 
 )
 
@@ -272,10 +274,48 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 			return nil, err
 		}
 	}
+	hotels := []types.Segment{}
+	if len(itinerary.TripID) > 0 {
+		fmt.Println(destination.ID)
+		destItr := client.Collection("trips").Doc(itinerary.TripID).Collection("destinations").Where("destination_id", "==", destination.ID).Documents(ctx)
+		for{
+			destDoc, errDest := destItr.Next()
+			if errDest == iterator.Done {
+				break
+			}
+			if errDest != nil {
+				return nil, errDest
+			}
+
+			detailsIter := client.Collection("trips").Doc(itinerary.TripID).Collection("destinations").Doc(destDoc.Ref.ID).Collection("flights_accomodations").Documents(ctx)
+			for {
+				detailsDoc, errDetail := detailsIter.Next()
+				if errDetail == iterator.Done {
+					break
+				}
+				if errDetail != nil {
+					return nil, errDetail
+				}
+				var flightAccomodation types.FlightsAndAccomodations
+				detailsDoc.DataTo(&flightAccomodation)
+				for _, segment := range flightAccomodation.Segments {
+					fmt.Println(segment.Type)
+					if segment.Type == "Hotel" {
+						hotels = append(hotels, segment)
+					}
+				}
+				
+			}
+			
+		}
+		
+
+	}
 
 	itineraryData := map[string]interface{}{
 		"itinerary": itinerary,
 		"destination": destination,
+		"hotels": hotels,
 		"color": color,
 	}
 	return itineraryData, err

@@ -299,7 +299,6 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 				var flightAccomodation types.FlightsAndAccomodations
 				detailsDoc.DataTo(&flightAccomodation)
 				for _, segment := range flightAccomodation.Segments {
-					fmt.Println(segment.Type)
 					if segment.Type == "Hotel" {
 						hotels = append(hotels, segment)
 					}

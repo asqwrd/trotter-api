@@ -11,6 +11,9 @@ import (
 	"time"
 )
 
+var SHERPA_DOMAIN = "https://requirements-api.joinsherpa.com/v2/entry-requirements"
+var SHERPA_KEY = "AIzaSyDyOs9kPPkE_Dc49IDy49aHdY0y17SaErA"
+
 var passportValidityMap = map[string]string{
 	"DURATION_OF_STAY":                    "Your passport must be valid for the duration of your stay in this country.",
 	"ONE_MONTH_AFTER_ENTRY":               "Your passport must be valid for one month after entering this counrty.",
@@ -230,14 +233,13 @@ func ConvertCurrency(to string, from string) (map[string]interface{}, error) {
 
 }
 
-func GetVisa(to string, from string) (*VisaResponse, error) {
+func GetVisa(destination string, citizenship string) (*VisaResponse, error) {
 	client := http.Client{Timeout: time.Second * 10}
-	req, err := http.NewRequest(http.MethodGet, "https://api.joinsherpa.com/v2/entry-requirements/"+from+"-"+to, nil)
+	req, err := http.NewRequest(http.MethodGet, SHERPA_DOMAIN + "?key="+SHERPA_KEY+"&citizenship="+citizenship+"&destination="+destination, nil)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("Failed to access the Sherpa API.")
 	}
-	req.Header.Set("Authorization", "Basic VkRMUUxDYk1tdWd2c09FdGloUTlrZmM2blFvZUdkOm5JWGF4QUxGUFYwSWl3Tk92QkVCckRDTlN3M1NDdjY3UjRVRXZEOXI=")
 
 	res, err := client.Do(req)
 	if err != nil {

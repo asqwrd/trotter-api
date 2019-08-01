@@ -274,7 +274,7 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 			return nil, err
 		}
 	}
-	hotels := []types.Segment{}
+	hotels := []map[string]interface{}{}
 	if len(itinerary.TripID) > 0 {
 		fmt.Println(destination.ID)
 		destItr := client.Collection("trips").Doc(itinerary.TripID).Collection("destinations").Where("destination_id", "==", destination.ID).Documents(ctx)
@@ -300,7 +300,22 @@ func getItinerary(itineraryID string) (map[string]interface{}, error){
 				detailsDoc.DataTo(&flightAccomodation)
 				for _, segment := range flightAccomodation.Segments {
 					if segment.Type == "Hotel" {
-						hotels = append(hotels, segment)
+						travelers := []types.User{}
+						for _,id := range flightAccomodation.Travelers {
+							userDoc, errUser := client.Collection("users").Doc(id).Get(ctx)
+							if errUser != nil {
+								return nil, errUser
+							}
+							var user types.User
+							userDoc.DataTo(&user)
+							travelers = append(travelers, user)
+							
+						}
+						detail := map[string]interface{}{
+							"hotel": segment,
+							"travelers": travelers,
+						}
+						hotels = append(hotels, detail)
 					}
 				}
 				

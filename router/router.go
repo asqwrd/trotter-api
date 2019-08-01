@@ -126,6 +126,9 @@ var routes = Routes{
 		"GetItinerary", "GET", "/api/itineraries/get/{itineraryId}", itineraries.GetItinerary,
 	},
 	Route{
+		"ChangeStartLocation", "PUT", "/api/itineraries/update/{itineraryId}/startLocation", itineraries.ChangeStartLocation,
+	},
+	Route{
 		"GetDay", "GET", "/api/itineraries/get/{itineraryId}/day/{dayId}", itineraries.GetDay,
 	},
 	Route{

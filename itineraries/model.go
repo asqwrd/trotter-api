@@ -7,19 +7,20 @@ import (
 
 //Itinerary type for trips response
 type Itinerary struct {
-	Days                   []Day    `json:"days" firestore:"days"`
-	Location               Location `json:"location" firestore:"location"`
-	Name                   string   `json:"name" firestore:"name"`
-	Destination            string   `json:"destination" firestore:"destination"`
-	DestinationName        string   `json:"destination_name" firestore:"destination_name"`
-	DestinationCountry     string   `json:"destination_country" firestore:"destination_country"`
-	DestinationCountryName string   `json:"destination_country_name" firestore:"destination_country_name"`
-	ID                     string   `json:"id" firestore:"id"`
-	Public                 bool     `json:"public" firestore:"public"`
-	StartDate              int64    `json:"start_date" firestore:"start_date"`
-	EndDate                int64    `json:"end_date" firestore:"end_date"`
-	TripID                 string   `json:"trip_id" firestore:"trip_id"`
-	OwnerID                string   `json:"owner_id" firestore:"owner_id"`
+	Days                   []Day          `json:"days" firestore:"days"`
+	Location               *Location      `json:"location" firestore:"location"`
+	Name                   string         `json:"name" firestore:"name"`
+	Destination            string         `json:"destination" firestore:"destination"`
+	DestinationName        string         `json:"destination_name" firestore:"destination_name"`
+	DestinationCountry     string         `json:"destination_country" firestore:"destination_country"`
+	DestinationCountryName string         `json:"destination_country_name" firestore:"destination_country_name"`
+	ID                     string         `json:"id" firestore:"id"`
+	Public                 bool           `json:"public" firestore:"public"`
+	StartDate              int64          `json:"start_date" firestore:"start_date"`
+	EndDate                int64          `json:"end_date" firestore:"end_date"`
+	TripID                 string         `json:"trip_id" firestore:"trip_id"`
+	OwnerID                string         `json:"owner_id" firestore:"owner_id"`
+	StartLocation          *StartLocation `json:"start_location" firestore:"start_location"`
 }
 
 //Day struct
@@ -34,6 +35,12 @@ type Day struct {
 type Location struct {
 	Latitude  float64 `json:"lat"`
 	Longitude float64 `json:"lng"`
+}
+
+//StartLocation struct
+type StartLocation struct {
+	Location *Location `json:"location" firestore:"location"`
+	Name     string    `json:"name" firestore:"name"`
 }
 
 //ItineraryItem struct

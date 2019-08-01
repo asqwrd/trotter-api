@@ -349,6 +349,53 @@ func GetItinerary(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+//ChangeStartLocation function
+func ChangeStartLocation(w http.ResponseWriter, r *http.Request) {
+	itineraryID := mux.Vars(r)["itineraryId"]
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	decoder := json.NewDecoder(r.Body)
+	var location StartLocation
+	err := decoder.Decode(&location)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	app, errApp := firebase.NewApp(ctx, nil, sa)
+	fmt.Println("Change start location")
+	if errApp != nil {
+		response.WriteErrorResponse(w, errApp)
+		return
+	}
+
+	client, errClient := app.Firestore(ctx)
+	if errClient != nil {
+		response.WriteErrorResponse(w, errClient)
+		return
+	}
+
+	defer client.Close()
+	_, errUpdate := client.Collection("itineraries").Doc(itineraryID).Set(ctx,map[string]interface{}{
+		"start_location": location,
+	},firestore.MergeAll)
+	if errUpdate != nil {
+		response.WriteErrorResponse(w, errUpdate)
+		return
+	}
+
+
+	
+	response.Write(w, map[string]interface{}{
+		"start_location": location,
+		"success": true,
+	}, http.StatusOK)
+	return
+}
+
 func optimizeItinerary(itineraryItems []ItineraryItem, matrix maps.DistanceMatrixResponse) ([]ItineraryItem){
 	var rows = matrix.Rows
 	var slice []map[string]interface{}
@@ -474,7 +521,12 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 			//fmt.Println(itinerary)
 			var locations []string
 			var chunks [][]string
-			locations = append(locations,fmt.Sprintf("%g,%g",itinerary.(Itinerary).Location.Latitude , itinerary.(Itinerary).Location.Longitude))
+			start := itinerary.(Itinerary).Location
+			if itinerary.(Itinerary).StartLocation != nil {
+				start = itinerary.(Itinerary).StartLocation.Location
+			}
+
+			locations = append(locations,fmt.Sprintf("%g,%g",start.Latitude , start.Longitude))
 			for i:=0; i < len(itineraryItems); i++ {
 				location := fmt.Sprintf("%g,%g", itineraryItems[i].Poi.Location.Lat,itineraryItems[i].Poi.Location.Lng)
 				if(itineraryItems[i].Poi.Coordinates != nil){

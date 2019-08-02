@@ -84,6 +84,9 @@ var routes = Routes{
 		"AddFlightsAndAccomodations", "POST", "/api/trips/add/flights_accomodations/{tripId}/destination/{destinationId}", trips.AddFlightsAndAccomodations,
 	},
 	Route{
+		"DeleteFlightsAndAccomodations", "DELETE", "/api/trips/delete/flights_accomodations/{tripId}/destination/{destinationId}/detail/{detailId}", trips.DeleteFlightsAndAccomodation,
+	},
+	Route{
 		"DeleteDestination", "DELETE", "/api/trips/delete/{tripId}/destination/{destinationId}", trips.DeleteDestination,
 	},
 	Route{

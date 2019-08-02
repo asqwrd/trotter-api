@@ -859,6 +859,43 @@ func AddFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// DeleteFlightsAndAccomodation function 
+func DeleteFlightsAndAccomodation(w http.ResponseWriter, r *http.Request) {
+	tripID := mux.Vars(r)["tripId"]
+	detailID := mux.Vars(r)["detailId"]
+	destinationID := mux.Vars(r)["destinationId"]
+	
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+	_, errDelete := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destinationID).Collection("flights_accomodations").Doc(detailID).Delete(ctx)
+	if errDelete != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(errDelete)
+		response.WriteErrorResponse(w, errDelete)
+	}
+
+	flightData := map[string]interface{}{
+		"success": true,
+	}
+
+	response.Write(w, flightData, http.StatusOK)	
+	return
+}
+
 // GetFlightsAndAccomodations function 
 func GetFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 	tripID := mux.Vars(r)["tripId"]

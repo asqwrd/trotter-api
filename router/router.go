@@ -117,6 +117,9 @@ var routes = Routes{
 		"GetNotifications", "GET", "/api/notifications", users.GetNotifications,
 	},
 	Route{
+		"MarkNotificationRead", "PUT", "/api/notifications/{notificationId}", users.MarkNotificationRead,
+	},
+	Route{
 		"GetTrip", "GET", "/api/trips/get/{tripId}", trips.GetTrip,
 	},
 	Route{

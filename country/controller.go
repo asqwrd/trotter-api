@@ -482,7 +482,7 @@ func getCityState(cityStateID string) (map[string]interface{}, error) {
 
 	for i, param := range urlparams {
 		go func(param string, i int) {
-			place, err := triposo.GetPoiFromLocation(cityStateID, "20", param, i)
+			place, _,err := triposo.GetPoiFromLocation(cityStateID, "20", param, i)
 			res := new(triposo.TriposoChannel)
 			res.Places = *place
 			res.Index = i

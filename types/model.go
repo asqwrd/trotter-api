@@ -42,6 +42,7 @@ type Notification struct {
 	Type     string      `json:"type" firestore:"type"`
 	Data     interface{} `json:"data" firestore:"data"`
 	Read     bool        `json:"read" firestore:"read"`
+	ID       string      `json:"id" firestore:"id"`
 }
 
 // Flight struct

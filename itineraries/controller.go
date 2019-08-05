@@ -86,12 +86,20 @@ func collectionHandler(iter *firestore.DocumentIterator, client *firestore.Clien
 			itineraries[res.Index].Days = res.Days
 		}
 	}
+
+	totalDoc, errTotal := client.Collection("itineraries").Doc("total_public").Get(ctx)
+	if errTotal != nil {
+		return nil, errTotal
+	}
+
+	total := totalDoc.Data();
 	
 
 
 
 	return map[string]interface{}{
 		"itineraries": itineraries,
+		"total_public": total,
 	}, nil
 }
 // GetItineraries function
@@ -118,9 +126,15 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+
 	defer client.Close()
 
-	itinerariesCollection := client.Collection("itineraries").Limit(10)
+	var itinerariesCollection firestore.Query
+	if len(q.Get("last")) > 0  {
+		itinerariesCollection = client.Collection("itineraries").OrderBy("id", firestore.Asc).StartAfter(q.Get("last")).Limit(10)
+	} else {
+		itinerariesCollection = client.Collection("itineraries").OrderBy("id",firestore.Asc).Limit(10)
+	}
 	var queries firestore.Query
 	var itr *firestore.DocumentIterator
 	var public bool
@@ -158,14 +172,16 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 		itr = itinerariesCollection.Documents(ctx)
 	}
 
-	tripsData,errData := collectionHandler(itr,client)
+	itineraryData,errData := collectionHandler(itr,client)
 	if errData != nil {
+		fmt.Println(errData);
 		response.WriteErrorResponse(w, errData)
+		return;
 	}
 
 	fmt.Println("Got Itineraries")
 
-	response.Write(w, tripsData, http.StatusOK)
+	response.Write(w, itineraryData, http.StatusOK)
 	return
 }
 

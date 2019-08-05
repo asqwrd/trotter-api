@@ -9,9 +9,11 @@ import (
 	//"github.com/asqwrd/trotter-api/triposo"
 	"net/url"
 
+	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
 	"github.com/asqwrd/trotter-api/response"
 	"github.com/asqwrd/trotter-api/types"
+	"github.com/gorilla/mux"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -158,7 +160,73 @@ func GetNotifications(w http.ResponseWriter, r *http.Request) {
 	defer client.Close()
 
 	notifications := []types.Notification{}
-	iter := client.Collection("users").Doc(uuid).Collection("notifications").Documents(ctx)
+	iter := client.Collection("users").Doc(uuid).Collection("notifications").Where("read", "==", false).OrderBy("created_at", firestore.Desc).Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		var notification types.Notification
+		doc.DataTo(&notification)
+		notifications = append(notifications, notification)
+	}
+
+	fmt.Println("Got Notifications")
+
+	userData := map[string]interface{}{
+		"success":       true,
+		"notifications": notifications,
+	}
+
+	response.Write(w, userData, http.StatusOK)
+	return
+}
+
+// MarkNotificationRead function
+func MarkNotificationRead(w http.ResponseWriter, r *http.Request) {
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+	fmt.Println("Start")
+
+	notificationID := mux.Vars(r)["notificationId"]
+	fmt.Println(notificationID)
+
+	uuid := q.Get("user_id")
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	_, errMark := client.Collection("users").Doc(uuid).Collection("notifications").Doc(notificationID).Set(ctx, map[string]interface{}{
+		"read": true,
+	},firestore.MergeAll)
+
+	if errMark != nil {
+		fmt.Println(errMark)
+		response.WriteErrorResponse(w, errMark)
+		return
+	}
+	fmt.Println("Here")
+
+	notifications := []types.Notification{}
+	iter := client.Collection("users").Doc(uuid).Collection("notifications").Where("read", "==", false).OrderBy("created_at", firestore.Desc).Documents(ctx)
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {

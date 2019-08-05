@@ -118,6 +118,55 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// Get Places
+func GetPlaces(w http.ResponseWriter, r *http.Request){
+	args := r.URL.Query()
+	q := &args
+	placeType := q.Get("type")
+	levelID := q.Get("levelId")
+	offset := q.Get("offset")
+	param := ""
+	urlparams := []string{"sightseeing|sight|topattractions",
+		"museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts",
+		"amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos",
+		"beaches|camping|wildlife|fishing|relaxinapark",
+		"eatingout|breakfast|coffeeandcake|lunch|dinner",
+		"do|shopping",
+		"nightlife|comedy|drinks|dancing|pubcrawl|redlight|musicandshows|celebrations|foodexperiences|breweries|showstheatresandmusic"}
+
+	switch{
+	case placeType == "discover":
+		param = urlparams[1]
+	case placeType == "see":
+		param = urlparams[0]
+	case placeType == "play":
+		param = urlparams[2]
+	case placeType == "eat":
+		param = urlparams[3]
+	case placeType == "nightlife":
+		param = urlparams[4]
+	case placeType == "shop":
+		param = urlparams[5]
+	case placeType == "relax":
+		param = urlparams[6]
+	
+	}
+	places, more, err := triposo.GetPoiFromLocationPagination(levelID, "20", param, offset)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	formatResponse := map[string]interface{}{"places":FromTriposoPlaces(*places,"poi"), "more":more}
+
+	response.Write(w, formatResponse, http.StatusOK)
+	return
+
+	
+
+
+}
+
 //Get City
 
 func GetCity(w http.ResponseWriter, r *http.Request) {
@@ -135,31 +184,32 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	colorChannel := make(chan Colors)
 	var city *triposo.InternalPlace
 
-	var placeToSee []triposo.InternalPlace
-	var discoverPlaces []triposo.InternalPlace
-	var playPlaces []triposo.InternalPlace
-	var eatPlaces []triposo.InternalPlace
-	var nightlifePlaces []triposo.InternalPlace
-	var shopPlaces []triposo.InternalPlace
-	var relaxPlaces []triposo.InternalPlace
+	var placeToSee map[string]interface{}
+	var discoverPlaces map[string]interface{}
+	var playPlaces map[string]interface{}
+	var eatPlaces map[string]interface{}
+	var nightlifePlaces map[string]interface{}
+	var shopPlaces map[string]interface{}
+	var relaxPlaces map[string]interface{}
 
-	seeChannel := make(chan []triposo.Place)
-	eatChannel := make(chan []triposo.Place)
-	discoverChannel := make(chan []triposo.Place)
-	playChannel := make(chan []triposo.Place)
-	nightlifeChannel := make(chan []triposo.Place)
-	shopChannel := make(chan []triposo.Place)
-	relaxChannel := make(chan []triposo.Place)
+	seeChannel := make(chan map[string]interface{})
+	eatChannel := make(chan map[string]interface{})
+	discoverChannel := make(chan map[string]interface{})
+	playChannel := make(chan map[string]interface{})
+	nightlifeChannel := make(chan map[string]interface{})
+	shopChannel := make(chan map[string]interface{})
+	relaxChannel := make(chan map[string]interface{})
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
 	var cityColor string
 
 	for i, param := range urlparams {
 		go func(param string, i int) {
-			place, err := triposo.GetPoiFromLocation(cityID, "20", param, i)
+			place, more, err := triposo.GetPoiFromLocation(cityID, "20", param, i)
 			res := new(triposo.TriposoChannel)
 			res.Places = *place
 			res.Index = i
+			res.More = more
 			res.Error = err
 			placeChannel <- *res
 		}(param, i)
@@ -174,19 +224,19 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 			}
 			switch {
 			case res.Index == 0:
-				seeChannel <- res.Places
+				seeChannel <- map[string]interface{}{"places":FromTriposoPlaces(res.Places,"poi"), "more":res.More}
 			case res.Index == 1:
-				discoverChannel <- res.Places
+				discoverChannel <-  map[string]interface{}{"places":FromTriposoPlaces(res.Places,"poi"), "more":res.More}
 			case res.Index == 2:
-				playChannel <- res.Places
+				playChannel <-  map[string]interface{}{"places":FromTriposoPlaces(res.Places,"poi"), "more":res.More}
 			case res.Index == 4:
-				eatChannel <- res.Places
+				eatChannel <-  map[string]interface{}{"places":FromTriposoPlaces(res.Places,"poi"), "more":res.More}
 			case res.Index == 6:
-				nightlifeChannel <- res.Places
+				nightlifeChannel <-  map[string]interface{}{"places":FromTriposoPlaces(res.Places,"poi"), "more":res.More}
 			case res.Index == 5:
-				shopChannel <- res.Places
+				shopChannel <-  map[string]interface{}{"places":FromTriposoPlaces(res.Places,"poi"), "more":res.More}
 			case res.Index == 3:
-				relaxChannel <- res.Places
+				relaxChannel <-  map[string]interface{}{"places":FromTriposoPlaces(res.Places,"poi"), "more":res.More}
 			}
 		}
 
@@ -238,19 +288,19 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	for i := 0; i < 9; i++ {
 		select {
 		case see := <-seeChannel:
-			placeToSee = FromTriposoPlaces(see, "poi")
+			placeToSee = see
 		case eat := <-eatChannel:
-			eatPlaces = FromTriposoPlaces(eat, "poi")
+			eatPlaces = eat
 		case discover := <-discoverChannel:
-			discoverPlaces = FromTriposoPlaces(discover, "poi")
+			discoverPlaces = discover
 		case shop := <-shopChannel:
-			shopPlaces = FromTriposoPlaces(shop, "poi")
+			shopPlaces = shop
 		case relax := <-relaxChannel:
-			relaxPlaces = FromTriposoPlaces(relax, "poi")
+			relaxPlaces = relax
 		case play := <-playChannel:
-			playPlaces = FromTriposoPlaces(play, "poi")
+			playPlaces = play
 		case nightlife := <-nightlifeChannel:
-			nightlifePlaces = FromTriposoPlaces(nightlife, "poi")
+			nightlifePlaces = nightlife
 		case cityRes := <-cityChannel:
 			city = &cityRes
 		case colorRes := <-colorChannel:
@@ -283,25 +333,25 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		"color": cityColor,
 
 		"see":           &placeToSee,
-		"see_locations": location.FromTriposoPlaces(placeToSee),
+		"see_locations": location.FromTriposoPlaces(placeToSee["places"].([]triposo.InternalPlace)),
 
 		"discover":           &discoverPlaces,
-		"discover_locations": location.FromTriposoPlaces(discoverPlaces),
+		"discover_locations": location.FromTriposoPlaces(discoverPlaces["places"].([]triposo.InternalPlace)),
 
 		"play":           &playPlaces,
-		"play_locations": location.FromTriposoPlaces(playPlaces),
+		"play_locations": location.FromTriposoPlaces(playPlaces["places"].([]triposo.InternalPlace)),
 
 		"eat":           &eatPlaces,
-		"eat_locations": location.FromTriposoPlaces(eatPlaces),
+		"eat_locations": location.FromTriposoPlaces(eatPlaces["places"].([]triposo.InternalPlace)),
 
 		"shop":           &shopPlaces,
-		"shop_locations": location.FromTriposoPlaces(shopPlaces),
+		"shop_locations": location.FromTriposoPlaces(shopPlaces["places"].([]triposo.InternalPlace)),
 
 		"nightlife":           &nightlifePlaces,
-		"nightlife_locations": location.FromTriposoPlaces(nightlifePlaces),
+		"nightlife_locations": location.FromTriposoPlaces(nightlifePlaces["places"].([]triposo.InternalPlace)),
 
 		"relax":           &relaxPlaces,
-		"relax_locations": location.FromTriposoPlaces(relaxPlaces),
+		"relax_locations": location.FromTriposoPlaces(relaxPlaces["places"].([]triposo.InternalPlace)),
 	}
 
 	response.Write(w, cityData, http.StatusOK)
@@ -597,7 +647,7 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 	var parkColor string
 
 	go func() {
-		place, err := triposo.GetPoiFromLocation(parkID, "20", "", 0)
+		place, _, err := triposo.GetPoiFromLocation(parkID, "20", "", 0)
 		if err != nil {
 			errorChannel <- err
 			return

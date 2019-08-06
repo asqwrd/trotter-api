@@ -85,7 +85,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	var country triposo.InternalPlace
 	var countryColor string
 	//var popularDestinations []triposo.InternalPlace
-	var cityState interface{}
+	//var cityState interface{}
 
 	var plugs []interface{}
 	var currency interface{}
@@ -141,18 +141,18 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		}(country.Name)
 	}*/
 
-	if country.Type == "city_state" {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			cityData, err := getCityState(country.ID)
-			if err != nil {
-				resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
-				return
-			}
-			resultsChannel <- map[string]interface{}{"result": cityData, "routine": "cityData"}
-		}()
-	}
+	// if country.Type == "city_state" {
+	// 	wg.Add(1)
+	// 	go func() {
+	// 		defer wg.Done()
+	// 		cityData, err := getCityState(country.ID)
+	// 		if err != nil {
+	// 			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
+	// 			return
+	// 		}
+	// 		resultsChannel <- map[string]interface{}{"result": cityData, "routine": "cityData"}
+	// 	}()
+	// }
 
 	/*
 		*
@@ -333,7 +333,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	var responseData map[string]interface{}
 
-	if country.Type == "city_state" {
+	/*if country.Type == "city_state" {
 		for res := range resultsChannel {
 			switch res["routine"] {
 			case "cityData":
@@ -388,7 +388,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			"safety":            safety,
 			"emergency_number":  emergencyNumbers,
 		}
-	} else {
+	} else {*/
 		for res := range resultsChannel {
 			switch res["routine"] {
 			/*case "destination":
@@ -443,7 +443,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			"safety":               safety,
 			"emergency_number":     emergencyNumbers,
 		}
-	}
+	//}
 
 	response.Write(w, responseData, http.StatusOK)
 	return

@@ -148,7 +148,7 @@ func GetPlaces(w http.ResponseWriter, r *http.Request){
 	case placeType == "shop":
 		param = urlparams[5]
 	case placeType == "relax":
-		param = urlparams[6]
+		param = urlparams[6]	
 	
 	}
 	places, more, err := triposo.GetPoiFromLocationPagination(levelID, "20", param, offset)
@@ -169,8 +169,8 @@ func GetPlaces(w http.ResponseWriter, r *http.Request){
 
 //Get City
 
-func GetCity(w http.ResponseWriter, r *http.Request) {
-	cityID := mux.Vars(r)["cityID"]
+func GetDestination(w http.ResponseWriter, r *http.Request) {
+	destinationID := mux.Vars(r)["destinationID"]
 	urlparams := []string{"sightseeing|sight|topattractions",
 		"museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts",
 		"amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos",
@@ -179,10 +179,12 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		"do|shopping",
 		"nightlife|comedy|drinks|dancing|pubcrawl|redlight|musicandshows|celebrations|foodexperiences|breweries|showstheatresandmusic"}
 
+	destinationType := r.URL.Query().Get("type")
+
 	placeChannel := make(chan triposo.TriposoChannel)
-	cityChannel := make(chan triposo.InternalPlace)
+	destinationChannel := make(chan triposo.InternalPlace)
 	colorChannel := make(chan Colors)
-	var city *triposo.InternalPlace
+	var destination *triposo.InternalPlace
 
 	var placeToSee map[string]interface{}
 	var discoverPlaces map[string]interface{}
@@ -201,11 +203,11 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	relaxChannel := make(chan map[string]interface{})
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
-	var cityColor string
+	var destinationColor string
 
 	for i, param := range urlparams {
 		go func(param string, i int) {
-			place, more, err := triposo.GetPoiFromLocation(cityID, "20", param, i)
+			place, more, err := triposo.GetPoiFromLocation(destinationID, "20", param, i)
 			res := new(triposo.TriposoChannel)
 			res.Places = *place
 			res.Index = i
@@ -243,23 +245,23 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	go func() {
-		city, err := triposo.GetLocation(cityID)
+		destination, err := triposo.GetLocation(destinationID)
 		if err != nil {
 			//fmt.Println("here")
 			errorChannel <- err
 			return
 		}
 
-		cityParam := *city
-		cityRes := FromTriposoPlace(cityParam[0], "city")
-		country, err := triposo.GetLocation(cityRes.CountryID);
+		destinationParam := *destination
+		destinationRes := FromTriposoPlace(destinationParam[0], destinationType)
+		country, err := triposo.GetLocation(destinationRes.CountryID);
 		if err != nil {
 			errorChannel <- err
 			return
 		}
 
 		countryParam := *country
-		cityRes.CountryName = countryParam[0].Name
+		destinationRes.CountryName = countryParam[0].Name
 
 		go func(image string) {
 			if len(image) == 0 {
@@ -274,9 +276,9 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 				}
 				colorChannel <- *colors
 			}
-		}(cityRes.Image)
+		}(destinationRes.Image)
 
-		cityChannel <- cityRes
+		destinationChannel <- destinationRes
 
 	}()
 
@@ -301,21 +303,21 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 			playPlaces = play
 		case nightlife := <-nightlifeChannel:
 			nightlifePlaces = nightlife
-		case cityRes := <-cityChannel:
-			city = &cityRes
+		case destinationRes := <-destinationChannel:
+			destination = &destinationRes
 		case colorRes := <-colorChannel:
 			if len(colorRes.Vibrant) > 0 {
-				cityColor = colorRes.Vibrant
+				destinationColor = colorRes.Vibrant
 			} else if len(colorRes.Muted) > 0 {
-				cityColor = colorRes.Muted
+				destinationColor = colorRes.Muted
 			} else if len(colorRes.LightVibrant) > 0 {
-				cityColor = colorRes.LightVibrant
+				destinationColor = colorRes.LightVibrant
 			} else if len(colorRes.LightMuted) > 0 {
-				cityColor = colorRes.LightMuted
+				destinationColor = colorRes.LightMuted
 			} else if len(colorRes.DarkVibrant) > 0 {
-				cityColor = colorRes.DarkVibrant
+				destinationColor = colorRes.DarkVibrant
 			} else if len(colorRes.DarkMuted) > 0 {
-				cityColor = colorRes.DarkMuted
+				destinationColor = colorRes.DarkMuted
 			}
 		case err := <-errorChannel:
 			response.WriteErrorResponse(w, err)
@@ -328,9 +330,9 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	cityData := map[string]interface{}{
-		"city":  city,
-		"color": cityColor,
+	destinationData := map[string]interface{}{
+		"destination":  destination,
+		"color": destinationColor,
 
 		"see":           &placeToSee,
 		"see_locations": location.FromTriposoPlaces(placeToSee["places"].([]triposo.InternalPlace)),
@@ -354,7 +356,7 @@ func GetCity(w http.ResponseWriter, r *http.Request) {
 		"relax_locations": location.FromTriposoPlaces(relaxPlaces["places"].([]triposo.InternalPlace)),
 	}
 
-	response.Write(w, cityData, http.StatusOK)
+	response.Write(w, destinationData, http.StatusOK)
 	return
 }
 
@@ -639,20 +641,23 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 	colorChannel := make(chan Colors)
 	var park *triposo.InternalPlace
 
-	var pois []triposo.InternalPlace
+	var pois map[string]interface{}
 
-	poiChannel := make(chan []triposo.Place)
+	poiChannel := make(chan triposo.TriposoChannel)
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
 	var parkColor string
 
 	go func() {
-		place, _, err := triposo.GetPoiFromLocation(parkID, "20", "", 0)
+		places, more, err := triposo.GetPoiFromLocation(parkID, "20", "", 0)
 		if err != nil {
 			errorChannel <- err
 			return
 		}
-		poiChannel <- *place
+		var res triposo.TriposoChannel
+		res.Places = *places
+		res.More = more
+		poiChannel <- res
 	}()
 
 	go func() {
@@ -692,7 +697,7 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 	for i := 0; i < 3; i++ {
 		select {
 		case poi := <-poiChannel:
-			pois = FromTriposoPlaces(poi, "poi")
+			pois = map[string]interface{}{"places":FromTriposoPlaces(poi.Places, "poi"),"more":poi.More}
 		case parkRes := <-parkChannel:
 			park = &parkRes
 		case colorRes := <-colorChannel:
@@ -725,7 +730,7 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 		"color": parkColor,
 
 		"pois":          &pois,
-		"poi_locations": location.FromTriposoPlaces(pois),
+		"poi_locations": location.FromTriposoPlaces(pois["places"].([]triposo.InternalPlace)),
 	}
 
 	response.Write(w, parkData, http.StatusOK)

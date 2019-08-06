@@ -48,7 +48,7 @@ var routes = Routes{
 		"GetConfirmations", "GET", "/api/confirmations/", traxo.GetConfirmations,
 	},
 	Route{
-		"GetCity", "GET", "/api/explore/cities/{cityID}/", places.GetCity,
+		"GetDestination", "GET", "/api/explore/destinations/{destinationID}/", places.GetDestination,
 	},
 	Route{
 		"GetPlaces", "GET", "/api/explore/places/", places.GetPlaces,

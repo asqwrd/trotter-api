@@ -16,7 +16,7 @@ type Trip struct {
 	Destinations []Destination `json:"destinations" firestore:"destinations"`
 	ItineraryIDS []string      `json:"itinerary_ids" firestore:"itinerary_ids"`
 	UpdatedAt    interface{}   `json:"updated_at" firestore:"updated_at"`
-	Travelers    []User        `json:"travelers"`
+	Travelers    []User        `json:"travelers" firestore:"travelers"`
 }
 
 // TripRes Struct for post

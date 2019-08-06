@@ -327,6 +327,8 @@ func getTrip(tripID string) (map[string]interface{}, error){
 		trav = append(trav, traveler)
 	}
 
+	trip.Travelers = trav
+
 	tripData := map[string]interface{}{
 		"trip": trip,
 		"destinations": dest,
@@ -378,7 +380,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
-	trip["updateAt"] = firestore.ServerTimestamp
+	trip["updatedAt"] = firestore.ServerTimestamp
 	_, err2 := client.Collection("trips").Doc(tripID).Set(ctx, trip,firestore.MergeAll)
 
 	if err2 != nil {

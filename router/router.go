@@ -111,6 +111,12 @@ var routes = Routes{
 		"AddTraveler", "POST", "/api/trips/{tripId}/travelers/add", trips.AddTraveler,
 	},
 	Route{
+		"GetUser", "GET", "/api/users/get/{userID}", users.GetUser,
+	},
+	Route{
+		"UpdateUser", "PUT", "/api/users/update/{userID}", users.UpdateUser,
+	},
+	Route{
 		"SaveLogin", "POST", "/api/users/login", users.SaveLogin,
 	},
 	Route{

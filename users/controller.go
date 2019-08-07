@@ -19,6 +19,79 @@ import (
 	"google.golang.org/api/option"
 )
 
+func GetUser(w http.ResponseWriter, r *http.Request) {
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+	userID := mux.Vars(r)["userID"]
+	var user types.User
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+	docSnap, errGet := client.Collection("users").Doc(userID).Get(ctx)
+	if errGet != nil {
+		response.WriteErrorResponse(w, errGet)
+		return 
+	}
+	docSnap.DataTo(&user)
+	response.Write(w, map[string]interface{}{
+		"user": user,
+	}, http.StatusOK)
+	return
+
+}
+
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+	decoder := json.NewDecoder(r.Body)
+	userID := mux.Vars(r)["userID"]
+	var user map[string]interface{}
+	err := decoder.Decode(&user)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+	_, errSet := client.Collection("users").Doc(userID).Set(ctx,user,firestore.MergeAll)
+	if errSet != nil {
+		fmt.Println(errSet)
+		response.WriteErrorResponse(w, errSet)
+		return 
+	}
+	response.Write(w, map[string]interface{}{
+		"success": true,
+	}, http.StatusOK)
+	return
+
+}
+
+
+
 // SaveLogin function
 func SaveLogin(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
@@ -50,7 +123,8 @@ func SaveLogin(w http.ResponseWriter, r *http.Request) {
 	//Check User
 	docSnap, _ := client.Collection("users").Doc(user.UID).Get(ctx)
 	if docSnap.Exists() == false {
-
+		user.NotificationsOn = true
+		user.Country = "US"
 		_, errUserCreate := client.Collection("users").Doc(user.UID).Set(ctx, user)
 		if errUserCreate != nil {
 			// Handle any errors in an appropriate way, such as returning them.

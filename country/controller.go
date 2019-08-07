@@ -19,6 +19,8 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"github.com/asqwrd/trotter-api/types"
+
 )
 
 var citizenCode = "US"
@@ -64,6 +66,11 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
+
+	userID := q.Get("user_id")
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
@@ -78,6 +85,13 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
+	var user types.User
+	docSnap, errGet := client.Collection("users").Doc(userID).Get(ctx)
+	if errGet != nil {
+		response.WriteErrorResponse(w, errGet)
+		return 
+	}
+	docSnap.DataTo(&user)
 
 	routeVars := mux.Vars(r)
 	countryID := routeVars["countryID"]
@@ -201,17 +215,17 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		*
 	*/
 	wg.Add(1)
-	go func() {
+	go func(user types.User) {
 		defer wg.Done()
 
-		visa, err := GetVisa(countryCode, citizenCode)
+		visa, err := GetVisa(countryCode, user.Country)
 		if err != nil {
 			resultsChannel <- map[string]interface{}{"result": nil, "routine": "visa"}
 			return
 		}
 		resultsChannel <- map[string]interface{}{"result": FormatVisa(*visa), "routine": "visa"}
 
-	}()
+	}(user)
 
 	/*
 		*
@@ -241,7 +255,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	*/
 
 	wg.Add(1)
-	go func() {
+	go func(user types.User) {
 		defer wg.Done()
 		currency, err := client.Collection("currencies").Doc(countryCode).Get(ctx)
 		if err != nil {
@@ -252,7 +266,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		currencyCodeIdData := currency.Data()
 		currencyCodeId := currencyCodeIdData["id"].(string)
 
-		citizenCurrency := currenciesCache["US"].(map[string]interface{})
+		citizenCurrency := currenciesCache[user.Country].(map[string]interface{})
 		var toCurrency map[string]interface{}
 		toCurrency = currenciesCache[currencyCodeId].(map[string]interface{})
 
@@ -268,7 +282,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		}
 		resultsChannel <- map[string]interface{}{"result": result, "routine": "currency"}
 
-	}()
+	}(user)
 
 	/*
 		*

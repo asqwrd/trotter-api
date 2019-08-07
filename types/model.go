@@ -34,6 +34,8 @@ type User struct {
 	PhoneNumber string `json:"phoneNumber" firestore:"phoneNumber"`
 	PhotoURL    string `json:"photoUrl" firestore:"photoUrl"`
 	UID         string `json:"uid" firestore:"uid"`
+	NotificationsOn         bool `json:"notifications_on" firestore:"notifications_on"`
+	Country         string `json:"country" firestore:"country"`
 }
 
 // Notification struct

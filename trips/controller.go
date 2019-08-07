@@ -181,7 +181,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 
 	_, err2 := client.Collection("trips").Doc(doc.ID).Set(ctx, map[string]interface{}{
 		"id": doc.ID,
-		"updatedAt": firestore.ServerTimestamp,
+		"updated_at": firestore.ServerTimestamp,
 	},firestore.MergeAll)
 	if err2 != nil {
 		// Handle any errors in an appropriate way, such as returning them.
@@ -380,7 +380,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
-	trip["updatedAt"] = firestore.ServerTimestamp
+	trip["updated_at"] = firestore.ServerTimestamp
 	_, err2 := client.Collection("trips").Doc(tripID).Set(ctx, trip,firestore.MergeAll)
 
 	if err2 != nil {
@@ -497,7 +497,7 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 		var group = append(tripDoc.Group,trip.User.UID)
 		_, errUpdateGroup := client.Collection("trips").Doc(tripID).Set(ctx,map[string]interface{}{
 			"group": group,
-			"updatedAt": firestore.ServerTimestamp,
+			"updated_at": firestore.ServerTimestamp,
 		},firestore.MergeAll)
 	
 		if errUpdateGroup != nil {
@@ -1225,6 +1225,23 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 
 	for i:=0; i < len(dest); i++ {
 		go func(tripID string, destination types.Destination) {
+			iter := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destination.ID).Collection("flights_accomodations").Documents(ctx)
+			for {
+				doc, err := iter.Next()
+				if err == iterator.Done {
+					break
+				}
+				if err != nil {
+					response.WriteErrorResponse(w, err)
+					return
+				}
+				_, errDeleteDetails := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destination.ID).Collection("flights_accomodations").Doc(doc.Ref.ID).Delete(ctx)
+				if errDeleteDetails != nil {
+					// Handle any errors in an appropriate way, such as returning them.
+					errorChannel <- errDeleteDetails
+					return
+				}
+			}
 			deleteRes, errDelete := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destination.ID).Delete(ctx)
 			if errDelete != nil {
 				// Handle any errors in an appropriate way, such as returning them.

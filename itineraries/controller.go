@@ -482,6 +482,11 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 
 	errorChannel := make(chan error)
 	matrixChannel := make(chan maps.DistanceMatrixResponse)
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
+	latlng := q.Get("latlng");
+
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
@@ -542,7 +547,15 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 				start = itinerary.(Itinerary).StartLocation.Location
 			}
 
-			locations = append(locations,fmt.Sprintf("%g,%g",start.Latitude , start.Longitude))
+	
+			if len(latlng) > 0 {
+				locations = append(locations,latlng);
+			} else {
+				locations = append(locations,fmt.Sprintf("%g,%g",start.Latitude , start.Longitude))
+			}
+
+			fmt.Println(locations)
+			
 			for i:=0; i < len(itineraryItems); i++ {
 				location := fmt.Sprintf("%g,%g", itineraryItems[i].Poi.Location.Lat,itineraryItems[i].Poi.Location.Lng)
 				if(itineraryItems[i].Poi.Coordinates != nil){

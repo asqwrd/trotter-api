@@ -86,12 +86,14 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 	var user types.User
-	docSnap, errGet := client.Collection("users").Doc(userID).Get(ctx)
-	if errGet != nil {
-		response.WriteErrorResponse(w, errGet)
-		return 
+	if len(userID) > 0 {
+		docSnap, errGet := client.Collection("users").Doc(userID).Get(ctx)
+		if errGet != nil {
+			response.WriteErrorResponse(w, errGet)
+			return 
+		}
+		docSnap.DataTo(&user)
 	}
-	docSnap.DataTo(&user)
 
 	routeVars := mux.Vars(r)
 	countryID := routeVars["countryID"]
@@ -214,18 +216,20 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		*
 		*
 	*/
-	wg.Add(1)
-	go func(user types.User) {
-		defer wg.Done()
+	if len(userID) > 0 {
+		wg.Add(1)
+		go func(user types.User) {
+			defer wg.Done()
 
-		visa, err := GetVisa(countryCode, user.Country)
-		if err != nil {
-			resultsChannel <- map[string]interface{}{"result": nil, "routine": "visa"}
-			return
-		}
-		resultsChannel <- map[string]interface{}{"result": FormatVisa(*visa), "routine": "visa"}
+			visa, err := GetVisa(countryCode, user.Country)
+			if err != nil {
+				resultsChannel <- map[string]interface{}{"result": nil, "routine": "visa"}
+				return
+			}
+			resultsChannel <- map[string]interface{}{"result": FormatVisa(*visa), "routine": "visa"}
 
-	}(user)
+		}(user)
+	}
 
 	/*
 		*
@@ -253,36 +257,37 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		*
 		*
 	*/
+	if len(userID) > 0 {
+		wg.Add(1)
+		go func(user types.User) {
+			defer wg.Done()
+			currency, err := client.Collection("currencies").Doc(countryCode).Get(ctx)
+			if err != nil {
+				resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
+				return
+			}
 
-	wg.Add(1)
-	go func(user types.User) {
-		defer wg.Done()
-		currency, err := client.Collection("currencies").Doc(countryCode).Get(ctx)
-		if err != nil {
-			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
-			return
-		}
+			currencyCodeIdData := currency.Data()
+			currencyCodeId := currencyCodeIdData["id"].(string)
 
-		currencyCodeIdData := currency.Data()
-		currencyCodeId := currencyCodeIdData["id"].(string)
+			citizenCurrency := currenciesCache[user.Country].(map[string]interface{})
+			var toCurrency map[string]interface{}
+			toCurrency = currenciesCache[currencyCodeId].(map[string]interface{})
 
-		citizenCurrency := currenciesCache[user.Country].(map[string]interface{})
-		var toCurrency map[string]interface{}
-		toCurrency = currenciesCache[currencyCodeId].(map[string]interface{})
+			currencyData, err := ConvertCurrency(toCurrency["currencyId"].(string), citizenCurrency["currencyId"].(string))
+			if err != nil {
+				resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
+				return
+			}
+			result := map[string]interface{}{
+				"converted_currency": currencyData["val"],
+				"converted_unit":     toCurrency,
+				"unit":               citizenCurrency,
+			}
+			resultsChannel <- map[string]interface{}{"result": result, "routine": "currency"}
 
-		currencyData, err := ConvertCurrency(toCurrency["currencyId"].(string), citizenCurrency["currencyId"].(string))
-		if err != nil {
-			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
-			return
-		}
-		result := map[string]interface{}{
-			"converted_currency": currencyData["val"],
-			"converted_unit":     toCurrency,
-			"unit":               citizenCurrency,
-		}
-		resultsChannel <- map[string]interface{}{"result": result, "routine": "currency"}
-
-	}(user)
+		}(user)
+	}
 
 	/*
 		*

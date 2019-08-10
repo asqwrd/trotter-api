@@ -183,7 +183,7 @@ func FormatEmergencyNumbers(numbers EmergencyNumbers) (e *EmergencyNumbers) {
 }
 
 func GetCountriesCurrenciesApi() (map[string]interface{}, error) {
-	client := http.Client{Timeout: time.Second * 10}
+	client := http.Client{Timeout: time.Second * 30}
 	req, err := http.NewRequest(http.MethodGet, "https://free.currencyconverterapi.com/api/v6/countries?apiKey=e2f487a9577429d44774", nil)
 	if err != nil {
 		log.Println(err)
@@ -209,7 +209,7 @@ func GetCountriesCurrenciesApi() (map[string]interface{}, error) {
 }
 
 func ConvertCurrency(to string, from string) (map[string]interface{}, error) {
-	client := http.Client{Timeout: time.Second * 10}
+	client := http.Client{Timeout: time.Second * 30}
 	req, err := http.NewRequest(http.MethodGet, "https://free.currencyconverterapi.com/api/v6/convert?q="+from+"_"+to+"&compact=n&apiKey=e2f487a9577429d44774", nil)
 	if err != nil {
 		log.Println(err)
@@ -234,7 +234,7 @@ func ConvertCurrency(to string, from string) (map[string]interface{}, error) {
 }
 
 func GetVisa(destination string, citizenship string) (*VisaResponse, error) {
-	client := http.Client{Timeout: time.Second * 10}
+	client := http.Client{Timeout: time.Second * 30}
 	req, err := http.NewRequest(http.MethodGet, SHERPA_DOMAIN + "?key="+SHERPA_KEY+"&citizenship="+citizenship+"&destination="+destination, nil)
 	if err != nil {
 		log.Println(err)
@@ -293,7 +293,7 @@ func FormatVisa(visa VisaResponse) (v *InternalVisa) {
 }
 
 func GetSafety(countryCode string) (*SafetyData, error) {
-	client := http.Client{Timeout: time.Second * 10}
+	client := http.Client{Timeout: time.Second * 30}
 	req, err := http.NewRequest(http.MethodGet, "https://www.reisewarnung.net/api?country="+countryCode, nil)
 	if err != nil {
 		log.Println(err)

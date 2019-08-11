@@ -293,7 +293,7 @@ func FormatVisa(visa VisaResponse) (v *InternalVisa) {
 }
 
 func GetSafety(countryCode string) (*SafetyData, error) {
-	client := http.Client{Timeout: time.Second * 30}
+	client := http.Client{Timeout: time.Second * 90}
 	req, err := http.NewRequest(http.MethodGet, "https://www.reisewarnung.net/api?country="+countryCode, nil)
 	if err != nil {
 		log.Println(err)

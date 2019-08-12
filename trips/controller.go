@@ -66,7 +66,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			if errTravelers != nil {
-				response.WriteErrorResponse(w, err)
+				response.WriteErrorResponse(w, errTravelers)
 				return
 			}
 			var traveler types.User
@@ -78,9 +78,10 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 	for i := 0; i < len(trips); i++ {
 		go func(index int) {
 
-			colors, err := places.GetColor(trips[index].Image)
-				if err != nil {
-					response.WriteErrorResponse(w, err);
+			colors, errColor := places.GetColor(trips[index].Image)
+				if errColor != nil {
+					response.WriteErrorResponse(w, errColor);
+					retrurn
 				}
 
 				res := new(places.ColorChannel)

@@ -81,7 +81,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 			colors, errColor := places.GetColor(trips[index].Image)
 				if errColor != nil {
 					response.WriteErrorResponse(w, errColor);
-					retrurn
+					return
 				}
 
 				res := new(places.ColorChannel)

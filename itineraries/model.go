@@ -2,6 +2,7 @@ package itineraries
 
 import (
 	"github.com/asqwrd/trotter-api/triposo"
+	"github.com/asqwrd/trotter-api/types"
 	"googlemaps.github.io/maps"
 )
 
@@ -51,8 +52,11 @@ type ItineraryItem struct {
 	Time        Time                       `json:"time" firestore:"time"`
 	Image       string                     `json:"image" firestore:"image"`
 	ID          string                     `json:"id" firestore:"id"`
+	PoiID       string                     `json:"poi_id" firestore:"poi_id"`
 	Color       string                     `json:"color" firestore:"color"`
 	Travel      maps.DistanceMatrixElement `json:"travel,omitempty" firestore:"travel,omitempty"`
+	AddedBy     *string                    `json:"added_by,omitempty" firestore:"added_by,omitempty"`
+	AddedByFull *types.User                `json:"added_by_full,omitempty" firestore:"added_by_full,omitempty"`
 }
 
 //Time struct

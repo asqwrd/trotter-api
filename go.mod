@@ -14,6 +14,8 @@ require (
 	github.com/grokify/html-strip-tags-go v0.0.0-20180907063347-e9e44961e26f
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
+	github.com/sergi/go-diff v1.0.0 // indirect
+	github.com/stretchr/testify v1.3.0 // indirect
 	go.opencensus.io v0.17.0 // indirect
 	golang.org/x/net v0.0.0-20181011144130-49bb7cea24b1
 	golang.org/x/oauth2 v0.0.0-20181003184128-c57b0facaced // indirect

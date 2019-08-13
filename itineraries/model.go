@@ -21,6 +21,7 @@ type Itinerary struct {
 	EndDate                int64          `json:"end_date" firestore:"end_date"`
 	TripID                 string         `json:"trip_id" firestore:"trip_id"`
 	OwnerID                string         `json:"owner_id" firestore:"owner_id"`
+	Travelers              []string       `json:"travelers" firestore:"travelers"`
 	StartLocation          *StartLocation `json:"start_location" firestore:"start_location"`
 }
 

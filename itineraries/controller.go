@@ -147,12 +147,12 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 		if notNil == true {
 			queries = queries.Where("destination", "==", q.Get("destination"))
 		} else {
-			fmt.Println("here")
 			queries = itinerariesCollection.Where("destination", "==", q.Get("destination"))
 		}
 	}
-	if len(q.Get("owner_id")) > 0 {
-		queries = queries.Where("owner_id", "==", q.Get("owner_id"))
+	if len(q.Get("user_id")) > 0 {
+		print("here")
+		queries = queries.Where("travelers", "array-contains", q.Get("user_id"))
 
 	} else {
 		queries = queries.Where("owner_id", "==", "")

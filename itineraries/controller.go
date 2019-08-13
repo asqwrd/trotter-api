@@ -151,7 +151,6 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if len(q.Get("user_id")) > 0 {
-		print("here")
 		queries = queries.Where("travelers", "array-contains", q.Get("user_id"))
 
 	} else {

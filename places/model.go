@@ -212,7 +212,7 @@ func FromGooglePlaceSearch(sp maps.PlacesSearchResult, level string) (p triposo.
 		Score:            sp.Rating * 2,
 		OpeningHours:     &triposo.OpeningHours{OpenNow: openNow},
 		Properties:       properties,
-		GooglePlace: &gplace,
+		GooglePlace:      &gplace,
 	}
 
 	return p
@@ -322,7 +322,7 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 		for i := 0; i < length; i++ {
 			var a = sp.Images[i].Sizes.Original.Width * sp.Images[i].Sizes.Original.Height
 			bytes := 1000000
-			if (area < a && sp.Images[i].Sizes.Original.Bytes <= bytes) {
+			if area < a && sp.Images[i].Sizes.Original.Bytes <= bytes && sp.Images[i].SourceID != "flickr" {
 				area = a
 				areaIndex = i
 			}

@@ -10,7 +10,7 @@ import (
 
 type placesResponse struct {
 	Results []Place
-	More bool `json:"more" firestore:"more"`
+	More    bool `json:"more" firestore:"more"`
 }
 
 type Location struct {
@@ -36,21 +36,22 @@ type Content struct {
 }
 
 type ImageSize struct {
-	Url string `json:"url" firestore:"url"`
-	Width int `json:"width"`
-	Height int `json:"height"`
-	Bytes int `json:"bytes"`
+	Url    string `json:"url" firestore:"url"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+	Bytes  int    `json:"bytes"`
 }
 
 type ImageSizes struct {
-	Medium ImageSize `json:"medium" firestore:"medium"`
-	Original ImageSize `json:"original" firestore:"original"`
+	Medium    ImageSize `json:"medium" firestore:"medium"`
+	Original  ImageSize `json:"original" firestore:"original"`
 	Thumbnail ImageSize `json:"thumbnail" firestore:"thumbnail"`
 }
 
 //Image struct
 type Image struct {
 	OwnerURL string     `json:"owner_url" firestore:"owner_url"`
+	SourceID string     `json:"source_id" firestore:"source_id"`
 	Sizes    ImageSizes `json:"sizes" firestore:"sizes"`
 }
 
@@ -167,7 +168,7 @@ type InternalPlace struct {
 	ID               string        `json:"id" firestore:"id"`
 	Type             string        `json:"type" firestore:"type"`
 	Image            string        `json:"image,omitempty" firestore:"image,omitempty"`
-	ImageHD            string        `json:"image_hd,omitempty" firestore:"image_hd,omitempty"`
+	ImageHD          string        `json:"image_hd,omitempty" firestore:"image_hd,omitempty"`
 	Description      string        `json:"description" json:"intro" firestore:"intro" firestore:"description"`
 	DescriptionShort string        `json:"description_short,omitempty" firestore:"description_short,omitempty"`
 	Name             string        `json:"name" firestore:"name"`
@@ -205,7 +206,7 @@ type PoiInfo struct {
 type TriposoChannel struct {
 	Places []Place
 	Index  int
-	More *bool
+	More   *bool
 	Error  error
 }
 
@@ -369,15 +370,14 @@ func GetPoiFromLocation(id string, count string, tag_labels string, index int) (
 		return nil, nil, errors.New("Server experienced an error while parsing Triposo API response.")
 	}
 
-	return &resp.Results,  &resp.More, nil
+	return &resp.Results, &resp.More, nil
 
 }
 
 func GetPoiFromLocationPagination(id string, count string, tag_labels string, offset string) (*[]Place, *bool, error) {
 
 	client := http.Client{Timeout: time.Second * 30}
-	url := baseTriposoAPI + "poi.json?location_id=" + id + "&tag_labels=" + tag_labels + "&count=" + count + "&offset="+offset+"&fields=id,name,coordinates,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
-	
+	url := baseTriposoAPI + "poi.json?location_id=" + id + "&tag_labels=" + tag_labels + "&count=" + count + "&offset=" + offset + "&fields=id,name,coordinates,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
 
 	//fmt.Println(url)
 

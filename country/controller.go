@@ -182,6 +182,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		if len(country.Image) > 0 {
 			colors, err := places.GetColor(country.Image)
 			if err != nil {
+				fmt.Println("color error")
+				fmt.Println(country.Image)
 				resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 				return
 			}

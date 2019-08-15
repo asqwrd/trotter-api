@@ -34,12 +34,14 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -53,6 +55,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if err != nil {
+			fmt.Println(err)
 			response.WriteErrorResponse(w, err)
 			return
 		}
@@ -66,6 +69,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			if errTravelers != nil {
+				fmt.Println(errTravelers)
 				response.WriteErrorResponse(w, errTravelers)
 				return
 			}
@@ -80,6 +84,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 
 			colors, errColor := places.GetColor(trips[index].Image)
 			if errColor != nil {
+				fmt.Println(errColor)
 				response.WriteErrorResponse(w, errColor)
 				return
 			}
@@ -99,6 +104,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 				if err != nil {
+					fmt.Println(err)
 					response.WriteErrorResponse(w, err)
 					return
 				}
@@ -140,7 +146,6 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Got trips")
 
 	response.Write(w, tripsData, http.StatusOK)
-	return
 }
 
 // CreateTrip function
@@ -160,12 +165,14 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -186,6 +193,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 	}, firestore.MergeAll)
 	if err2 != nil {
 		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(err2)
 		response.WriteErrorResponse(w, err2)
 	}
 	_, errUserCreate := client.Collection("trips").Doc(doc.ID).Collection("travelers").Doc(trip.User.UID).Set(ctx, trip.User)
@@ -213,6 +221,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 			}, firestore.MergeAll)
 			if err2 != nil {
 				// Handle any errors in an appropriate way, such as returning them.
+				fmt.Println(err2)
 				response.WriteErrorResponse(w, err2)
 				return
 			}
@@ -232,6 +241,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 
 			_, errDays := itineraries.CreateItineraryHelper(tripID, destDoc.ID, itinerary)
 			if errDays != nil {
+				fmt.Println(errDays)
 				response.WriteErrorResponse(w, errDays)
 			}
 			destinationChannel <- destDoc.ID
@@ -248,6 +258,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 	id := doc.ID
 	tripData, err := getTrip(id)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -344,6 +355,7 @@ func GetTrip(w http.ResponseWriter, r *http.Request) {
 	//tripChannel := make(chan Trip)
 	tripData, err := getTrip(tripID)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -368,12 +380,14 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -384,6 +398,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 
 	if err2 != nil {
 		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(err2)
 		response.WriteErrorResponse(w, err2)
 		return
 	}
@@ -400,6 +415,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 			_, err3 := client.Collection("itineraries").Doc(itinerary.ID).Set(ctx, map[string]interface{}{"name": trip["name"]}, firestore.MergeAll)
 			if err3 != nil {
 				// Handle any errors in an appropriate way, such as returning them.
+				fmt.Println(err3)
 				response.WriteErrorResponse(w, err3)
 				return
 			}
@@ -420,6 +436,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 				_, err3 := client.Collection("trips").Doc(tripID).Collection("travelers").Doc(traveler.UID).Delete(ctx)
 				if err3 != nil {
 					// Handle any errors in an appropriate way, such as returning them.
+					fmt.Println(err3)
 					response.WriteErrorResponse(w, err3)
 					return
 				}
@@ -431,6 +448,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 					if errI10 != nil {
+						fmt.Println(errI10)
 						response.WriteErrorResponse(w, errI10)
 						break
 					}
@@ -438,6 +456,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 					var i10 itineraries.Itinerary
 					errData := docIt.DataTo(&i10)
 					if errData != nil {
+						fmt.Println(errData)
 						response.WriteErrorResponse(w, errData)
 						break
 					}
@@ -445,6 +464,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 						"travelers": group,
 					}, firestore.MergeAll)
 					if errTrav != nil {
+						fmt.Println(errTrav)
 						response.WriteErrorResponse(w, errTrav)
 						break
 					}
@@ -461,6 +481,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			if errTravelers != nil {
+				fmt.Println(errTravelers)
 				response.WriteErrorResponse(w, errTravelers)
 				return
 			}
@@ -496,12 +517,14 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -514,12 +537,14 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 	if !docSnap.Exists() {
 		tripSnap, errTrip := client.Collection("trips").Doc(tripID).Get(ctx)
 		if errTrip != nil {
+			fmt.Println(errTrip)
 			response.WriteErrorResponse(w, errTrip)
 			return
 		}
 		var tripDoc types.Trip
 		errData1 := tripSnap.DataTo(&tripDoc)
 		if errData1 != nil {
+			fmt.Println(errData1)
 			response.WriteErrorResponse(w, errData1)
 			return
 		}
@@ -550,6 +575,7 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			if errI10 != nil {
+				fmt.Println(errI10)
 				response.WriteErrorResponse(w, errI10)
 				break
 			}
@@ -557,6 +583,7 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 			var i10 itineraries.Itinerary
 			errData := docIt.DataTo(&i10)
 			if errData != nil {
+				fmt.Println(errData)
 				response.WriteErrorResponse(w, errData)
 				break
 			}
@@ -566,6 +593,7 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 				"travelers": travelers,
 			}, firestore.MergeAll)
 			if errTrav != nil {
+				fmt.Println(errTrav)
 				response.WriteErrorResponse(w, errTrav)
 				break
 			}
@@ -612,12 +640,14 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -628,6 +658,7 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 
 	if err2 != nil {
 		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(err2)
 		response.WriteErrorResponse(w, err2)
 		return
 	}
@@ -639,6 +670,7 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 		}, firestore.MergeAll)
 
 		if errUpdateI10 != nil {
+			fmt.Println(err2)
 			response.WriteErrorResponse(w, err2)
 			return
 		}
@@ -657,6 +689,7 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			if err != nil {
+				fmt.Println(err)
 				response.WriteErrorResponse(w, err)
 				break
 			}
@@ -709,6 +742,7 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 				case res := <-itineraryItemsChannel:
 					itinerariesItems = res
 				case err := <-errorChannel:
+					fmt.Println(err)
 					response.WriteErrorResponse(w, err)
 					return
 				}
@@ -757,6 +791,7 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 				case res := <-dayIdsChannel:
 					ids = append(ids, res)
 				case err := <-errorChannel:
+					fmt.Println(err)
 					response.WriteErrorResponse(w, err)
 					return
 				}
@@ -792,12 +827,14 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -812,6 +849,7 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if err != nil {
+			fmt.Println(err)
 			response.WriteErrorResponse(w, err)
 			break
 		}
@@ -842,6 +880,7 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 		}, firestore.MergeAll)
 		if err2 != nil {
 			// Handle any errors in an appropriate way, such as returning them.
+			fmt.Println(err2)
 			response.WriteErrorResponse(w, err2)
 		}
 		destinationChannel <- *destDoc
@@ -881,12 +920,14 @@ func AddFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -904,6 +945,7 @@ func AddFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 	}, firestore.MergeAll)
 	if err2 != nil {
 		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(err2)
 		response.WriteErrorResponse(w, err2)
 	}
 	flightData := map[string]interface{}{
@@ -926,12 +968,14 @@ func DeleteFlightsAndAccomodation(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -965,12 +1009,14 @@ func GetFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -984,6 +1030,7 @@ func GetFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if errDest != nil {
+			fmt.Println(errDest)
 			response.WriteErrorResponse(w, errDest)
 			return
 		}
@@ -997,6 +1044,7 @@ func GetFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			if err != nil {
+				fmt.Println(err)
 				response.WriteErrorResponse(w, err)
 				return
 			}
@@ -1006,6 +1054,7 @@ func GetFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 			for _, traveler := range flightAccomodation.Travelers {
 				user, errorUser := client.Collection("users").Doc(traveler).Get(ctx)
 				if errorUser != nil {
+					fmt.Println(errorUser)
 					response.WriteErrorResponse(w, errorUser)
 					return
 				}
@@ -1043,12 +1092,14 @@ func GetFlightsAndAccomodationTravelers(w http.ResponseWriter, r *http.Request) 
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -1063,6 +1114,7 @@ func GetFlightsAndAccomodationTravelers(w http.ResponseWriter, r *http.Request) 
 			break
 		}
 		if errTravelers != nil {
+			fmt.Println(err)
 			response.WriteErrorResponse(w, err)
 			return
 		}
@@ -1100,12 +1152,14 @@ func UpdateFlightsAndAccomodationTravelers(w http.ResponseWriter, r *http.Reques
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -1161,12 +1215,14 @@ func AddHotel(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -1184,6 +1240,7 @@ func AddHotel(w http.ResponseWriter, r *http.Request) {
 	}, firestore.MergeAll)
 	if err2 != nil {
 		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(err2)
 		response.WriteErrorResponse(w, err2)
 	}
 	hotelData := map[string]interface{}{
@@ -1204,12 +1261,14 @@ func DeleteDestination(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -1220,7 +1279,7 @@ func DeleteDestination(w http.ResponseWriter, r *http.Request) {
 	if errDelete != nil {
 		// Handle any errors in an appropriate way, such as returning them.
 		fmt.Println(errDelete)
-		response.WriteErrorResponse(w, err)
+		response.WriteErrorResponse(w, errDelete)
 		return
 	}
 
@@ -1244,12 +1303,14 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -1264,6 +1325,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if err != nil {
+			fmt.Println(err)
 			response.WriteErrorResponse(w, err)
 			return
 		}
@@ -1281,6 +1343,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 				if err != nil {
+					fmt.Println(err)
 					response.WriteErrorResponse(w, err)
 					return
 				}
@@ -1310,6 +1373,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if err != nil {
+			fmt.Println(err)
 			response.WriteErrorResponse(w, err)
 			return
 		}
@@ -1359,6 +1423,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 				_, errItem := client.Collection("itineraries").Doc(itinerary.ID).Collection("days").Doc(day.ID).Collection("itinerary_items").Doc(item.ID).Delete(ctx)
 				if errItem != nil {
 					// Handle any errors in an appropriate way, such as returning them.
+					fmt.Println(errItem)
 					response.WriteErrorResponse(w, errItem)
 					return
 				}
@@ -1367,6 +1432,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 			_, errDay := client.Collection("itineraries").Doc(itinerary.ID).Collection("days").Doc(day.ID).Delete(ctx)
 			if errDay != nil {
 				// Handle any errors in an appropriate way, such as returning them.
+				fmt.Println(errDay)
 				response.WriteErrorResponse(w, errDay)
 				return
 			}
@@ -1374,6 +1440,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 		_, err3 := client.Collection("itineraries").Doc(itinerary.ID).Delete(ctx)
 		if err3 != nil {
 			// Handle any errors in an appropriate way, such as returning them.
+			fmt.Println(err3)
 			response.WriteErrorResponse(w, err3)
 			return
 		}
@@ -1386,7 +1453,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 	if errDelete != nil {
 		// Handle any errors in an appropriate way, such as returning them.
 		fmt.Println(errDelete)
-		response.WriteErrorResponse(w, err)
+		response.WriteErrorResponse(w, errDelete)
 		return
 	}
 
@@ -1399,6 +1466,7 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 		case <-travelDeleteChannel:
 			travCount = travCount + 1
 		case err := <-errorChannel:
+			fmt.Println(err)
 			response.WriteErrorResponse(w, err)
 			return
 		}

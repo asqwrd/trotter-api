@@ -111,12 +111,14 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -348,6 +350,7 @@ func GetItinerary(w http.ResponseWriter, r *http.Request) {
 	//tripChannel := make(chan Trip)
 	itineraryData, err := getItinerary(itineraryID)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -375,12 +378,14 @@ func ChangeStartLocation(w http.ResponseWriter, r *http.Request) {
 	app, errApp := firebase.NewApp(ctx, nil, sa)
 	fmt.Println("Change start location")
 	if errApp != nil {
+		fmt.Println(errApp)
 		response.WriteErrorResponse(w, errApp)
 		return
 	}
 
 	client, errClient := app.Firestore(ctx)
 	if errClient != nil {
+		fmt.Println(errClient)
 		response.WriteErrorResponse(w, errClient)
 		return
 	}
@@ -390,6 +395,7 @@ func ChangeStartLocation(w http.ResponseWriter, r *http.Request) {
 		"start_location": location,
 	}, firestore.MergeAll)
 	if errUpdate != nil {
+		fmt.Println(errUpdate)
 		response.WriteErrorResponse(w, errUpdate)
 		return
 	}
@@ -481,12 +487,14 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -495,12 +503,14 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 
 	itinerary, err := getItinerary(itineraryID)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	snap, err := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Get(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -521,6 +531,7 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 
 	googleClient, err := places.InitGoogle()
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 	}
 
@@ -539,8 +550,6 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 			} else {
 				locations = append(locations, fmt.Sprintf("%g,%g", start.Latitude, start.Longitude))
 			}
-
-			fmt.Println(locations)
 
 			for i := 0; i < len(itineraryItems); i++ {
 				location := fmt.Sprintf("%g,%g", itineraryItems[i].Poi.Location.Lat, itineraryItems[i].Poi.Location.Lng)
@@ -621,6 +630,7 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 				itineraryItems = append([]ItineraryItem{head}, itineraryItems...)
 				day.ItineraryItems = optimizeItinerary(itineraryItems, matrix)
 			case err := <-errorChannel:
+				fmt.Println(err)
 				response.WriteErrorResponse(w, err)
 				return
 			}
@@ -775,6 +785,7 @@ func CreateItinerary(w http.ResponseWriter, r *http.Request) {
 
 	itineraryData, err := CreateItineraryHelper(itinerary.Itinerary.TripID, itinerary.TripDestinationID, itinerary.Itinerary)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -802,12 +813,14 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -821,6 +834,7 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if errCheck != nil {
+			fmt.Println(errCheck)
 			response.WriteErrorResponse(w, errCheck)
 			return
 		}
@@ -831,6 +845,7 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 		doc, _, err2 := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Add(ctx, itineraryItem)
 		if err2 != nil {
 			// Handle any errors in an appropriate way, such as returning them.
+			fmt.Println(err2)
 			response.WriteErrorResponse(w, err2)
 			return
 		}
@@ -838,7 +853,8 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 		_, errSet := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(doc.ID).Set(ctx, map[string]interface{}{
 			"id": doc.ID,
 		}, firestore.MergeAll)
-		if err != nil {
+		if errSet != nil {
+			fmt.Println(errSet)
 			response.WriteErrorResponse(w, errSet)
 			return
 		}
@@ -871,12 +887,14 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -887,7 +905,7 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 	if errDelete != nil {
 		// Handle any errors in an appropriate way, such as returning them.
 		fmt.Println(errDelete)
-		response.WriteErrorResponse(w, err)
+		response.WriteErrorResponse(w, errDelete)
 		return
 	}
 

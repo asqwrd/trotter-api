@@ -27,12 +27,14 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -40,14 +42,19 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	defer client.Close()
 	docSnap, errGet := client.Collection("users").Doc(userID).Get(ctx)
 	if errGet != nil {
+		fmt.Println(errGet)
 		response.WriteErrorResponse(w, errGet)
-		return 
+		return
 	}
-	docSnap.DataTo(&user)
+	errDataTo := docSnap.DataTo(&user)
+	if errDataTo != nil {
+		fmt.Println(errDataTo)
+		response.WriteErrorResponse(w, errDataTo)
+		return
+	}
 	response.Write(w, map[string]interface{}{
 		"user": user,
 	}, http.StatusOK)
-	return
 
 }
 
@@ -60,28 +67,31 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&user)
 	if err != nil {
 		fmt.Println(err)
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	defer client.Close()
-	_, errSet := client.Collection("users").Doc(userID).Set(ctx,user,firestore.MergeAll)
+	_, errSet := client.Collection("users").Doc(userID).Set(ctx, user, firestore.MergeAll)
 	if errSet != nil {
 		fmt.Println(errSet)
 		response.WriteErrorResponse(w, errSet)
-		return 
+		return
 	}
 	response.Write(w, map[string]interface{}{
 		"success": true,
@@ -90,14 +100,13 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 }
 
-
-
 // SaveLogin function
 func SaveLogin(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var user types.User
 	err := decoder.Decode(&user)
 	if err != nil {
+		fmt.Println(err)
 		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
@@ -108,12 +117,14 @@ func SaveLogin(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -158,6 +169,7 @@ func SaveToken(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&token)
 	if err != nil {
 		fmt.Println(err)
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -167,12 +179,14 @@ func SaveToken(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -221,12 +235,14 @@ func GetNotifications(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -241,6 +257,7 @@ func GetNotifications(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if err != nil {
+			fmt.Println(err)
 			response.WriteErrorResponse(w, err)
 			return
 		}
@@ -276,12 +293,14 @@ func MarkNotificationRead(w http.ResponseWriter, r *http.Request) {
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
 		return
 	}
@@ -290,7 +309,7 @@ func MarkNotificationRead(w http.ResponseWriter, r *http.Request) {
 
 	_, errMark := client.Collection("users").Doc(uuid).Collection("notifications").Doc(notificationID).Set(ctx, map[string]interface{}{
 		"read": true,
-	},firestore.MergeAll)
+	}, firestore.MergeAll)
 
 	if errMark != nil {
 		fmt.Println(errMark)
@@ -307,6 +326,7 @@ func MarkNotificationRead(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if err != nil {
+			fmt.Println(err)
 			response.WriteErrorResponse(w, err)
 			return
 		}

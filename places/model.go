@@ -139,8 +139,10 @@ func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 func FromGooglePlaceSearch(sp maps.PlacesSearchResult, level string) (p triposo.InternalPlace) {
 	length := len(sp.Photos)
 	var image = ""
+	var imageHD = ""
 	if length > 0 {
-		image = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + GoogleApi
+		image = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + GoogleApi
+		imageHD = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + GoogleApi
 	}
 	var images []triposo.Image
 
@@ -148,7 +150,10 @@ func FromGooglePlaceSearch(sp maps.PlacesSearchResult, level string) (p triposo.
 		images = append(images, triposo.Image{
 			Sizes: triposo.ImageSizes{
 				Medium: triposo.ImageSize{
-					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
+					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
+				},
+				Thumbnail: triposo.ImageSize{
+					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
 				},
 				Original: triposo.ImageSize{
 					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
@@ -203,6 +208,7 @@ func FromGooglePlaceSearch(sp maps.PlacesSearchResult, level string) (p triposo.
 		ID:               sp.PlaceID,
 		Type:             level,
 		Image:            image,
+		ImageHD:          imageHD,
 		Images:           images,
 		Description:      description,
 		DescriptionShort: vicinity,
@@ -221,8 +227,10 @@ func FromGooglePlaceSearch(sp maps.PlacesSearchResult, level string) (p triposo.
 func FromGooglePlace(sp maps.PlaceDetailsResult, level string) (p triposo.InternalPlace) {
 	length := len(sp.Photos)
 	var image = ""
+	var imageHD = ""
 	if length > 0 {
-		image = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + GoogleApi
+		image = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1024&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + GoogleApi
+		imageHD = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + GoogleApi
 	}
 	var images []triposo.Image
 
@@ -230,10 +238,13 @@ func FromGooglePlace(sp maps.PlaceDetailsResult, level string) (p triposo.Intern
 		images = append(images, triposo.Image{
 			Sizes: triposo.ImageSizes{
 				Medium: triposo.ImageSize{
-					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
+					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
 				},
 				Original: triposo.ImageSize{
 					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
+				},
+				Thumbnail: triposo.ImageSize{
+					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
 				},
 			},
 		})
@@ -296,6 +307,7 @@ func FromGooglePlace(sp maps.PlaceDetailsResult, level string) (p triposo.Intern
 		ID:               sp.PlaceID,
 		Type:             level,
 		Image:            image,
+		ImageHD:          imageHD,
 		Images:           images,
 		Description:      description,
 		DescriptionShort: vicinity,

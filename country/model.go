@@ -235,7 +235,7 @@ func ConvertCurrency(to string, from string) (map[string]interface{}, error) {
 
 func GetVisa(destination string, citizenship string) (*VisaResponse, error) {
 	client := http.Client{Timeout: time.Second * 30}
-	req, err := http.NewRequest(http.MethodGet, SHERPA_DOMAIN + "?key="+SHERPA_KEY+"&citizenship="+citizenship+"&destination="+destination, nil)
+	req, err := http.NewRequest(http.MethodGet, SHERPA_DOMAIN+"?key="+SHERPA_KEY+"&citizenship="+citizenship+"&destination="+destination, nil)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("Failed to access the Sherpa API.")
@@ -293,7 +293,7 @@ func FormatVisa(visa VisaResponse) (v *InternalVisa) {
 }
 
 func GetSafety(countryCode string) (*SafetyData, error) {
-	client := http.Client{Timeout: time.Second * 90}
+	client := http.Client{Timeout: time.Second * 30}
 	req, err := http.NewRequest(http.MethodGet, "https://www.reisewarnung.net/api?country="+countryCode, nil)
 	if err != nil {
 		log.Println(err)

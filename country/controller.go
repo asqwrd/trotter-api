@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -15,12 +14,12 @@ import (
 	"github.com/asqwrd/trotter-api/response" //"github.com/asqwrd/trotter-api/sygic"
 	"github.com/asqwrd/trotter-api/triposo"
 	"github.com/gorilla/mux"
+
 	//"github.com/mitchellh/mapstructure"
+	"github.com/asqwrd/trotter-api/types"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
-	"github.com/asqwrd/trotter-api/types"
-
 )
 
 var citizenCode = "US"
@@ -61,8 +60,8 @@ func getCurrencies() (map[string]interface{}, error) {
 }
 
 func GetCountry(w http.ResponseWriter, r *http.Request) {
-	runtime.GOMAXPROCS(10)
-	fmt.Println("Get Country started");
+	//runtime.GOMAXPROCS(10)
+	fmt.Println("Get Country started")
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
@@ -90,7 +89,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		docSnap, errGet := client.Collection("users").Doc(userID).Get(ctx)
 		if errGet != nil {
 			response.WriteErrorResponse(w, errGet)
-			return 
+			return
 		}
 		docSnap.DataTo(&user)
 	}
@@ -307,10 +306,9 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 			return
 		}
-	//	numbersData := numbers.Data()
+		//	numbersData := numbers.Data()
 		var emNumbers EmergencyNumbers
 		numbers.DataTo(&emNumbers)
-
 
 		resultsChannel <- map[string]interface{}{"result": *FormatEmergencyNumbers(emNumbers), "routine": "numbers"}
 
@@ -410,60 +408,60 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			"emergency_number":  emergencyNumbers,
 		}
 	} else {*/
-		for res := range resultsChannel {
-			switch res["routine"] {
-			/*case "destination":
-				popularDestinations = places.FromTriposoPlaces(res["result"].(interface{}).([]triposo.Place), "city")*/
-			case "plugs":
-				plugs = res["result"].([]interface{})
-			case "currency":
-				currency = res["result"].(interface{})
-			case "visa":
-				if (res["result"] != nil){
-					visa = res["result"].(interface{})
-				}else{
-					visa = res["result"]
-				}
-			case "safety":
-				ratingRes, err := strconv.ParseFloat(res["result"].(SafetyData).Situation.Rating, 32)
-				if err != nil {
-					response.WriteErrorResponse(w, err)
-					return
-				}
-				rating := float64(ratingRes)
-				safety = Safety{Advice: *FormatSafety(rating), Rating: rating}
-			case "numbers":
-				emergencyNumbers = res["result"].(EmergencyNumbers)
-			case "color":
-				colors := res["result"].(*places.Colors)
-				if len(colors.Vibrant) > 0 {
-					countryColor = colors.Vibrant
-				} else if len(colors.Muted) > 0 {
-					countryColor = colors.Muted
-				} else if len(colors.LightVibrant) > 0 {
-					countryColor = colors.LightVibrant
-				} else if len(colors.LightMuted) > 0 {
-					countryColor = colors.LightMuted
-				} else if len(colors.DarkVibrant) > 0 {
-					countryColor = colors.DarkVibrant
-				} else if len(colors.DarkMuted) > 0 {
-					countryColor = colors.DarkMuted
-				}
-			case "error":
-				response.WriteErrorResponse(w, res["result"].(error))
+	for res := range resultsChannel {
+		switch res["routine"] {
+		/*case "destination":
+		popularDestinations = places.FromTriposoPlaces(res["result"].(interface{}).([]triposo.Place), "city")*/
+		case "plugs":
+			plugs = res["result"].([]interface{})
+		case "currency":
+			currency = res["result"].(interface{})
+		case "visa":
+			if res["result"] != nil {
+				visa = res["result"].(interface{})
+			} else {
+				visa = res["result"]
+			}
+		case "safety":
+			ratingRes, err := strconv.ParseFloat(res["result"].(SafetyData).Situation.Rating, 32)
+			if err != nil {
+				response.WriteErrorResponse(w, err)
 				return
 			}
+			rating := float64(ratingRes)
+			safety = Safety{Advice: *FormatSafety(rating), Rating: rating}
+		case "numbers":
+			emergencyNumbers = res["result"].(EmergencyNumbers)
+		case "color":
+			colors := res["result"].(*places.Colors)
+			if len(colors.Vibrant) > 0 {
+				countryColor = colors.Vibrant
+			} else if len(colors.Muted) > 0 {
+				countryColor = colors.Muted
+			} else if len(colors.LightVibrant) > 0 {
+				countryColor = colors.LightVibrant
+			} else if len(colors.LightMuted) > 0 {
+				countryColor = colors.LightMuted
+			} else if len(colors.DarkVibrant) > 0 {
+				countryColor = colors.DarkVibrant
+			} else if len(colors.DarkMuted) > 0 {
+				countryColor = colors.DarkMuted
+			}
+		case "error":
+			response.WriteErrorResponse(w, res["result"].(error))
+			return
 		}
-		responseData = map[string]interface{}{
-			"country":              country,
-			//"popular_destinations": popularDestinations,
-			"plugs":                plugs,
-			"currency":             currency,
-			"color":                countryColor,
-			"visa":                 visa,
-			"safety":               safety,
-			"emergency_number":     emergencyNumbers,
-		}
+	}
+	responseData = map[string]interface{}{
+		"country": country,
+		//"popular_destinations": popularDestinations,
+		"plugs":            plugs,
+		"currency":         currency,
+		"color":            countryColor,
+		"visa":             visa,
+		"safety":           safety,
+		"emergency_number": emergencyNumbers,
+	}
 	//}
 
 	response.Write(w, responseData, http.StatusOK)
@@ -503,7 +501,7 @@ func getCityState(cityStateID string) (map[string]interface{}, error) {
 
 	for i, param := range urlparams {
 		go func(param string, i int) {
-			place, _,err := triposo.GetPoiFromLocation(cityStateID, "20", param, i)
+			place, _, err := triposo.GetPoiFromLocation(cityStateID, "20", param, i)
 			res := new(triposo.TriposoChannel)
 			res.Places = *place
 			res.Index = i

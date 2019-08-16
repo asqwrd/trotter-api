@@ -119,6 +119,7 @@ type HotelSegment struct {
 
 //Token struct
 type Token struct {
+	DeviceID string `json:"deviceId" firestore:"deviceId"`
 	UID   string `json:"uid" firestore:"uid"`
 	Token string `json:"token" firestore:"token"`
 }

@@ -193,26 +193,15 @@ func SaveToken(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 
-	//Check User
-	docSnap, _ := client.Collection("users").Doc(token.UID).Collection("devices").Doc(token.Token).Get(ctx)
-	if docSnap.Exists() == false {
-
-		_, errDeviceCreate := client.Collection("users").Doc(token.UID).Collection("devices").Doc(token.Token).Set(ctx, token)
-		if errDeviceCreate != nil {
-			// Handle any errors in an appropriate way, such as returning them.
-			fmt.Println(errDeviceCreate)
-			response.WriteErrorResponse(w, errDeviceCreate)
-			return
-		}
-	} else {
-		response.Write(w, map[string]interface{}{
-			"success": true,
-			"exists":  true,
-		}, http.StatusOK)
+	_, errDeviceCreate := client.Collection("users").Doc(token.UID).Collection("devices").Doc(token.DeviceID).Set(ctx, token)
+	if errDeviceCreate != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		fmt.Println(errDeviceCreate)
+		response.WriteErrorResponse(w, errDeviceCreate)
 		return
 	}
 
-	fmt.Println("Device Added")
+	fmt.Println("Device token updated")
 
 	userData := map[string]interface{}{
 		"success": true,
@@ -220,7 +209,6 @@ func SaveToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Write(w, userData, http.StatusOK)
-	return
 }
 
 // GetNotifications function

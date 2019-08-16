@@ -338,9 +338,9 @@ func GetPoi(id string) (*[]Place, error) {
 func GetPoiFromLocation(id string, count string, tag_labels string, index int) (*[]Place, *bool, error) {
 
 	client := http.Client{Timeout: time.Second * 30}
-	url := baseTriposoAPI + "poi.json?location_id=" + id + "&count=" + count + "&fields=id,name,coordinates,facebook_id,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
+	url := baseTriposoAPI + "poi.json?location_id=" + id + "&count=" + count + "&fields=id,score,name,coordinates,facebook_id,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
 	if len(tag_labels) > 0 {
-		url = baseTriposoAPI + "poi.json?location_id=" + id + "&tag_labels=" + tag_labels + "&count=" + count + "&fields=id,name,coordinates,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
+		url = baseTriposoAPI + "poi.json?location_id=" + id + "&tag_labels=" + tag_labels + "&count=" + count + "&fields=id,score,name,coordinates,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
 	}
 
 	//fmt.Println(url)
@@ -377,7 +377,7 @@ func GetPoiFromLocation(id string, count string, tag_labels string, index int) (
 func GetPoiFromLocationPagination(id string, count string, tag_labels string, offset string) (*[]Place, *bool, error) {
 
 	client := http.Client{Timeout: time.Second * 30}
-	url := baseTriposoAPI + "poi.json?location_id=" + id + "&tag_labels=" + tag_labels + "&count=" + count + "&offset=" + offset + "&fields=id,name,coordinates,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
+	url := baseTriposoAPI + "poi.json?location_id=" + id + "&tag_labels=" + tag_labels + "&count=" + count + "&offset=" + offset + "&fields=id,score,name,coordinates,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
 
 	//fmt.Println(url)
 

@@ -18,6 +18,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"gopkg.in/maddevsio/fcm.v1"
 )
 
 // GetTrips function
@@ -511,6 +512,7 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, err)
 		return
 	}
+	c := fcm.NewFCM(types.SERVER_KEY)
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
@@ -596,6 +598,57 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 				fmt.Println(errTrav)
 				response.WriteErrorResponse(w, errTrav)
 				break
+			}
+			for _, traveler := range tripDoc.Group {
+				iter := client.Collection("users").Doc(traveler).Collection("devices").Documents(ctx)
+				for {
+					doc, err := iter.Next()
+					if err == iterator.Done {
+						break
+					}
+					if err != nil {
+						fmt.Println(err)
+						response.WriteErrorResponse(w, err)
+						return
+					}
+
+					navigateData := map[string]interface{}{
+						"id":    tripID,
+						"level": "trip",
+					}
+
+					var token types.Token
+					doc.DataTo(&token)
+					data := map[string]interface{}{
+						"focus":            "trips",
+						"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+						"notificationData": navigateData,
+					}
+
+					notification, err := c.Send(fcm.Message{
+						Data:             data,
+						RegistrationIDs:  []string{token.Token},
+						ContentAvailable: true,
+						Priority:         fcm.PriorityNormal,
+						Notification: fcm.Notification{
+							Title:       "New traveler",
+							Body:        trip.User.DisplayName + "joined " + trip.Trip.Name,
+							ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+							//Badge: user.PhotoURL,
+						},
+					})
+					if err != nil {
+						fmt.Println(err)
+						response.WriteErrorResponse(w, err)
+						return
+					}
+					fmt.Println("Status Code   :", notification.StatusCode)
+					fmt.Println("Success       :", notification.Success)
+					fmt.Println("Fail          :", notification.Fail)
+					fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+					fmt.Println("Topic MsgId   :", notification.MsgID)
+
+				}
 			}
 
 		}

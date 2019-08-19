@@ -632,7 +632,7 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 						Priority:         fcm.PriorityNormal,
 						Notification: fcm.Notification{
 							Title:       "New traveler",
-							Body:        trip.User.DisplayName + "joined " + trip.Trip.Name,
+							Body:        trip.User.DisplayName + " joined " + tripDoc.Name,
 							ClickAction: "FLUTTER_NOTIFICATION_CLICK",
 							//Badge: user.PhotoURL,
 						},

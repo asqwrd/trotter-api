@@ -21,6 +21,7 @@ import (
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"googlemaps.github.io/maps"
+	"gopkg.in/maddevsio/fcm.v1"
 )
 
 func collectionHandler(iter *firestore.DocumentIterator, client *firestore.Client) (map[string]interface{}, error) {
@@ -915,4 +916,94 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 
 	response.Write(w, deleteData, http.StatusOK)
 	return
+}
+
+// TestNotification function
+func TestNotification(w http.ResponseWriter, r *http.Request) {
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+	c := fcm.NewFCM(types.SERVER_KEY)
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	userDoc, errUser := client.Collection("users").Doc("BjPpGEpI0ERGoCnGSdalv22jbV73").Get(ctx)
+	if errUser != nil {
+		fmt.Println(errUser)
+		response.WriteErrorResponse(w, errUser)
+		return
+	}
+	var user types.User
+	userDoc.DataTo(&user)
+	iter := client.Collection("users").Doc("BjPpGEpI0ERGoCnGSdalv22jbV73").Collection("devices").Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			fmt.Println(err)
+			response.WriteErrorResponse(w, err)
+			return
+		}
+
+		navigateData := map[string]interface{}{
+			"itineraryId":   "uRrfmJintOxNVhevP74p",
+			"dayId":         "5lOZSEJz345IJmOZEED7",
+			"startLocation": map[string]interface{}{"lat": 3.143497, "lng": 101.704094},
+			"level":         "itinerary/day/edit",
+		}
+
+		var token types.Token
+		doc.DataTo(&token)
+		data := map[string]interface{}{
+			"focus":            "trips",
+			"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+			"notificationData": navigateData,
+		}
+
+		notification, err := c.Send(fcm.Message{
+			Data:             data,
+			RegistrationIDs:  []string{token.Token},
+			ContentAvailable: true,
+			Priority:         fcm.PriorityHigh,
+			Notification: fcm.Notification{
+				Title:       "Hello",
+				Body:        "World",
+				ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+				//Badge: user.PhotoURL,
+			},
+		})
+		if err != nil {
+			fmt.Println(err)
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		fmt.Println("Status Code   :", notification.StatusCode)
+		fmt.Println("Success       :", notification.Success)
+		fmt.Println("Fail          :", notification.Fail)
+		fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+		fmt.Println("Topic MsgId   :", notification.MsgID)
+
+	}
+
+	response.Write(w, map[string]interface{}{
+		"ok": true,
+	}, http.StatusOK)
+
+	return
+
 }

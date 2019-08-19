@@ -12,6 +12,7 @@ require (
 	github.com/gorilla/handlers v1.4.0
 	github.com/gorilla/mux v1.6.2
 	github.com/grokify/html-strip-tags-go v0.0.0-20180907063347-e9e44961e26f
+	github.com/maddevsio/fcm v1.0.4
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
@@ -23,4 +24,5 @@ require (
 	google.golang.org/api v0.0.0-20181015145326-625cd1887957
 	google.golang.org/grpc v1.15.0
 	googlemaps.github.io/maps v0.0.0-20181207230752-65eab92263cb
+	gopkg.in/maddevsio/fcm.v1 v1.0.4
 )

@@ -5,6 +5,8 @@ import (
 	"github.com/asqwrd/trotter-api/triposo"
 )
 
+const SERVER_KEY = "AAAAlpfTUfI:APA91bGDjcKRvVSlPAU25oS8o5XvdoeGODVHFbMMhqZ7-lAhLBrOWSBLKC_e0Bq8s5KOMXxOKwFzDPOQSJCQj9xGKbIv2Dd-3zg7m-w9WG1OR8o-FGbZAaH7Hc8830IPZNoplLMA2U9Fx_L_nBM0iFqp2I4h156mJg"
+
 //Trip type for trips response
 type Trip struct {
 	Image        string        `json:"image" firestore:"image"`
@@ -29,12 +31,12 @@ type TripRes struct {
 
 // User struct
 type User struct {
-	DisplayName string `json:"displayName" firestore:"displayName"`
-	Email       string `json:"email" firestore:"email"`
-	PhoneNumber string `json:"phoneNumber" firestore:"phoneNumber"`
-	PhotoURL    string `json:"photoUrl" firestore:"photoUrl"`
-	UID         string `json:"uid" firestore:"uid"`
-	NotificationsOn         bool `json:"notifications_on" firestore:"notifications_on"`
+	DisplayName     string `json:"displayName" firestore:"displayName"`
+	Email           string `json:"email" firestore:"email"`
+	PhoneNumber     string `json:"phoneNumber" firestore:"phoneNumber"`
+	PhotoURL        string `json:"photoUrl" firestore:"photoUrl"`
+	UID             string `json:"uid" firestore:"uid"`
+	NotificationsOn bool   `json:"notifications_on" firestore:"notifications_on"`
 	Country         string `json:"country" firestore:"country"`
 }
 
@@ -120,8 +122,8 @@ type HotelSegment struct {
 //Token struct
 type Token struct {
 	DeviceID string `json:"deviceId" firestore:"deviceId"`
-	UID   string `json:"uid" firestore:"uid"`
-	Token string `json:"token" firestore:"token"`
+	UID      string `json:"uid" firestore:"uid"`
+	Token    string `json:"token" firestore:"token"`
 }
 
 // Destination struct

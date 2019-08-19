@@ -32,6 +32,8 @@ github.com/gorilla/mux v1.6.2/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2z
 github.com/grokify/html-strip-tags-go v0.0.0-20180907063347-e9e44961e26f h1:CTesHAvAG+NLVJQjbN26kTriSz5YMpeEN0iwVCA37x8=
 github.com/grokify/html-strip-tags-go v0.0.0-20180907063347-e9e44961e26f/go.mod h1:Xk7G0nwBiIloTMbLddk4WWJOqi4i/JLhadLd0HUXO30=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
+github.com/maddevsio/fcm v1.0.4 h1:ZMk5Wj9MqprmEQKDxMLDUA6BJ+gOprdk0+th2QNHUwc=
+github.com/maddevsio/fcm v1.0.4/go.mod h1:zEPvIv5ro5KfkS9iDIjsOw2degWzHWG4WZH91wjiZ6g=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/mitchellh/mapstructure v1.1.2 h1:fmNYVwqnSfB9mZU6OS2O6GsXM+wcskZDuKQzvN1EDeE=
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
@@ -81,4 +83,6 @@ google.golang.org/grpc v1.15.0 h1:Az/KuahOM4NAidTEuJCv/RonAA7rYsTPkqXVjr+8OOw=
 google.golang.org/grpc v1.15.0/go.mod h1:0JHn/cJsOMiMfNA9+DeHDlAU7KAAB5GDlYFpa9MZMio=
 googlemaps.github.io/maps v0.0.0-20181207230752-65eab92263cb h1:jVkV1/yTqK/SrOhLHgeFTQEn8A6S3HA7Jn7ITF2Ludc=
 googlemaps.github.io/maps v0.0.0-20181207230752-65eab92263cb/go.mod h1:skwIRP56b3wXI7uVor5+NBjKLuQ3WXPpUvSKq4k7luo=
+gopkg.in/maddevsio/fcm.v1 v1.0.4 h1:2WCxHMNG4vEKfXX49HogYlnbQHUdj/cnhA8QyKWRUPE=
+gopkg.in/maddevsio/fcm.v1 v1.0.4/go.mod h1:N6C33XkuqTx6jerI0Jffq3/f6lghsfJhxx7iaJZIcMM=
 honnef.co/go/tools v0.0.0-20180728063816-88497007e858/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=

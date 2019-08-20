@@ -603,7 +603,7 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 				notification := types.Notification{
 					CreateAt: time.Now().UnixNano() / int64(time.Millisecond),
 					Type:     "user",
-					Data:     trip.User,
+					Data:     map[string]interface{}{"user": trip.User, "subject": trip.User.DisplayName + " joined " + tripDoc.Name},
 					Read:     false,
 				}
 				notificationDoc, _, errNotifySet := client.Collection("users").Doc(traveler).Collection("notifications").Add(ctx, notification)

@@ -600,6 +600,27 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			for _, traveler := range tripDoc.Group {
+				notification := types.Notification{
+					CreateAt: time.Now().UnixNano() / int64(time.Millisecond),
+					Type:     "user",
+					Data:     trip.User,
+					Read:     false,
+				}
+				notificationDoc, _, errNotifySet := client.Collection("users").Doc(traveler).Collection("notifications").Add(ctx, notification)
+				if errNotifySet != nil {
+					fmt.Println(errNotifySet)
+					response.WriteErrorResponse(w, errNotifySet)
+					return
+				}
+				_, errNotifyID := client.Collection("users").Doc(traveler).Collection("notifications").Doc(notificationDoc.ID).Set(ctx, map[string]interface{}{
+					"id": notificationDoc.ID,
+				}, firestore.MergeAll)
+				if errNotifyID != nil {
+					fmt.Println(errNotifyID)
+					response.WriteErrorResponse(w, errNotifyID)
+					return
+				}
+
 				iter := client.Collection("users").Doc(traveler).Collection("devices").Documents(ctx)
 				for {
 					doc, err := iter.Next()

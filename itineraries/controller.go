@@ -827,6 +827,34 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
+	var itinerary Itinerary
+	itineraryDoc, errItin := client.Collection("itineraries").Doc(itineraryID).Get(ctx)
+	if errItin != nil {
+		fmt.Println(errItin)
+		response.WriteErrorResponse(w, errItin)
+		return
+	}
+
+	itineraryDoc.DataTo(&itinerary)
+
+	var trip types.Trip
+	tripDoc, errTrip := client.Collection("trips").Doc(itinerary.TripID).Get(ctx)
+	if errTrip != nil {
+		fmt.Println(errTrip)
+		response.WriteErrorResponse(w, errTrip)
+		return
+	}
+
+	tripDoc.DataTo(&trip)
+
+	userDoc, errUser := client.Collection("users").Doc(*itineraryItem.AddedBy).Get(ctx)
+	if errUser != nil {
+		fmt.Println(errUser)
+		response.WriteErrorResponse(w, errUser)
+		return
+	}
+	var addedBy types.User
+	userDoc.DataTo(&addedBy)
 
 	iter := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Where("poi_id", "==", itineraryItem.PoiID).Documents(ctx)
 	for {
@@ -871,6 +899,85 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 		getDay(w, r, id, false)
 	}
 
+	c := fcm.NewFCM(types.SERVER_KEY)
+
+	for _, traveler := range trip.Group {
+		if traveler != addedBy.UID {
+			navigateData := map[string]interface{}{
+				"itineraryId":   itineraryID,
+				"dayId":         dayID,
+				"startLocation": itinerary.StartLocation,
+				"level":         "itinerary/day/edit",
+			}
+
+			notification := types.Notification{
+				CreateAt: time.Now().UnixNano() / int64(time.Millisecond),
+				Type:     "user",
+				Data:     map[string]interface{}{"navigationData": navigateData, "user": addedBy, "subject": addedBy.DisplayName + " added " + itineraryItem.Poi.Name + " to " + itinerary.Name},
+				Read:     false,
+			}
+			notificationDoc, _, errNotifySet := client.Collection("users").Doc(traveler).Collection("notifications").Add(ctx, notification)
+			if errNotifySet != nil {
+				fmt.Println(errNotifySet)
+				response.WriteErrorResponse(w, errNotifySet)
+				return
+			}
+			_, errNotifyID := client.Collection("users").Doc(traveler).Collection("notifications").Doc(notificationDoc.ID).Set(ctx, map[string]interface{}{
+				"id": notificationDoc.ID,
+			}, firestore.MergeAll)
+			if errNotifyID != nil {
+				fmt.Println(errNotifyID)
+				response.WriteErrorResponse(w, errNotifyID)
+				return
+			}
+
+			iter := client.Collection("users").Doc(traveler).Collection("devices").Documents(ctx)
+			for {
+				doc, err := iter.Next()
+				if err == iterator.Done {
+					break
+				}
+				if err != nil {
+					fmt.Println(err)
+					response.WriteErrorResponse(w, err)
+					return
+				}
+
+				var token types.Token
+				doc.DataTo(&token)
+				data := map[string]interface{}{
+					"focus":            "trips",
+					"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+					"notificationData": navigateData,
+				}
+
+				notification, err := c.Send(fcm.Message{
+					Data:             data,
+					RegistrationIDs:  []string{token.Token},
+					ContentAvailable: true,
+					Priority:         fcm.PriorityNormal,
+					Notification: fcm.Notification{
+						Title:       "New place Added!",
+						Body:        addedBy.DisplayName + " added " + itineraryItem.Poi.Name + " to " + itinerary.Name,
+						ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+						//Badge: user.PhotoURL,
+					},
+				})
+				if err != nil {
+					fmt.Println(err)
+					response.WriteErrorResponse(w, err)
+					return
+				}
+				fmt.Println("Status Code   :", notification.StatusCode)
+				fmt.Println("Success       :", notification.Success)
+				fmt.Println("Fail          :", notification.Fail)
+				fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+				fmt.Println("Topic MsgId   :", notification.MsgID)
+
+			}
+		}
+	}
+
 	fmt.Println("added")
 	return
 
@@ -881,6 +988,10 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 	itineraryID := mux.Vars(r)["itineraryId"]
 	dayID := mux.Vars(r)["dayId"]
 	place := mux.Vars(r)["placeId"]
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
+
 	fmt.Println("Delete Itinerary Item")
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
@@ -902,12 +1013,131 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 
 	defer client.Close()
 
+	var itineraryItem ItineraryItem
+
+	doc, errItem := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(place).Get(ctx)
+	if errItem != nil {
+		fmt.Println(errItem)
+		response.WriteErrorResponse(w, errItem)
+		return
+	}
+
+	doc.DataTo(&itineraryItem)
+
+	var itinerary Itinerary
+	itineraryDoc, errItin := client.Collection("itineraries").Doc(itineraryID).Get(ctx)
+	if errItin != nil {
+		fmt.Println(errItin)
+		response.WriteErrorResponse(w, errItin)
+		return
+	}
+
+	itineraryDoc.DataTo(&itinerary)
+
+	var trip types.Trip
+	tripDoc, errTrip := client.Collection("trips").Doc(itinerary.TripID).Get(ctx)
+	if errTrip != nil {
+		fmt.Println(errTrip)
+		response.WriteErrorResponse(w, errTrip)
+		return
+	}
+
+	tripDoc.DataTo(&trip)
+
+	userDoc, errUser := client.Collection("users").Doc(q.Get("deletedBy")).Get(ctx)
+	if errUser != nil {
+		fmt.Println(errUser)
+		response.WriteErrorResponse(w, errUser)
+		return
+	}
+	var deletedBy types.User
+	userDoc.DataTo(&deletedBy)
+
 	_, errDelete := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(place).Delete(ctx)
 	if errDelete != nil {
 		// Handle any errors in an appropriate way, such as returning them.
 		fmt.Println(errDelete)
 		response.WriteErrorResponse(w, errDelete)
 		return
+	}
+
+	c := fcm.NewFCM(types.SERVER_KEY)
+
+	for _, traveler := range trip.Group {
+		if traveler != deletedBy.UID {
+			navigateData := map[string]interface{}{
+				"itineraryId":   itineraryID,
+				"dayId":         dayID,
+				"startLocation": itinerary.StartLocation,
+				"level":         "itinerary/day/edit",
+			}
+
+			notification := types.Notification{
+				CreateAt: time.Now().UnixNano() / int64(time.Millisecond),
+				Type:     "user",
+				Data:     map[string]interface{}{"navigationData": navigateData, "user": deletedBy, "subject": deletedBy.DisplayName + " deleted " + itineraryItem.Poi.Name + " from " + itinerary.Name},
+				Read:     false,
+			}
+			notificationDoc, _, errNotifySet := client.Collection("users").Doc(traveler).Collection("notifications").Add(ctx, notification)
+			if errNotifySet != nil {
+				fmt.Println(errNotifySet)
+				response.WriteErrorResponse(w, errNotifySet)
+				return
+			}
+			_, errNotifyID := client.Collection("users").Doc(traveler).Collection("notifications").Doc(notificationDoc.ID).Set(ctx, map[string]interface{}{
+				"id": notificationDoc.ID,
+			}, firestore.MergeAll)
+			if errNotifyID != nil {
+				fmt.Println(errNotifyID)
+				response.WriteErrorResponse(w, errNotifyID)
+				return
+			}
+
+			iter := client.Collection("users").Doc(traveler).Collection("devices").Documents(ctx)
+			for {
+				doc, err := iter.Next()
+				if err == iterator.Done {
+					break
+				}
+				if err != nil {
+					fmt.Println(err)
+					response.WriteErrorResponse(w, err)
+					return
+				}
+
+				var token types.Token
+				doc.DataTo(&token)
+				data := map[string]interface{}{
+					"focus":            "trips",
+					"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+					"notificationData": navigateData,
+				}
+
+				notification, err := c.Send(fcm.Message{
+					Data:             data,
+					RegistrationIDs:  []string{token.Token},
+					ContentAvailable: true,
+					Priority:         fcm.PriorityNormal,
+					Notification: fcm.Notification{
+						Title:       "Place removed from itinerary",
+						Body:        deletedBy.DisplayName + " deleted " + itineraryItem.Poi.Name + " from " + itinerary.Name,
+						ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+						//Badge: user.PhotoURL,
+					},
+				})
+				if err != nil {
+					fmt.Println(err)
+					response.WriteErrorResponse(w, err)
+					return
+				}
+				fmt.Println("Status Code   :", notification.StatusCode)
+				fmt.Println("Success       :", notification.Success)
+				fmt.Println("Fail          :", notification.Fail)
+				fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+				fmt.Println("Topic MsgId   :", notification.MsgID)
+
+			}
+		}
 	}
 
 	deleteData := map[string]interface{}{

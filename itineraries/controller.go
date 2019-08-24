@@ -912,8 +912,8 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 
 			notification := types.Notification{
 				CreateAt: time.Now().UnixNano() / int64(time.Millisecond),
-				Type:     "user",
-				Data:     map[string]interface{}{"navigationData": navigateData, "user": addedBy, "subject": addedBy.DisplayName + " added " + itineraryItem.Poi.Name + " to " + itinerary.Name},
+				Type:     "user_day",
+				Data:     map[string]interface{}{"navigationData": navigateData, "user": addedBy, "subject": addedBy.DisplayName + " added " + itineraryItem.Poi.Name + " to a day in " + itinerary.Name},
 				Read:     false,
 			}
 			notificationDoc, _, errNotifySet := client.Collection("users").Doc(traveler).Collection("notifications").Add(ctx, notification)
@@ -1074,8 +1074,8 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 
 			notification := types.Notification{
 				CreateAt: time.Now().UnixNano() / int64(time.Millisecond),
-				Type:     "user",
-				Data:     map[string]interface{}{"navigationData": navigateData, "user": deletedBy, "subject": deletedBy.DisplayName + " deleted " + itineraryItem.Poi.Name + " from " + itinerary.Name},
+				Type:     "user_day",
+				Data:     map[string]interface{}{"navigationData": navigateData, "user": deletedBy, "subject": deletedBy.DisplayName + " deleted " + itineraryItem.Poi.Name + " from a day in " + itinerary.Name},
 				Read:     false,
 			}
 			notificationDoc, _, errNotifySet := client.Collection("users").Doc(traveler).Collection("notifications").Add(ctx, notification)

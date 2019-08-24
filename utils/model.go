@@ -2,9 +2,8 @@ package utils
 
 import (
 	"cloud.google.com/go/firestore"
-	"golang.org/x/net/context"
 	"github.com/asqwrd/trotter-api/types"
-
+	"golang.org/x/net/context"
 )
 
 // Block Type
@@ -60,5 +59,14 @@ func FindInTripGroup(group []interface{}, queryUser types.User) bool {
 		}
 	}
 
+	return false
+}
+
+func Contains(s []string, e string) bool {
+	for _, a := range s {
+			if a == e {
+					return true
+			}
+	}
 	return false
 }

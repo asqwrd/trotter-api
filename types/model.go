@@ -163,6 +163,7 @@ type FlightsAndAccomodations struct {
 	Segments      []Segment `json:"segments" firestore:"segments"`
 	Travelers     []string  `json:"travelers" firestore:"travelers"`
 	TravelersFull []User    `json:"travelers_full" firestore:"travelers_full"`
+	OwnerID       string    `json:"ownerId" firestore:"ownerId"`
 }
 
 // Segment Struct

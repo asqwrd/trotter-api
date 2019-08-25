@@ -64,9 +64,21 @@ func FindInTripGroup(group []interface{}, queryUser types.User) bool {
 
 func Contains(s []string, e string) bool {
 	for _, a := range s {
-			if a == e {
-					return true
-			}
+		if a == e {
+			return true
+		}
 	}
 	return false
+}
+
+func UniqueUserSlice(userSlice []types.User) []types.User {
+	keys := make(map[string]bool)
+	list := []types.User{}
+	for _, entry := range userSlice {
+		if _, value := keys[entry.UID]; !value {
+			keys[entry.UID] = true
+			list = append(list, entry)
+		}
+	}
+	return list
 }

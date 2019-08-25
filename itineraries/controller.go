@@ -919,7 +919,7 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 			notificationDoc, _, errNotifySet := client.Collection("users").Doc(traveler).Collection("notifications").Add(ctx, notification)
 			if errNotifySet != nil {
 				fmt.Println(errNotifySet)
-				response.WriteErrorResponse(w, errNotifySet)
+				//response.WriteErrorResponse(w, errNotifySet)
 				return
 			}
 			_, errNotifyID := client.Collection("users").Doc(traveler).Collection("notifications").Doc(notificationDoc.ID).Set(ctx, map[string]interface{}{
@@ -927,7 +927,7 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 			}, firestore.MergeAll)
 			if errNotifyID != nil {
 				fmt.Println(errNotifyID)
-				response.WriteErrorResponse(w, errNotifyID)
+				//response.WriteErrorResponse(w, errNotifyID)
 				return
 			}
 
@@ -939,7 +939,7 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 				}
 				if err != nil {
 					fmt.Println(err)
-					response.WriteErrorResponse(w, err)
+					//response.WriteErrorResponse(w, err)
 					return
 				}
 
@@ -948,7 +948,10 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 				data := map[string]interface{}{
 					"focus":            "trips",
 					"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+					"type":             "user_day",
 					"notificationData": navigateData,
+					"user":             addedBy,
+					"msg":              addedBy.DisplayName + " added " + itineraryItem.Poi.Name + " to " + itinerary.Name,
 				}
 
 				notification, err := c.Send(fcm.Message{
@@ -965,7 +968,7 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 				})
 				if err != nil {
 					fmt.Println(err)
-					response.WriteErrorResponse(w, err)
+					//response.WriteErrorResponse(w, err)
 					return
 				}
 				fmt.Println("Status Code   :", notification.StatusCode)
@@ -1110,7 +1113,10 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 				data := map[string]interface{}{
 					"focus":            "trips",
 					"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+					"type":             "user_day",
 					"notificationData": navigateData,
+					"user":             deletedBy,
+					"msg":              deletedBy.DisplayName + " deleted " + itineraryItem.Poi.Name + " from " + itinerary.Name,
 				}
 
 				notification, err := c.Send(fcm.Message{
@@ -1203,6 +1209,9 @@ func TestNotification(w http.ResponseWriter, r *http.Request) {
 			"focus":            "trips",
 			"click_action":     "FLUTTER_NOTIFICATION_CLICK",
 			"notificationData": navigateData,
+			"user":             user,
+			"msg":              "Hellow World",
+			"type":             "user",
 		}
 
 		notification, err := c.Send(fcm.Message{
@@ -1227,6 +1236,7 @@ func TestNotification(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Fail          :", notification.Fail)
 		fmt.Println("Canonical_ids :", notification.CanonicalIDs)
 		fmt.Println("Topic MsgId   :", notification.MsgID)
+		fmt.Println("Results   :", notification.Results)
 
 	}
 

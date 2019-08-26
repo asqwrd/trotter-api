@@ -375,6 +375,9 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, err)
 		return
 	}
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
@@ -394,6 +397,41 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
+	var oldTrip types.Trip
+	tripDoc, errTrip := client.Collection("trips").Doc(tripID).Get(ctx)
+	if errTrip != nil {
+		fmt.Println(errTrip)
+		response.WriteErrorResponse(w, errTrip)
+		return
+	}
+
+	tripDoc.DataTo(&oldTrip)
+	var oldTrav []types.User
+	oldTravelers := client.Collection("trips").Doc(tripID).Collection("travelers").Documents(ctx)
+	for {
+		docTravelers, errTravelers := oldTravelers.Next()
+		if errTravelers == iterator.Done {
+			break
+		}
+		if errTravelers != nil {
+			fmt.Println(errTravelers)
+			response.WriteErrorResponse(w, errTravelers)
+			return
+		}
+		var traveler types.User
+		docTravelers.DataTo(&traveler)
+		oldTrav = append(oldTrav, traveler)
+	}
+
+	userDoc, errUser := client.Collection("users").Doc(q.Get("updatedBy")).Get(ctx)
+	if errUser != nil {
+		fmt.Println(errUser)
+		response.WriteErrorResponse(w, errUser)
+		return
+	}
+	var updatedBy types.User
+	userDoc.DataTo(&updatedBy)
+
 	trip["updated_at"] = firestore.ServerTimestamp
 	_, err2 := client.Collection("trips").Doc(tripID).Set(ctx, trip, firestore.MergeAll)
 
@@ -403,8 +441,10 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, err2)
 		return
 	}
+	c := fcm.NewFCM(types.SERVER_KEY)
 
 	if trip["name"] != nil {
+
 		iter := client.Collection("itineraries").Where("trip_id", "==", tripID).Documents(ctx)
 		for {
 			doc, err := iter.Next()
@@ -421,6 +461,87 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+		for _, traveler := range oldTrip.Group {
+			if traveler != updatedBy.UID {
+				notification := types.Notification{
+					CreateAt: time.Now().UnixNano() / int64(time.Millisecond),
+					Type:     "user_trip",
+					Data: map[string]interface{}{"navigationData": map[string]interface{}{
+						"id":    tripID,
+						"level": "trip",
+					}, "user": updatedBy, "subject": updatedBy.DisplayName + " changed trip name from  " + oldTrip.Name + " to " + trip["name"].(string)},
+					Read: false,
+				}
+				notificationDoc, _, errNotifySet := client.Collection("users").Doc(traveler).Collection("notifications").Add(ctx, notification)
+				if errNotifySet != nil {
+					fmt.Println(errNotifySet)
+					//response.WriteErrorResponse(w, errNotifySet)
+					return
+				}
+				_, errNotifyID := client.Collection("users").Doc(traveler).Collection("notifications").Doc(notificationDoc.ID).Set(ctx, map[string]interface{}{
+					"id": notificationDoc.ID,
+				}, firestore.MergeAll)
+				if errNotifyID != nil {
+					fmt.Println(errNotifyID)
+					//response.WriteErrorResponse(w, errNotifyID)
+					return
+				}
+
+				iter := client.Collection("users").Doc(traveler).Collection("devices").Documents(ctx)
+				for {
+					doc, err := iter.Next()
+					if err == iterator.Done {
+						break
+					}
+					if err != nil {
+						fmt.Println(err)
+						//response.WriteErrorResponse(w, err)
+						return
+					}
+
+					navigateData := map[string]interface{}{
+						"id":    tripID,
+						"level": "trip",
+					}
+
+					var token types.Token
+					doc.DataTo(&token)
+					data := map[string]interface{}{
+						"focus":            "trips",
+						"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+						"type":             "user_trip",
+						"notificationData": navigateData,
+						"user":             updatedBy,
+						"msg":              updatedBy.DisplayName + " changed trip name from  " + oldTrip.Name + " to " + trip["name"].(string),
+					}
+
+					notification, err := c.Send(fcm.Message{
+						Data:             data,
+						RegistrationIDs:  []string{token.Token},
+						ContentAvailable: true,
+						Priority:         fcm.PriorityNormal,
+						Notification: fcm.Notification{
+							Title:       "New traveler",
+							Body:        updatedBy.DisplayName + " changed trip name from  " + oldTrip.Name + " to " + trip["name"].(string),
+							ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+							//Badge: user.PhotoURL,
+						},
+					})
+					if err != nil {
+						fmt.Println(err)
+						//response.WriteErrorResponse(w, err)
+						return
+					}
+					fmt.Println("Status Code   :", notification.StatusCode)
+					fmt.Println("Success       :", notification.Success)
+					fmt.Println("Fail          :", notification.Fail)
+					fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+					fmt.Println("Topic MsgId   :", notification.MsgID)
+
+				}
+			}
+		}
+
 	}
 	trav := []types.User{}
 	if trip["group"] != nil {
@@ -474,6 +595,7 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 
 			}
 		}
+		var travelersSlice []string
 
 		iterTravelers := client.Collection("trips").Doc(tripID).Collection("travelers").Documents(ctx)
 		for {
@@ -489,6 +611,97 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 			var traveler types.User
 			docTravelers.DataTo(&traveler)
 			trav = append(trav, traveler)
+			travelersSlice = append(travelersSlice, traveler.UID)
+		}
+		for _, traveler := range utils.UniqueUserSlice(append(oldTrav, trav...)) {
+			if traveler.UID != updatedBy.UID {
+				var msg string
+				var notificationType string
+				if !utils.Contains(travelersSlice, updatedBy.UID) && utils.Contains(oldTrip.Group, updatedBy.UID) {
+					msg = updatedBy.DisplayName + " left " + oldTrip.Name
+					notificationType = "user_trip_remove"
+				} else if !utils.Contains(travelersSlice, traveler.UID) && utils.Contains(oldTrip.Group, traveler.UID) {
+					msg = updatedBy.DisplayName + " removed you from " + oldTrip.Name
+					notificationType = "user_trip_remove"
+				}
+
+				notification := types.Notification{
+					CreateAt: time.Now().UnixNano() / int64(time.Millisecond),
+					Type:     notificationType,
+					Data: map[string]interface{}{"navigationData": map[string]interface{}{
+						"id":    tripID,
+						"level": "trip",
+					}, "user": updatedBy, "subject": msg},
+					Read: false,
+				}
+				notificationDoc, _, errNotifySet := client.Collection("users").Doc(traveler.UID).Collection("notifications").Add(ctx, notification)
+				if errNotifySet != nil {
+					fmt.Println(errNotifySet)
+					//response.WriteErrorResponse(w, errNotifySet)
+					return
+				}
+				_, errNotifyID := client.Collection("users").Doc(traveler.UID).Collection("notifications").Doc(notificationDoc.ID).Set(ctx, map[string]interface{}{
+					"id": notificationDoc.ID,
+				}, firestore.MergeAll)
+				if errNotifyID != nil {
+					fmt.Println(errNotifyID)
+					//response.WriteErrorResponse(w, errNotifyID)
+					return
+				}
+
+				iter := client.Collection("users").Doc(traveler.UID).Collection("devices").Documents(ctx)
+				for {
+					doc, err := iter.Next()
+					if err == iterator.Done {
+						break
+					}
+					if err != nil {
+						fmt.Println(err)
+						//response.WriteErrorResponse(w, err)
+						return
+					}
+
+					navigateData := map[string]interface{}{
+						"id":    tripID,
+						"level": "trip",
+					}
+
+					var token types.Token
+					doc.DataTo(&token)
+					data := map[string]interface{}{
+						"focus":            "trips",
+						"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+						"type":             notificationType,
+						"notificationData": navigateData,
+						"user":             updatedBy,
+						"msg":              msg,
+					}
+
+					notification, err := c.Send(fcm.Message{
+						Data:             data,
+						RegistrationIDs:  []string{token.Token},
+						ContentAvailable: true,
+						Priority:         fcm.PriorityNormal,
+						Notification: fcm.Notification{
+							Title:       "Trip update!",
+							Body:        msg,
+							ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+							//Badge: user.PhotoURL,
+						},
+					})
+					if err != nil {
+						fmt.Println(err)
+						//response.WriteErrorResponse(w, err)
+						return
+					}
+					fmt.Println("Status Code   :", notification.StatusCode)
+					fmt.Println("Success       :", notification.Success)
+					fmt.Println("Fail          :", notification.Fail)
+					fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+					fmt.Println("Topic MsgId   :", notification.MsgID)
+
+				}
+			}
 		}
 	}
 
@@ -1476,10 +1689,10 @@ func UpdateFlightsAndAccomodationTravelers(w http.ResponseWriter, r *http.Reques
 			var msg string
 			var notificationType string
 			if !utils.Contains(detail.Travelers, updatedBy.UID) && utils.Contains(oldDetail.Travelers, updatedBy.UID) {
-				msg = updatedBy.DisplayName + " left a travel itinerary in " + trip.Name
+				msg = updatedBy.DisplayName + " left one of the travel itineraries for " + trip.Name
 				notificationType = "user_travel_details_remove"
 			} else if !utils.Contains(detail.Travelers, traveler.UID) && utils.Contains(oldDetail.Travelers, traveler.UID) {
-				msg = updatedBy.DisplayName + " removed you from a travel itinerary in " + trip.Name
+				msg = updatedBy.DisplayName + " removed you from one of the travel itineraries for " + trip.Name
 				notificationType = "user_travel_details_remove"
 			} else if utils.Contains(detail.Travelers, traveler.UID) && !utils.Contains(oldDetail.Travelers, traveler.UID) {
 				msg = updatedBy.DisplayName + " added you to a travel itinerary in " + trip.Name

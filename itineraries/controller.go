@@ -900,15 +900,16 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c := fcm.NewFCM(types.SERVER_KEY)
+	var tokens []string
+	navigateData := map[string]interface{}{
+		"itineraryId":   itineraryID,
+		"dayId":         dayID,
+		"startLocation": itinerary.StartLocation,
+		"level":         "itinerary/day/edit",
+	}
 
 	for _, traveler := range trip.Group {
 		if traveler != addedBy.UID {
-			navigateData := map[string]interface{}{
-				"itineraryId":   itineraryID,
-				"dayId":         dayID,
-				"startLocation": itinerary.StartLocation,
-				"level":         "itinerary/day/edit",
-			}
 
 			notification := types.Notification{
 				CreateAt: time.Now().UnixNano() / int64(time.Millisecond),
@@ -945,41 +946,44 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 
 				var token types.Token
 				doc.DataTo(&token)
-				data := map[string]interface{}{
-					"focus":            "trips",
-					"click_action":     "FLUTTER_NOTIFICATION_CLICK",
-					"type":             "user_day",
-					"notificationData": navigateData,
-					"user":             addedBy,
-					"msg":              addedBy.DisplayName + " added " + itineraryItem.Poi.Name + " to " + itinerary.Name,
-				}
-
-				notification, err := c.Send(fcm.Message{
-					Data:             data,
-					RegistrationIDs:  []string{token.Token},
-					ContentAvailable: true,
-					Priority:         fcm.PriorityNormal,
-					Notification: fcm.Notification{
-						Title:       "New place Added!",
-						Body:        addedBy.DisplayName + " added " + itineraryItem.Poi.Name + " to " + itinerary.Name,
-						ClickAction: "FLUTTER_NOTIFICATION_CLICK",
-						//Badge: user.PhotoURL,
-					},
-				})
-				if err != nil {
-					fmt.Println(err)
-					//response.WriteErrorResponse(w, err)
-					return
-				}
-				fmt.Println("Status Code   :", notification.StatusCode)
-				fmt.Println("Success       :", notification.Success)
-				fmt.Println("Fail          :", notification.Fail)
-				fmt.Println("Canonical_ids :", notification.CanonicalIDs)
-				fmt.Println("Topic MsgId   :", notification.MsgID)
+				tokens = append(tokens, token.Token)
 
 			}
 		}
 	}
+
+	data := map[string]interface{}{
+		"focus":            "trips",
+		"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+		"type":             "user_day",
+		"notificationData": navigateData,
+		"user":             addedBy,
+		"msg":              addedBy.DisplayName + " added " + itineraryItem.Poi.Name + " to " + itinerary.Name,
+	}
+
+	notification, err := c.Send(fcm.Message{
+		Data:             data,
+		RegistrationIDs:  tokens,
+		CollapseKey:      "New place Added!",
+		ContentAvailable: true,
+		Priority:         fcm.PriorityNormal,
+		Notification: fcm.Notification{
+			Title:       "New place Added!",
+			Body:        addedBy.DisplayName + " added " + itineraryItem.Poi.Name + " to " + itinerary.Name,
+			ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+			//Badge: user.PhotoURL,
+		},
+	})
+	if err != nil {
+		fmt.Println(err)
+		//response.WriteErrorResponse(w, err)
+		return
+	}
+	fmt.Println("Status Code   :", notification.StatusCode)
+	fmt.Println("Success       :", notification.Success)
+	fmt.Println("Fail          :", notification.Fail)
+	fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+	fmt.Println("Topic MsgId   :", notification.MsgID)
 
 	fmt.Println("added")
 	return
@@ -1065,16 +1069,16 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c := fcm.NewFCM(types.SERVER_KEY)
+	var tokens []string
+	navigateData := map[string]interface{}{
+		"itineraryId":   itineraryID,
+		"dayId":         dayID,
+		"startLocation": itinerary.StartLocation,
+		"level":         "itinerary/day/edit",
+	}
 
 	for _, traveler := range trip.Group {
 		if traveler != deletedBy.UID {
-			navigateData := map[string]interface{}{
-				"itineraryId":   itineraryID,
-				"dayId":         dayID,
-				"startLocation": itinerary.StartLocation,
-				"level":         "itinerary/day/edit",
-			}
-
 			notification := types.Notification{
 				CreateAt: time.Now().UnixNano() / int64(time.Millisecond),
 				Type:     "user_day",
@@ -1110,41 +1114,43 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 
 				var token types.Token
 				doc.DataTo(&token)
-				data := map[string]interface{}{
-					"focus":            "trips",
-					"click_action":     "FLUTTER_NOTIFICATION_CLICK",
-					"type":             "user_day",
-					"notificationData": navigateData,
-					"user":             deletedBy,
-					"msg":              deletedBy.DisplayName + " deleted " + itineraryItem.Poi.Name + " from " + itinerary.Name,
-				}
-
-				notification, err := c.Send(fcm.Message{
-					Data:             data,
-					RegistrationIDs:  []string{token.Token},
-					ContentAvailable: true,
-					Priority:         fcm.PriorityNormal,
-					Notification: fcm.Notification{
-						Title:       "Place removed from itinerary",
-						Body:        deletedBy.DisplayName + " deleted " + itineraryItem.Poi.Name + " from " + itinerary.Name,
-						ClickAction: "FLUTTER_NOTIFICATION_CLICK",
-						//Badge: user.PhotoURL,
-					},
-				})
-				if err != nil {
-					fmt.Println(err)
-					response.WriteErrorResponse(w, err)
-					return
-				}
-				fmt.Println("Status Code   :", notification.StatusCode)
-				fmt.Println("Success       :", notification.Success)
-				fmt.Println("Fail          :", notification.Fail)
-				fmt.Println("Canonical_ids :", notification.CanonicalIDs)
-				fmt.Println("Topic MsgId   :", notification.MsgID)
-
+				tokens = append(tokens, token.Token)
 			}
 		}
 	}
+
+	data := map[string]interface{}{
+		"focus":            "trips",
+		"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+		"type":             "user_day",
+		"notificationData": navigateData,
+		"user":             deletedBy,
+		"msg":              deletedBy.DisplayName + " deleted " + itineraryItem.Poi.Name + " from " + itinerary.Name,
+	}
+
+	notification, err := c.Send(fcm.Message{
+		Data:             data,
+		RegistrationIDs:  tokens,
+		CollapseKey:      "Place removed from itinerary",
+		ContentAvailable: true,
+		Priority:         fcm.PriorityNormal,
+		Notification: fcm.Notification{
+			Title:       "Place removed from itinerary",
+			Body:        deletedBy.DisplayName + " deleted " + itineraryItem.Poi.Name + " from " + itinerary.Name,
+			ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+			//Badge: user.PhotoURL,
+		},
+	})
+	if err != nil {
+		fmt.Println(err)
+		//response.WriteErrorResponse(w, err)
+		return
+	}
+	fmt.Println("Status Code   :", notification.StatusCode)
+	fmt.Println("Success       :", notification.Success)
+	fmt.Println("Fail          :", notification.Fail)
+	fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+	fmt.Println("Topic MsgId   :", notification.MsgID)
 
 	deleteData := map[string]interface{}{
 		"success": true,
@@ -1216,8 +1222,9 @@ func TestNotification(w http.ResponseWriter, r *http.Request) {
 
 		notification, err := c.Send(fcm.Message{
 			Data:             data,
-			RegistrationIDs:  []string{token.Token},
+			To:               token.Token,
 			ContentAvailable: true,
+			CollapseKey:      "Test notification",
 			Priority:         fcm.PriorityHigh,
 			Notification: fcm.Notification{
 				Title:       "Hello",

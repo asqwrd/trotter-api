@@ -113,7 +113,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	var safety Safety
 
-	emergencyNumbers := EmergencyNumbers{Dispatch: Numbers{All:[]string{},Fixed:[]string{},GSM:[]string{}}, Ambulance: Numbers{All:[]string{},Fixed:[]string{},GSM:[]string{}},Fire:Numbers{All:[]string{},Fixed:[]string{},GSM:[]string{}},Police:Numbers{All:[]string{},Fixed:[]string{},GSM:[]string{}},European_emergency_number:[]string{}}
+	var emergencyNumbers EmergencyNumbers
 
 	if currenciesCache == nil {
 		data, err := getCurrencies()
@@ -277,7 +277,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		//	numbersData := numbers.Data()
-		var emNumbers EmergencyNumbers
+		emNumbers := EmergencyNumbers{Dispatch: Numbers{All:[]string{},Fixed:[]string{},GSM:[]string{}}, Ambulance: Numbers{All:[]string{},Fixed:[]string{},GSM:[]string{}},Fire:Numbers{All:[]string{},Fixed:[]string{},GSM:[]string{}},Police:Numbers{All:[]string{},Fixed:[]string{},GSM:[]string{}},European_emergency_number:[]string{}}
 		numbers.DataTo(&emNumbers)
 
 		resultsChannel <- map[string]interface{}{"result": FormatEmergencyNumbers(emNumbers), "routine": "numbers"}
@@ -344,7 +344,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			rating := float64(ratingRes)
 			safety = Safety{Advice: *FormatSafety(rating), Rating: rating}
 		case "numbers":
-			//emergencyNumbers = res["result"]
+			emergencyNumbers = res["result"].(EmergencyNumbers)
 		case "color":
 			colors := res["result"].(*places.Colors)
 			if len(colors.Vibrant) > 0 {

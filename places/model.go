@@ -334,6 +334,12 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 		for i := 0; i < length; i++ {
 			var a = sp.Images[i].Sizes.Original.Width * sp.Images[i].Sizes.Original.Height
 			bytes := 1000000
+			resp, err := http.Get(sp.Images[i].Sizes.Original)
+if err != nil {
+    print(err.Error())
+} else {
+    print(string(resp.StatusCode) + resp.Status)
+}
 			if area < a && sp.Images[i].Sizes.Original.Bytes <= bytes && sp.Images[i].SourceID != "flickr" {
 				area = a
 				areaIndex = i

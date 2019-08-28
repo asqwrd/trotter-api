@@ -334,7 +334,7 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 		for i := 0; i < length; i++ {
 			var a = sp.Images[i].Sizes.Original.Width * sp.Images[i].Sizes.Original.Height
 			bytes := 1000000
-			resp, err := http.Get(sp.Images[i].Sizes.Original)
+			resp, err := http.Get(sp.Images[i].Sizes.Original.Url)
 if err != nil {
     print(err.Error())
 } else {

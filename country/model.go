@@ -173,6 +173,7 @@ func FormatEmergencyNumbers(numbers EmergencyNumbers) (e *EmergencyNumbers) {
 	if numbers.Member112 == true {
 		member112 = []string{"112"}
 	}
+	fmt.Println(numbers.Dispatch.All)
 	e = &EmergencyNumbers{
 		Ambulance:                 numbers.Ambulance,
 		Dispatch:                  numbers.Dispatch,

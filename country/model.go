@@ -155,6 +155,8 @@ type SafetySituation struct {
 
 type Numbers struct {
 	All []string `json:"all,omitempty"`
+	Fixed []string `json:"fixed,omitempty"`
+	GSM []string `json:"gsm,omitempty"`
 }
 
 type EmergencyNumbers struct {

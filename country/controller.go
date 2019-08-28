@@ -242,7 +242,12 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 			currencyData, err := ConvertCurrency(toCurrency["currencyId"].(string), citizenCurrency["currencyId"].(string))
 			if err != nil {
-				resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
+				result := map[string]interface{}{
+				"converted_currency": ",
+				"converted_unit":     "",
+				"unit":               "",
+			}
+				resultsChannel <- map[string]interface{}{"result": result, "routine": "currency"}
 				return
 			}
 			result := map[string]interface{}{

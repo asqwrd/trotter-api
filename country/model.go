@@ -155,9 +155,9 @@ type SafetySituation struct {
 }
 
 type Numbers struct {
-	All []string `json:"all"`
-	Fixed []string `json:"fixed"`
-	GSM []string `json:"gsm"`
+	All []string `json:"all" firestore:"all"`
+	Fixed []string `json:"fixed" firestore:"fixed"`
+	GSM []string `json:"gsm" firestore:"gsm"`
 }
 
 type EmergencyNumbers struct {

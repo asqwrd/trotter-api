@@ -277,7 +277,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		//	numbersData := numbers.Data()
-		var emNumbers EmergencyNumbers
+		emNumbers := EmergencyNumbers{}
 		numbers.DataTo(&emNumbers)
 
 		resultsChannel <- map[string]interface{}{"result": FormatEmergencyNumbers(emNumbers), "routine": "numbers"}

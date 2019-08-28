@@ -113,7 +113,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	var safety Safety
 
-	var emergencyNumbers interface{}
+	emergencyNumbers := EmergencyNumbers{}
 
 	if currenciesCache == nil {
 		data, err := getCurrencies()
@@ -344,7 +344,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			rating := float64(ratingRes)
 			safety = Safety{Advice: *FormatSafety(rating), Rating: rating}
 		case "numbers":
-			emergencyNumbers = res["result"]
+			//emergencyNumbers = res["result"]
 		case "color":
 			colors := res["result"].(*places.Colors)
 			if len(colors.Vibrant) > 0 {

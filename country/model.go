@@ -1,6 +1,7 @@
 package country
 
 import (
+	"fmt"
 	"encoding/json"
 	"errors"
 	_ "image/gif"

@@ -338,6 +338,8 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 if err != nil {
     fmt.Println(resp.StatusCode)
 	fmt.Println(err)
+}else {
+	fmt.Println(resp.StatusCode)
 }
 			if area < a && sp.Images[i].Sizes.Original.Bytes <= bytes && sp.Images[i].SourceID != "flickr" {
 				area = a

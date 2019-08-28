@@ -113,7 +113,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	var safety Safety
 
-	emergencyNumbers := EmergencyNumbers{}
+	emergencyNumbers := EmergencyNumbers{Dispatch: Numbers{All:[],Fixed:[],GSM:[]}, Ambulance: Numbers{All:[],Fixed:[],GSM:[]},Fire:Numbers{All:[],Fixed:[],GSM:[]},Police:Numbers{All:[],Fixed:[],GSM:[]},}
 
 	if currenciesCache == nil {
 		data, err := getCurrencies()

@@ -113,7 +113,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	var safety Safety
 
-	var emergencyNumbers EmergencyNumbers
+	var emergencyNumbers interface{}
 
 	if currenciesCache == nil {
 		data, err := getCurrencies()

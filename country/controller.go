@@ -344,7 +344,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			rating := float64(ratingRes)
 			safety = Safety{Advice: *FormatSafety(rating), Rating: rating}
 		case "numbers":
-			emergencyNumbers = res["result"].(EmergencyNumbers)
+			emergencyNumbers = res["result"]
 		case "color":
 			colors := res["result"].(*places.Colors)
 			if len(colors.Vibrant) > 0 {

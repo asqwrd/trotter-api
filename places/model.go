@@ -336,7 +336,7 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 			bytes := 1000000
 			resp, err := http.Get(sp.Images[i].Sizes.Original.Url)
 
-			if area < a && sp.Images[i].Sizes.Original.Bytes <= bytes && resp.StatusCode == 200 {
+			if area < a && sp.Images[i].Sizes.Original.Bytes <= bytes && resp.StatusCode == 200 && err == nil {
 				area = a
 				areaIndex = i
 			}

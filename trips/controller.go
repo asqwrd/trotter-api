@@ -507,42 +507,45 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-		navigateData := map[string]interface{}{
-			"id":    tripID,
-			"level": "trip",
-		}
-		data := map[string]interface{}{
-			"focus":            "trips",
-			"click_action":     "FLUTTER_NOTIFICATION_CLICK",
-			"type":             "user_trip",
-			"notificationData": navigateData,
-			"user":             updatedBy,
-			"msg":              updatedBy.DisplayName + " changed trip name from  " + oldTrip.Name + " to " + trip["name"].(string),
-		}
 
-		notification, err := c.Send(fcm.Message{
-			Data:             data,
-			RegistrationIDs:  tokens,
-			CollapseKey:      "Trip name updated",
-			ContentAvailable: true,
-			Priority:         fcm.PriorityNormal,
-			Notification: fcm.Notification{
-				Title:       "Trip name updated",
-				Body:        updatedBy.DisplayName + " changed trip name from  " + oldTrip.Name + " to " + trip["name"].(string),
-				ClickAction: "FLUTTER_NOTIFICATION_CLICK",
-				//Badge: user.PhotoURL,
-			},
-		})
-		if err != nil {
-			fmt.Println(err)
-			//response.WriteErrorResponse(w, err)
-			return
+		if len(tokens) > 0 {
+			navigateData := map[string]interface{}{
+				"id":    tripID,
+				"level": "trip",
+			}
+			data := map[string]interface{}{
+				"focus":            "trips",
+				"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+				"type":             "user_trip",
+				"notificationData": navigateData,
+				"user":             updatedBy,
+				"msg":              updatedBy.DisplayName + " changed trip name from  " + oldTrip.Name + " to " + trip["name"].(string),
+			}
+
+			notification, err := c.Send(fcm.Message{
+				Data:             data,
+				RegistrationIDs:  tokens,
+				CollapseKey:      "Trip name updated",
+				ContentAvailable: true,
+				Priority:         fcm.PriorityNormal,
+				Notification: fcm.Notification{
+					Title:       "Trip name updated",
+					Body:        updatedBy.DisplayName + " changed trip name from  " + oldTrip.Name + " to " + trip["name"].(string),
+					ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+					//Badge: user.PhotoURL,
+				},
+			})
+			if err != nil {
+				fmt.Println("Notification send err")
+				fmt.Println(err)
+				//response.WriteErrorResponse(w, err)
+			}
+			fmt.Println("Status Code   :", notification.StatusCode)
+			fmt.Println("Success       :", notification.Success)
+			fmt.Println("Fail          :", notification.Fail)
+			fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+			fmt.Println("Topic MsgId   :", notification.MsgID)
 		}
-		fmt.Println("Status Code   :", notification.StatusCode)
-		fmt.Println("Success       :", notification.Success)
-		fmt.Println("Fail          :", notification.Fail)
-		fmt.Println("Canonical_ids :", notification.CanonicalIDs)
-		fmt.Println("Topic MsgId   :", notification.MsgID)
 
 	}
 
@@ -695,9 +698,9 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 						},
 					})
 					if err != nil {
+						fmt.Println("Notification send err")
 						fmt.Println(err)
 						//response.WriteErrorResponse(w, err)
-						return
 					}
 					fmt.Println("Status Code   :", notification.StatusCode)
 					fmt.Println("Success       :", notification.Success)
@@ -864,42 +867,45 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 
 		}
 
-		navigateData := map[string]interface{}{
-			"id":    tripID,
-			"level": "trip",
-		}
-		data := map[string]interface{}{
-			"focus":            "trips",
-			"click_action":     "FLUTTER_NOTIFICATION_CLICK",
-			"type":             "user_trip",
-			"notificationData": navigateData,
-			"user":             trip.User,
-			"msg":              trip.User.DisplayName + " joined " + tripDoc.Name,
-		}
+		if len(tokens) > 0 {
 
-		notification, err := c.Send(fcm.Message{
-			Data:             data,
-			RegistrationIDs:  tokens,
-			CollapseKey:      "New traveler",
-			ContentAvailable: true,
-			Priority:         fcm.PriorityNormal,
-			Notification: fcm.Notification{
-				Title:       "New traveler",
-				Body:        trip.User.DisplayName + " joined " + tripDoc.Name,
-				ClickAction: "FLUTTER_NOTIFICATION_CLICK",
-				//Badge: user.PhotoURL,
-			},
-		})
-		if err != nil {
-			fmt.Println(err)
-			//response.WriteErrorResponse(w, err)
-			return
+			navigateData := map[string]interface{}{
+				"id":    tripID,
+				"level": "trip",
+			}
+			data := map[string]interface{}{
+				"focus":            "trips",
+				"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+				"type":             "user_trip",
+				"notificationData": navigateData,
+				"user":             trip.User,
+				"msg":              trip.User.DisplayName + " joined " + tripDoc.Name,
+			}
+
+			notification, err := c.Send(fcm.Message{
+				Data:             data,
+				RegistrationIDs:  tokens,
+				CollapseKey:      "New traveler",
+				ContentAvailable: true,
+				Priority:         fcm.PriorityNormal,
+				Notification: fcm.Notification{
+					Title:       "New traveler",
+					Body:        trip.User.DisplayName + " joined " + tripDoc.Name,
+					ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+					//Badge: user.PhotoURL,
+				},
+			})
+			if err != nil {
+				fmt.Println("Notification send err")
+				fmt.Println(err)
+				//response.WriteErrorResponse(w, err)
+			}
+			fmt.Println("Status Code   :", notification.StatusCode)
+			fmt.Println("Success       :", notification.Success)
+			fmt.Println("Fail          :", notification.Fail)
+			fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+			fmt.Println("Topic MsgId   :", notification.MsgID)
 		}
-		fmt.Println("Status Code   :", notification.StatusCode)
-		fmt.Println("Success       :", notification.Success)
-		fmt.Println("Fail          :", notification.Fail)
-		fmt.Println("Canonical_ids :", notification.CanonicalIDs)
-		fmt.Println("Topic MsgId   :", notification.MsgID)
 
 	} else {
 		response.Write(w, map[string]interface{}{
@@ -1201,6 +1207,7 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 		destDoc, _, errCreate := client.Collection("trips").Doc(tripID).Collection("destinations").Add(ctx, destination)
 		if errCreate != nil {
 			// Handle any errors in an appropriate way, such as returning them.
+			fmt.Println("here")
 			fmt.Println(errCreate)
 			response.WriteErrorResponse(w, errCreate)
 			return
@@ -1230,6 +1237,7 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 		}
 		_, errDays := itineraries.CreateItineraryHelper(tripID, destDoc.ID, itinerary)
 		if errDays != nil {
+
 			fmt.Println(errDays)
 			response.WriteErrorResponse(w, errDays)
 		}
@@ -1298,39 +1306,41 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	if len(tokens) > 0 {
 
-	data := map[string]interface{}{
-		"focus":            "trips",
-		"click_action":     "FLUTTER_NOTIFICATION_CLICK",
-		"type":             "user_trip",
-		"notificationData": navigateData,
-		"user":             updatedBy,
-		"msg":              updatedBy.DisplayName + " added " + destination.DestinationName + " to " + trip.Name,
-	}
+		data := map[string]interface{}{
+			"focus":            "trips",
+			"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+			"type":             "user_trip",
+			"notificationData": navigateData,
+			"user":             updatedBy,
+			"msg":              updatedBy.DisplayName + " added " + destination.DestinationName + " to " + trip.Name,
+		}
 
-	notification, err := c.Send(fcm.Message{
-		Data:             data,
-		RegistrationIDs:  tokens,
-		CollapseKey:      "Destination Added!",
-		ContentAvailable: true,
-		Priority:         fcm.PriorityNormal,
-		Notification: fcm.Notification{
-			Title:       "Destination Added!",
-			Body:        updatedBy.DisplayName + " added " + destination.DestinationName + " to " + trip.Name,
-			ClickAction: "FLUTTER_NOTIFICATION_CLICK",
-			//Badge: user.PhotoURL,
-		},
-	})
-	if err != nil {
-		fmt.Println(err)
-		//response.WriteErrorResponse(w, err)
-		return
+		notification, err := c.Send(fcm.Message{
+			Data:             data,
+			RegistrationIDs:  tokens,
+			CollapseKey:      "Destination Added!",
+			ContentAvailable: true,
+			Priority:         fcm.PriorityNormal,
+			Notification: fcm.Notification{
+				Title:       "Destination Added!",
+				Body:        updatedBy.DisplayName + " added " + destination.DestinationName + " to " + trip.Name,
+				ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+				//Badge: user.PhotoURL,
+			},
+		})
+		if err != nil {
+			fmt.Println("Notification send err")
+			fmt.Println(err)
+			//response.WriteErrorResponse(w, err)
+		}
+		fmt.Println("Status Code   :", notification.StatusCode)
+		fmt.Println("Success       :", notification.Success)
+		fmt.Println("Fail          :", notification.Fail)
+		fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+		fmt.Println("Topic MsgId   :", notification.MsgID)
 	}
-	fmt.Println("Status Code   :", notification.StatusCode)
-	fmt.Println("Success       :", notification.Success)
-	fmt.Println("Fail          :", notification.Fail)
-	fmt.Println("Canonical_ids :", notification.CanonicalIDs)
-	fmt.Println("Topic MsgId   :", notification.MsgID)
 
 	response.Write(w, destinationData, http.StatusOK)
 }
@@ -1772,9 +1782,9 @@ func UpdateFlightsAndAccomodationTravelers(w http.ResponseWriter, r *http.Reques
 					},
 				})
 				if errSend != nil {
+					fmt.Println("Notification send err")
 					fmt.Println(errSend)
 					//response.WriteErrorResponse(w, errSend)
-					return
 				}
 				fmt.Println("Status Code   :", notification.StatusCode)
 				fmt.Println("Success       :", notification.Success)
@@ -2034,38 +2044,41 @@ func DeleteDestination(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	data := map[string]interface{}{
-		"focus":            "trips",
-		"click_action":     "FLUTTER_NOTIFICATION_CLICK",
-		"type":             "user_trip",
-		"notificationData": navigateData,
-		"user":             updatedBy,
-		"msg":              updatedBy.DisplayName + " removed " + destination.DestinationName + " from " + trip.Name,
-	}
+	if len(tokens) > 0 {
 
-	notification, err := c.Send(fcm.Message{
-		Data:             data,
-		RegistrationIDs:  tokens,
-		ContentAvailable: true,
-		CollapseKey:      "Destination removed!",
-		Priority:         fcm.PriorityNormal,
-		Notification: fcm.Notification{
-			Title:       "Destination removed!",
-			Body:        updatedBy.DisplayName + " removed " + destination.DestinationName + " from " + trip.Name,
-			ClickAction: "FLUTTER_NOTIFICATION_CLICK",
-			//Badge: user.PhotoURL,
-		},
-	})
-	if err != nil {
-		fmt.Println(err)
-		//response.WriteErrorResponse(w, err)
-		return
+		data := map[string]interface{}{
+			"focus":            "trips",
+			"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+			"type":             "user_trip",
+			"notificationData": navigateData,
+			"user":             updatedBy,
+			"msg":              updatedBy.DisplayName + " removed " + destination.DestinationName + " from " + trip.Name,
+		}
+
+		notification, err := c.Send(fcm.Message{
+			Data:             data,
+			RegistrationIDs:  tokens,
+			ContentAvailable: true,
+			CollapseKey:      "Destination removed!",
+			Priority:         fcm.PriorityNormal,
+			Notification: fcm.Notification{
+				Title:       "Destination removed!",
+				Body:        updatedBy.DisplayName + " removed " + destination.DestinationName + " from " + trip.Name,
+				ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+				//Badge: user.PhotoURL,
+			},
+		})
+		if err != nil {
+			fmt.Println("Notification send err")
+			fmt.Println(err)
+			//response.WriteErrorResponse(w, err)
+		}
+		fmt.Println("Status Code   :", notification.StatusCode)
+		fmt.Println("Success       :", notification.Success)
+		fmt.Println("Fail          :", notification.Fail)
+		fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+		fmt.Println("Topic MsgId   :", notification.MsgID)
 	}
-	fmt.Println("Status Code   :", notification.StatusCode)
-	fmt.Println("Success       :", notification.Success)
-	fmt.Println("Fail          :", notification.Fail)
-	fmt.Println("Canonical_ids :", notification.CanonicalIDs)
-	fmt.Println("Topic MsgId   :", notification.MsgID)
 
 	deleteData := map[string]interface{}{
 		"success": true,

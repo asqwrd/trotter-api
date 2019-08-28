@@ -169,13 +169,13 @@ type EmergencyNumbers struct {
 	Member112                 bool     `json:"member_112,omitempty" firestore:"member_112"`
 }
 
-func FormatEmergencyNumbers(numbers EmergencyNumbers) (e *EmergencyNumbers) {
+func FormatEmergencyNumbers(numbers EmergencyNumbers) (e EmergencyNumbers) {
 	member112 := []string{}
 	if numbers.Member112 == true {
 		member112 = []string{"112"}
 	}
 	fmt.Println(numbers.Dispatch.All)
-	e = &EmergencyNumbers{
+	e = EmergencyNumbers{
 		Ambulance:                 numbers.Ambulance,
 		Dispatch:                  numbers.Dispatch,
 		Fire:                      numbers.Fire,

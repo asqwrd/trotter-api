@@ -243,7 +243,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			currencyData, err := ConvertCurrency(toCurrency["currencyId"].(string), citizenCurrency["currencyId"].(string))
 			if err != nil {
 				result := map[string]interface{}{
-				"converted_currency": ",
+				"converted_currency": "",
 				"converted_unit":     "",
 				"unit":               "",
 			}

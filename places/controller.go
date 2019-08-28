@@ -270,6 +270,7 @@ func GetDestination(w http.ResponseWriter, r *http.Request) {
 			} else {
 				colors, err := GetColor(image)
 				if err != nil {
+					fmt.Println(image)
 					errorChannel <- err
 					return
 				}

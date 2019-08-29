@@ -156,7 +156,7 @@ type SafetySituation struct {
 }
 
 type SafetyAdvisory struct {
-	Score         string    `json:"score" firestore:"score"`
+	Score         float32   `json:"score" firestore:"score"`
 	Sources       int       `json:"sources"`
 	SourcesActive string    `json:"sources_active" firestore:"sources_active"`
 }

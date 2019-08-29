@@ -305,7 +305,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		//defer wg.Done()
 		var plugsData []interface{}
 
-		iter := client.Collection("plugs").Where("country", "==", name).Documents(ctx)
+		iter := client.Collection("plugs").Where("country", "==", country.Name).Documents(ctx)
 
 		for {
 			doc, err := iter.Next()

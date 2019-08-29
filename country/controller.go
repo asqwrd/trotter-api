@@ -337,13 +337,13 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 				visa = res["result"]
 			}
 		case "safety":
-			scoreRes, err := strconv.ParseFloat(res["result"].(SafetyData).Advisory.Score, 32)
-			if err != nil {
-				fmt.Println(err)
-				response.WriteErrorResponse(w, err)
-				return
-			}
-			score := float64(scoreRes)
+// 			scoreRes, err := strconv.ParseFloat(res["result"].(SafetyData).Advisory.Score, 32)
+// 			if err != nil {
+// 				fmt.Println(err)
+// 				response.WriteErrorResponse(w, err)
+// 				return
+// 			}
+			score := res["result"].(SafetyData).Advisory.Score
 			safety = Safety{Advice: *FormatSafety(score), Rating: score}
 		case "numbers":
 			emergencyNumbers = res["result"].(EmergencyNumbers)

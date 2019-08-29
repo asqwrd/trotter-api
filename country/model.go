@@ -134,8 +134,10 @@ type safetyResponse struct {
 }
 
 type SafetyData struct {
-	Code      SafetyCode      `json:"code"`
-	Situation SafetySituation `json:"situation"`
+	IsoAlpha2      string         `json:"iso_alpha2" firestore:"iso_alpha2"`
+	Name           string         `json:"name" firestore:"name"`
+	Continent      string         `json:"continent" firestore:"continent"`
+	Advisory       SafetyAdvisory `json:"advisory" firestore:"advisory"`
 }
 
 type Safety struct {
@@ -151,6 +153,12 @@ type SafetyCode struct {
 type SafetySituation struct {
 	Rating  string `json:"rating"`
 	Sources int    `json:"sources"`
+}
+
+type SafetyAdvisory struct {
+	Score         string    `json:"score" firestore:"score"`
+	Sources       int       `json:"sources"`
+	SourcesActive string    `json:"sources_active" firestore:"sources_active"`
 }
 
 type Numbers struct {

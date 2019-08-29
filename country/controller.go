@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	//"strconv"
-	//"sync"
 	"time"
 
 	firebase "firebase.google.com/go"
@@ -105,11 +103,9 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	//var popularDestinations []triposo.InternalPlace
 	//var cityState interface{}
 
-	//var plugs []interface{}
 	var currency interface{}
 	var visa interface{}
 	routines := 0
-	//var wg sync.WaitGroup
 	resultsChannel := make(chan map[string]interface{})
 
 	var safety interface{}
@@ -141,7 +137,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		Colors block
 		*
 		**/
-	//wg.Add(1)
 	routines++
 	go func() {
 		//defer wg.Done()
@@ -185,7 +180,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		*
 	*/
 	if len(userID) > 0 {
-		//wg.Add(1)
 		routines++
 		go func(user types.User) {
 			//defer wg.Done()
@@ -208,7 +202,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		*
 	*/
 
-	//wg.Add(1)
 	routines++
 	go func() {
 		//defer wg.Done()
@@ -275,7 +268,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		*
 		**/
 
-	//wg.Add(1)
 	routines++
 	go func() {
 		//defer wg.Done()
@@ -300,9 +292,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		*
 		**/
 
-	//wg.Add(1)
-// 	go func(name string, routines int) {
-		//defer wg.Done()
 		var plugsData []interface{}
 
 		iter := client.Collection("plugs").Where("country", "==", country.Name).Documents(ctx)
@@ -318,10 +307,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			}
 
 			plugsData = append(plugsData, doc.Data())
-// 			resultsChannel <- map[string]interface{}{"result": plugsData, "routine": "plugs"}
 		}
-
-	//}(country.Name, routines)
 
 	
 
@@ -331,8 +317,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		select {
 			case res := <-resultsChannel:
 			switch res["routine"] {
-// 				case "plugs":
-// 					plugs = res["result"].([]interface{})
 				case "currency":
 					currency = res["result"].(interface{})
 				case "visa":
@@ -342,15 +326,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 						visa = res["result"]
 					}
 				case "safety":
-		// 			scoreRes, err := strconv.ParseFloat(res["result"].(SafetyData).Advisory.Score, 32)
-		// 			if err != nil {
-		// 				fmt.Println(err)
-		// 				response.WriteErrorResponse(w, err)
-		// 				return
-		// 			}
-					fmt.Println(res["result"])
-					//score := res["result"].(SafetyData).Advisory.Score
-					safety = res["result"]//Safety{Advice: *FormatSafety(score), Rating: score}
+					score := res["result"].(SafetyData).Advisory.Score
+					safety = Safety{Advice: *FormatSafety(score), Rating: score}
 				case "numbers":
 					emergencyNumbers = res["result"].(EmergencyNumbers)
 				case "color":

@@ -111,7 +111,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	var wg sync.WaitGroup
 	resultsChannel := make(chan map[string]interface{})
 
-	var safety Safety
+	var safety SafetyData
 
 	var emergencyNumbers EmergencyNumbers
 
@@ -346,7 +346,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(res["result"])
 			fmt.Println(res["result"].(SafetyData).Advisory.Score)
 			score := res["result"].(SafetyData).Advisory.Score
-			safety = Safety{Advice: *FormatSafety(score), Rating: score}
+			safety = res["result"].(SafetyData)//Safety{Advice: *FormatSafety(score), Rating: score}
 		case "numbers":
 			emergencyNumbers = res["result"].(EmergencyNumbers)
 		case "color":

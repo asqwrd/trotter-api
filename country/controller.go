@@ -215,7 +215,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		safetyRes.DataTo(&safetyData)
-		resultsChannel <- map[string]interface{}{"result": *safetyData, "routine": "safety"}
+		resultsChannel <- map[string]interface{}{"result": safetyData, "routine": "safety"}
 	}()
 
 	/*

@@ -208,7 +208,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		safetyRes, err := GetSafety(countryCode)
+		safetyRes, err := client.Collection("safety").Doc(countryCode).Get(ctx)
 		if err != nil {
 			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 			return
@@ -335,14 +335,14 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 				visa = res["result"]
 			}
 		case "safety":
-			ratingRes, err := strconv.ParseFloat(res["result"].(SafetyData).Situation.Rating, 32)
+			scoreRes, err := strconv.ParseFloat(res["result"].(SafetyData).Advisory.Score, 32)
 			if err != nil {
 				fmt.Println(err)
 				response.WriteErrorResponse(w, err)
 				return
 			}
-			rating := float64(ratingRes)
-			safety = Safety{Advice: *FormatSafety(rating), Rating: rating}
+			score := float64(scoreRes)
+			safety = Safety{Advice: *FormatSafety(score), Rating: score}
 		case "numbers":
 			emergencyNumbers = res["result"].(EmergencyNumbers)
 		case "color":

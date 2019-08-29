@@ -82,7 +82,7 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	go func() {
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 		timeoutChannel <- true
 	}()
 
@@ -201,7 +201,7 @@ func GetDestination(w http.ResponseWriter, r *http.Request) {
 	shopChannel := make(chan map[string]interface{})
 	relaxChannel := make(chan map[string]interface{})
 	errorChannel := make(chan error)
-	timeoutChannel := make(chan bool)
+	//timeoutChannel := make(chan bool)
 	var destinationColor string
 
 	for i, param := range urlparams {
@@ -262,30 +262,34 @@ func GetDestination(w http.ResponseWriter, r *http.Request) {
 		countryParam := *country
 		destinationRes.CountryName = countryParam[0].Name
 
-		go func(image string) {
-			if len(image) == 0 {
-				var colors Colors
-				colors.Vibrant = "#c27949"
-				colorChannel <- colors
-			} else {
-				colors, err := GetColor(image)
-				if err != nil {
-					fmt.Println(image)
+		if len(destinationRes.Image) == 0 {
+			var colors Colors
+			colors.Vibrant = "#c27949"
+			colorChannel <- colors
+		} else {
+			colors, err := GetColor(destinationRes.Image)
+			if err != nil {
+				colorsBackup, errBackup := GetColor(destinationRes.ImageMedium)
+				if errBackup != nil {
 					errorChannel <- err
 					return
 				}
-				colorChannel <- *colors
+				colorChannel <- *colorsBackup
+				destinationRes.Image = destinationRes.ImageMedium
+				destinationChannel <- destinationRes
+				return
 			}
-		}(destinationRes.Image)
+			colorChannel <- *colors
+		}
 
 		destinationChannel <- destinationRes
 
 	}()
 
-	go func() {
-		time.Sleep(10 * time.Second)
-		timeoutChannel <- true
-	}()
+	// go func() {
+	// 	time.Sleep(30 * time.Second)
+	// 	timeoutChannel <- true
+	// }()
 
 	for i := 0; i < 9; i++ {
 		select {
@@ -323,12 +327,12 @@ func GetDestination(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err)
 			response.WriteErrorResponse(w, err)
 			return
-		case timeout := <-timeoutChannel:
-			if timeout == true {
-				fmt.Println("api timeout")
-				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
-				return
-			}
+			// case timeout := <-timeoutChannel:
+			// 	if timeout == true {
+			// 		fmt.Println("api timeout")
+			// 		response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
+			// 		return
+			// 	}
 		}
 	}
 
@@ -406,7 +410,7 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	go func() {
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 		timeoutChannel <- true
 	}()
 
@@ -565,20 +569,25 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 			poiParam := *poi
 			poiRes := FromTriposoPlace(poiParam[0], "poi")
 
-			go func(image string) {
-				if len(image) == 0 {
-					var colors Colors
-					colors.Vibrant = "#c27949"
-					colorChannel <- colors
-				} else {
-					colors, err := GetColor(image)
-					if err != nil {
+			if len(poiRes.Image) == 0 {
+				var colors Colors
+				colors.Vibrant = "#c27949"
+				colorChannel <- colors
+			} else {
+				colors, err := GetColor(poiRes.Image)
+				if err != nil {
+					colorsBackup, errBackup := GetColor(poiRes.ImageMedium)
+					if errBackup != nil {
 						errorChannel <- err
-						return
 					}
-					colorChannel <- *colors
+					colorChannel <- *colorsBackup
+					poiChannel <- poiRes
+					return
 				}
-			}(poiRes.Image)
+				colorChannel <- *colors
+				poiChannel <- poiRes
+				return
+			}
 			poiChannel <- poiRes
 
 		}()
@@ -670,27 +679,32 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 		parkParam := *parkData
 		parkRes := FromTriposoPlace(parkParam[0], "national_park")
 
-		go func(image string) {
-			if len(image) == 0 {
-				var colors Colors
-				colors.Vibrant = "#c27949"
-				colorChannel <- colors
-			} else {
-				colors, err := GetColor(image)
-				if err != nil {
+		if len(parkRes.Image) == 0 {
+			var colors Colors
+			colors.Vibrant = "#c27949"
+			colorChannel <- colors
+		} else {
+			colors, err := GetColor(parkRes.Image)
+			if err != nil {
+				colorsBackup, errBackup := GetColor(parkRes.ImageMedium)
+				if errBackup != nil {
 					errorChannel <- err
 					return
 				}
-				colorChannel <- *colors
+				colorChannel <- *colorsBackup
+				parkRes.Image = parkRes.ImageMedium
+				parkChannel <- parkRes
+				return
 			}
-		}(parkRes.Image)
+			colorChannel <- *colors
+		}
 
 		parkChannel <- parkRes
 
 	}()
 
 	go func() {
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 		timeoutChannel <- true
 	}()
 
@@ -839,7 +853,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		}()
 
 		go func() {
-			time.Sleep(10 * time.Second)
+			time.Sleep(30 * time.Second)
 			timeoutChannel <- true
 		}()
 
@@ -996,7 +1010,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		}
 
 		go func() {
-			time.Sleep(10 * time.Second)
+			time.Sleep(30 * time.Second)
 			timeoutChannel <- true
 		}()
 
@@ -1202,7 +1216,7 @@ func RecentSearch(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	go func() {
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 		timeoutChannel <- true
 	}()
 
@@ -1254,7 +1268,7 @@ func GetPopularLocations(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	go func() {
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 		timeoutChannel <- true
 	}()
 

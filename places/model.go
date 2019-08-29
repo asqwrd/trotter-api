@@ -327,6 +327,7 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 	length := len(sp.Images)
 	var image = ""
 	var image_hd = ""
+	var image_medium = ""
 	var areaIndex = 0
 	var area = 0
 
@@ -334,20 +335,25 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 		for i := 0; i < length; i++ {
 			var a = sp.Images[i].Sizes.Original.Width * sp.Images[i].Sizes.Original.Height
 			bytes := 1000000
-			resp, err := http.Get(sp.Images[i].Sizes.Original.Url)
 
-			if area < a && sp.Images[i].Sizes.Original.Bytes <= bytes && resp.StatusCode == 200 && err == nil {
+			if area < a && sp.Images[i].Sizes.Original.Bytes <= bytes {
 				area = a
 				areaIndex = i
 			}
 		}
 
-		if len(thumbnail) > 0 && thumbnail[0] == true {
+		if len(thumbnail) > 0 && thumbnail[0] {
 			image = sp.Images[areaIndex].Sizes.Medium.Url
+			image_medium = sp.Images[areaIndex].Sizes.Medium.Url
+			image_hd = sp.Images[areaIndex].Sizes.Original.Url
+		} else if areaIndex >= 0 {
+			image = sp.Images[areaIndex].Sizes.Original.Url
+			image_medium = sp.Images[areaIndex].Sizes.Medium.Url
 			image_hd = sp.Images[areaIndex].Sizes.Original.Url
 		} else {
-			image = sp.Images[areaIndex].Sizes.Original.Url
-			image_hd = sp.Images[areaIndex].Sizes.Original.Url
+			image = sp.Images[0].Sizes.Medium.Url
+			image_medium = sp.Images[areaIndex].Sizes.Medium.Url
+			image_hd = sp.Images[0].Sizes.Medium.Url
 		}
 	}
 
@@ -364,6 +370,7 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 		Type:             sp.Type,
 		Image:            image,
 		ImageHD:          image_hd,
+		ImageMedium:      image_medium,
 		Images:           sp.Images,
 		Description:      description,
 		DescriptionShort: sp.Snippet,

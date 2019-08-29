@@ -1,7 +1,6 @@
 package country
 
 import (
-	"fmt"
 	"encoding/json"
 	"errors"
 	_ "image/gif"
@@ -155,9 +154,9 @@ type SafetySituation struct {
 }
 
 type Numbers struct {
-	All []string `json:"all" firestore:"all"`
+	All   []string `json:"all" firestore:"all"`
 	Fixed []string `json:"fixed" firestore:"fixed"`
-	GSM []string `json:"gsm" firestore:"gsm"`
+	GSM   []string `json:"gsm" firestore:"gsm"`
 }
 
 type EmergencyNumbers struct {
@@ -174,7 +173,6 @@ func FormatEmergencyNumbers(numbers EmergencyNumbers) (e EmergencyNumbers) {
 	if numbers.Member112 == true {
 		member112 = []string{"112"}
 	}
-	fmt.Println(numbers.Dispatch.All)
 	e = EmergencyNumbers{
 		Ambulance:                 numbers.Ambulance,
 		Dispatch:                  numbers.Dispatch,

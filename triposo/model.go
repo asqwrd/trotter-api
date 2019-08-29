@@ -168,6 +168,7 @@ type InternalPlace struct {
 	ID               string        `json:"id" firestore:"id"`
 	Type             string        `json:"type" firestore:"type"`
 	Image            string        `json:"image,omitempty" firestore:"image,omitempty"`
+	ImageMedium      string        `json:"image_medium,omitempty" firestore:"image_medium,omitempty"`
 	ImageHD          string        `json:"image_hd,omitempty" firestore:"image_hd,omitempty"`
 	Description      string        `json:"description" json:"intro" firestore:"intro" firestore:"description"`
 	DescriptionShort string        `json:"description_short,omitempty" firestore:"description_short,omitempty"`

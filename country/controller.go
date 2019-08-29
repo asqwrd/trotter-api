@@ -450,7 +450,7 @@ func getCityState(cityStateID string) (map[string]interface{}, error) {
 	}()
 
 	go func() {
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 		timeoutChannel <- fmt.Errorf("timeout occured")
 	}()
 

@@ -105,7 +105,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	//var popularDestinations []triposo.InternalPlace
 	//var cityState interface{}
 
-	var plugs []interface{}
+	//var plugs []interface{}
 	var currency interface{}
 	var visa interface{}
 	routines := 0
@@ -301,7 +301,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		**/
 
 	//wg.Add(1)
-	go func(name string, routines int) {
+// 	go func(name string, routines int) {
 		//defer wg.Done()
 		var plugsData []interface{}
 
@@ -316,13 +316,12 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 				resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 				break
 			}
-			routines++
 
 			plugsData = append(plugsData, doc.Data())
-			resultsChannel <- map[string]interface{}{"result": plugsData, "routine": "plugs"}
+// 			resultsChannel <- map[string]interface{}{"result": plugsData, "routine": "plugs"}
 		}
 
-	}(country.Name, routines)
+	//}(country.Name, routines)
 
 	
 
@@ -332,8 +331,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		select {
 			case res := <-resultsChannel:
 			switch res["routine"] {
-				case "plugs":
-					plugs = res["result"].([]interface{})
+// 				case "plugs":
+// 					plugs = res["result"].([]interface{})
 				case "currency":
 					currency = res["result"].(interface{})
 				case "visa":
@@ -380,7 +379,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	responseData = map[string]interface{}{
 		"country":          country,
-		"plugs":            plugs,
+		"plugs":            plugsData,
 		"currency":         currency,
 		"color":            countryColor,
 		"visa":             visa,

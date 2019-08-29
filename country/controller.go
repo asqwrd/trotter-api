@@ -108,7 +108,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	var plugs []interface{}
 	var currency interface{}
 	var visa interface{}
-	routines := 0
+	routines := 1
 	//var wg sync.WaitGroup
 	resultsChannel := make(chan map[string]interface{})
 

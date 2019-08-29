@@ -337,7 +337,7 @@ func FormatSafety(rating float64) *string {
 			"Travelling in this country is relatively safe. Higher attention is advised when traveling here due to some areas being unsafe."
 	} else if rating >= 2.5 && rating < 3.5 {
 		advice =
-			"This country can be unsafe.  Warnings often relate to specific regions within this country. However, high attention is still advised when moving around. Trotter also recommends traveling to this country with someone who is familiar with the culture and area."
+			"This country can be unsafe.  Warnings often relate to specific regions within this country. However, high attention is still advised when moving around. Make sure not to travel to high risk area and if you are, Trotter also recommends traveling to this country with someone who is familiar with the culture and area."
 	} else if rating >= 3.5 && rating < 4.5 {
 		advice =
 			"Travel to this country should be reduced to a necessary minimum and be conducted with good preparation and high attention. If you are not familiar with the area it is recommended you travel with someone who knows the area well."

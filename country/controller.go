@@ -367,10 +367,10 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	//go func() {
+	go func() {
 		wg.Wait()
 		close(resultsChannel)
-	//}()
+	}()
 	responseData = map[string]interface{}{
 		"country":          country,
 		"plugs":            plugs,

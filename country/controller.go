@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	//"strconv"
-	"sync"
+	//"sync"
 	"time"
 
 	firebase "firebase.google.com/go"
@@ -330,7 +330,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	for i := 0; i < routines; i++ {
 		select {
-		case res: <- resultsChannel
+		case res := <- resultsChannel
 			switch res["routine"] {
 				case "plugs":
 					plugs = res["result"].([]interface{})

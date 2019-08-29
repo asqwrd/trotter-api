@@ -108,7 +108,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	var plugs []interface{}
 	var currency interface{}
 	var visa interface{}
-	routines := 1
+	routines := 0
 	//var wg sync.WaitGroup
 	resultsChannel := make(chan map[string]interface{})
 
@@ -301,8 +301,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		**/
 
 	//wg.Add(1)
-	routines++
-	go func(name string) {
+	go func(name string, routines int) {
 		//defer wg.Done()
 		var plugsData []interface{}
 
@@ -317,12 +316,13 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 				resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 				break
 			}
+			routines++
 
 			plugsData = append(plugsData, doc.Data())
 			resultsChannel <- map[string]interface{}{"result": plugsData, "routine": "plugs"}
 		}
 
-	}(country.Name)
+	}(country.Name, routines)
 
 	
 
@@ -349,7 +349,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		// 				response.WriteErrorResponse(w, err)
 		// 				return
 		// 			}
-					fmt.Println(res["result"].(SafetyData).Advisory)
+					fmt.Println(res["result"])
 					//score := res["result"].(SafetyData).Advisory.Score
 					safety = res["result"]//Safety{Advice: *FormatSafety(score), Rating: score}
 				case "numbers":

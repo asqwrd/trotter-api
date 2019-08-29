@@ -343,6 +343,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 // 				response.WriteErrorResponse(w, err)
 // 				return
 // 			}
+			fmt.Println(res["result"])
+			fmt.Println(res["result"].(SafetyData).Advisory.Score))
 			score := res["result"].(SafetyData).Advisory.Score
 			safety = Safety{Advice: *FormatSafety(score), Rating: score}
 		case "numbers":

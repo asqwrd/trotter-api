@@ -108,7 +108,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	var plugs []interface{}
 	var currency interface{}
 	var visa interface{}
-	var wg sync.WaitGroup
+	routines := 0
+	//var wg sync.WaitGroup
 	resultsChannel := make(chan map[string]interface{})
 
 	var safety interface{}
@@ -140,9 +141,10 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		Colors block
 		*
 		**/
-	wg.Add(1)
+	//wg.Add(1)
+	routines++
 	go func() {
-		defer wg.Done()
+		//defer wg.Done()
 		if len(country.Image) > 0 {
 			colors, err := places.GetColor(country.Image)
 			if err != nil {
@@ -183,9 +185,10 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		*
 	*/
 	if len(userID) > 0 {
-		wg.Add(1)
+		//wg.Add(1)
+		routines++
 		go func(user types.User) {
-			defer wg.Done()
+			//defer wg.Done()
 
 			visa, err := GetVisa(countryCode, user.Country)
 			if err != nil {
@@ -205,9 +208,10 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		*
 	*/
 
-	wg.Add(1)
+	//wg.Add(1)
+	routines++
 	go func() {
-		defer wg.Done()
+		//defer wg.Done()
 		var safetyData SafetyData
 		safetyRes, err := client.Collection("safety").Doc(countryCode).Get(ctx)
 		if err != nil {
@@ -226,9 +230,10 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		*
 	*/
 	if len(userID) > 0 {
-		wg.Add(1)
+		//wg.Add(1)
+		routines++
 		go func(user types.User) {
-			defer wg.Done()
+			//defer wg.Done()
 			currency, err := client.Collection("currencies").Doc(countryCode).Get(ctx)
 			if err != nil {
 				resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
@@ -270,9 +275,10 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		*
 		**/
 
-	wg.Add(1)
+	//wg.Add(1)
+	routines++
 	go func() {
-		defer wg.Done()
+		//defer wg.Done()
 		numbers, err := client.Collection("emergency_numbers").Doc(countryCode).Get(ctx)
 		if err != nil {
 			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
@@ -294,9 +300,10 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		*
 		**/
 
-	wg.Add(1)
+	//wg.Add(1)
+	routines++
 	go func(name string) {
-		defer wg.Done()
+		//defer wg.Done()
 		var plugsData []interface{}
 
 		iter := client.Collection("plugs").Where("country", "==", name).Documents(ctx)
@@ -321,56 +328,56 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	var responseData map[string]interface{}
 
-	for res := range resultsChannel {
-		switch res["routine"] {
-		case "plugs":
-			plugs = res["result"].([]interface{})
-		case "currency":
-			currency = res["result"].(interface{})
-		case "visa":
-			if res["result"] != nil {
-				visa = res["result"].(interface{})
-			} else {
-				visa = res["result"]
+	for i := 0; i < routines; i++ {
+		select {
+		case res: <- resultsChannel
+			switch res["routine"] {
+				case "plugs":
+					plugs = res["result"].([]interface{})
+				case "currency":
+					currency = res["result"].(interface{})
+				case "visa":
+					if res["result"] != nil {
+						visa = res["result"].(interface{})
+					} else {
+						visa = res["result"]
+					}
+				case "safety":
+		// 			scoreRes, err := strconv.ParseFloat(res["result"].(SafetyData).Advisory.Score, 32)
+		// 			if err != nil {
+		// 				fmt.Println(err)
+		// 				response.WriteErrorResponse(w, err)
+		// 				return
+		// 			}
+					fmt.Println(res["result"].(SafetyData).Advisory)
+					//score := res["result"].(SafetyData).Advisory.Score
+					safety = res["result"]//Safety{Advice: *FormatSafety(score), Rating: score}
+				case "numbers":
+					emergencyNumbers = res["result"].(EmergencyNumbers)
+				case "color":
+					colors := res["result"].(*places.Colors)
+					if len(colors.Vibrant) > 0 {
+						countryColor = colors.Vibrant
+					} else if len(colors.Muted) > 0 {
+						countryColor = colors.Muted
+					} else if len(colors.LightVibrant) > 0 {
+						countryColor = colors.LightVibrant
+					} else if len(colors.LightMuted) > 0 {
+						countryColor = colors.LightMuted
+					} else if len(colors.DarkVibrant) > 0 {
+						countryColor = colors.DarkVibrant
+					} else if len(colors.DarkMuted) > 0 {
+						countryColor = colors.DarkMuted
+					}
+				case "error":
+					fmt.Println(res["result"].(error))
+					response.WriteErrorResponse(w, res["result"].(error))
+					return
 			}
-		case "safety":
-// 			scoreRes, err := strconv.ParseFloat(res["result"].(SafetyData).Advisory.Score, 32)
-// 			if err != nil {
-// 				fmt.Println(err)
-// 				response.WriteErrorResponse(w, err)
-// 				return
-// 			}
-			fmt.Println(res["result"].(SafetyData).Advisory)
-			//score := res["result"].(SafetyData).Advisory.Score
-			safety = res["result"]//Safety{Advice: *FormatSafety(score), Rating: score}
-		case "numbers":
-			emergencyNumbers = res["result"].(EmergencyNumbers)
-		case "color":
-			colors := res["result"].(*places.Colors)
-			if len(colors.Vibrant) > 0 {
-				countryColor = colors.Vibrant
-			} else if len(colors.Muted) > 0 {
-				countryColor = colors.Muted
-			} else if len(colors.LightVibrant) > 0 {
-				countryColor = colors.LightVibrant
-			} else if len(colors.LightMuted) > 0 {
-				countryColor = colors.LightMuted
-			} else if len(colors.DarkVibrant) > 0 {
-				countryColor = colors.DarkVibrant
-			} else if len(colors.DarkMuted) > 0 {
-				countryColor = colors.DarkMuted
-			}
-		case "error":
-			fmt.Println(res["result"].(error))
-			response.WriteErrorResponse(w, res["result"].(error))
-			return
 		}
 	}
 	
-	go func() {
-		wg.Wait()
-		close(resultsChannel)
-	}()
+
 	responseData = map[string]interface{}{
 		"country":          country,
 		"plugs":            plugs,

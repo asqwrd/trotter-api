@@ -208,12 +208,14 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		var safetyData SafetyData
 		safetyRes, err := client.Collection("safety").Doc(countryCode).Get(ctx)
 		if err != nil {
 			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 			return
 		}
-		resultsChannel <- map[string]interface{}{"result": *safetyRes, "routine": "safety"}
+		safetyRes.DataTo(&safetyData)
+		resultsChannel <- map[string]interface{}{"result": *safetyData, "routine": "safety"}
 	}()
 
 	/*

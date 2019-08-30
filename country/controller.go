@@ -243,10 +243,10 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			currencyData, err := ConvertCurrency(toCurrency["currencyId"].(string), citizenCurrency["currencyId"].(string))
 			if err != nil {
 				result := map[string]interface{}{
-				"converted_currency": "",
-				"converted_unit":     "",
-				"unit":               "",
-			}
+					"converted_currency": "",
+					"converted_unit":     "",
+					"unit":               "",
+				}
 				resultsChannel <- map[string]interface{}{"result": result, "routine": "currency"}
 				return
 			}
@@ -277,7 +277,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		//	numbersData := numbers.Data()
-		emNumbers := EmergencyNumbers{Dispatch: Numbers{All:[]string{},Fixed:[]string{},GSM:[]string{}}, Ambulance: Numbers{All:[]string{},Fixed:[]string{},GSM:[]string{}},Fire:Numbers{All:[]string{},Fixed:[]string{},GSM:[]string{}},Police:Numbers{All:[]string{},Fixed:[]string{},GSM:[]string{}},European_emergency_number:[]string{}}
+		emNumbers := EmergencyNumbers{Dispatch: Numbers{All: []string{}, Fixed: []string{}, GSM: []string{}}, Ambulance: Numbers{All: []string{}, Fixed: []string{}, GSM: []string{}}, Fire: Numbers{All: []string{}, Fixed: []string{}, GSM: []string{}}, Police: Numbers{All: []string{}, Fixed: []string{}, GSM: []string{}}, European_emergency_number: []string{}}
 		numbers.DataTo(&emNumbers)
 
 		resultsChannel <- map[string]interface{}{"result": FormatEmergencyNumbers(emNumbers), "routine": "numbers"}
@@ -292,67 +292,64 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		*
 		**/
 
-		var plugsData []interface{}
+	var plugsData []interface{}
 
-		iter := client.Collection("plugs").Where("country", "==", country.Name).Documents(ctx)
+	iter := client.Collection("plugs").Where("country", "==", country.Name).Documents(ctx)
 
-		for {
-			doc, err := iter.Next()
-			if err == iterator.Done {
-				break
-			}
-			if err != nil {
-				resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
-				break
-			}
-
-			plugsData = append(plugsData, doc.Data())
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
+			break
 		}
 
-	
+		plugsData = append(plugsData, doc.Data())
+	}
 
 	var responseData map[string]interface{}
 
 	for i := 0; i < routines; i++ {
 		select {
-			case res := <-resultsChannel:
+		case res := <-resultsChannel:
 			switch res["routine"] {
-				case "currency":
-					currency = res["result"].(interface{})
-				case "visa":
-					if res["result"] != nil {
-						visa = res["result"].(interface{})
-					} else {
-						visa = res["result"]
-					}
-				case "safety":
-					score := res["result"].(SafetyData).Advisory.Score
-					safety = Safety{Advice: *FormatSafety(score), Rating: score}
-				case "numbers":
-					emergencyNumbers = res["result"].(EmergencyNumbers)
-				case "color":
-					colors := res["result"].(*places.Colors)
-					if len(colors.Vibrant) > 0 {
-						countryColor = colors.Vibrant
-					} else if len(colors.Muted) > 0 {
-						countryColor = colors.Muted
-					} else if len(colors.LightVibrant) > 0 {
-						countryColor = colors.LightVibrant
-					} else if len(colors.LightMuted) > 0 {
-						countryColor = colors.LightMuted
-					} else if len(colors.DarkVibrant) > 0 {
-						countryColor = colors.DarkVibrant
-					} else if len(colors.DarkMuted) > 0 {
-						countryColor = colors.DarkMuted
-					}
-				case "error":
-					fmt.Println(res["result"].(error))
-					response.WriteErrorResponse(w, res["result"].(error))
-					return
+			case "currency":
+				currency = res["result"].(interface{})
+			case "visa":
+				if res["result"] != nil {
+					visa = res["result"].(interface{})
+				} else {
+					visa = res["result"]
+				}
+			case "safety":
+				score := res["result"].(SafetyData).Advisory.Score
+				safety = Safety{Advice: *FormatSafety(score), Rating: score}
+			case "numbers":
+				emergencyNumbers = res["result"].(EmergencyNumbers)
+			case "color":
+				colors := res["result"].(*places.Colors)
+				if len(colors.Vibrant) > 0 {
+					countryColor = colors.Vibrant
+				} else if len(colors.Muted) > 0 {
+					countryColor = colors.Muted
+				} else if len(colors.LightVibrant) > 0 {
+					countryColor = colors.LightVibrant
+				} else if len(colors.LightMuted) > 0 {
+					countryColor = colors.LightMuted
+				} else if len(colors.DarkVibrant) > 0 {
+					countryColor = colors.DarkVibrant
+				} else if len(colors.DarkMuted) > 0 {
+					countryColor = colors.DarkMuted
+				}
+			case "error":
+				fmt.Println(res["result"].(error))
+				response.WriteErrorResponse(w, res["result"].(error))
+				return
 			}
 		}
 	}
-	
 
 	responseData = map[string]interface{}{
 		"country":          country,

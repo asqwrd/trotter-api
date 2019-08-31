@@ -169,6 +169,12 @@ type FlightsAndAccomodations struct {
 	OwnerID       string    `json:"ownerId" firestore:"ownerId"`
 }
 
+// TravelersUpdateBody struct
+type TravelersUpdateBody struct {
+	Added   []User   `json:"added" firestore:"added"`
+	Deleted []string `json:"deleted" firestore:"deleted"`
+}
+
 // Segment Struct
 type Segment struct {
 	Type                 string        `json:"type" firestore:"type"`

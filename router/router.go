@@ -114,6 +114,9 @@ var routes = Routes{
 		"GetUser", "GET", "/api/users/get/{userID}", users.GetUser,
 	},
 	Route{
+		"SearchUsers", "GET", "/api/users/search", users.SearchUsers,
+	},
+	Route{
 		"UpdateUser", "PUT", "/api/users/update/{userID}", users.UpdateUser,
 	},
 	Route{

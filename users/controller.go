@@ -9,6 +9,8 @@ import (
 	//"github.com/asqwrd/trotter-api/triposo"
 	"net/url"
 
+	"github.com/algolia/algoliasearch-client-go/algolia/search"
+
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
 	"github.com/asqwrd/trotter-api/response"
@@ -18,6 +20,34 @@ import (
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
+
+func SearchUsers(w http.ResponseWriter, r *http.Request) {
+
+	var users []types.User
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
+
+	client := search.NewClient(types.Algolia_APPID, types.Algolia_ADMINKEY)
+	index := client.InitIndex("users")
+
+	res, err := index.Search(q.Get("query"))
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+	}
+
+	err = res.UnmarshalHits(&users)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+	}
+
+	response.Write(w, map[string]interface{}{
+		"results": users,
+	}, http.StatusOK)
+
+}
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	sa := option.WithCredentialsFile("serviceAccountKey.json")

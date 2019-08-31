@@ -581,6 +581,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 						errorChannel <- err
 					}
 					colorChannel <- *colorsBackup
+					poiRes.Image = poiRes.ImageMedium
 					poiChannel <- poiRes
 					return
 				}

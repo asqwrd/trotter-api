@@ -4,10 +4,16 @@ cloud.google.com/go v0.30.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 firebase.google.com/go v3.4.0+incompatible h1:QjDi5xxlA0k4HtqXYLr4NMrtIfLrXOPlt7SOkLPefAE=
 firebase.google.com/go v3.4.0+incompatible/go.mod h1:xlah6XbEyW6tbfSklcfe5FHJIwjt8toICdV5Wh9ptHs=
 git.apache.org/thrift.git v0.0.0-20180902110319-2566ecd5d999/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
+github.com/algolia/algoliasearch-client-go v0.0.0-20190821184312-c8a260aa5a1d h1:1yrZS7Ze2wa26nb6PBHu3sa+OnbaI55sMquHXnLZRzw=
+github.com/algolia/algoliasearch-client-go v0.0.0-20190821184312-c8a260aa5a1d/go.mod h1:expjYHk/4/gubqaK79eehBPQFb+fCP93qQ5VgQmegmU=
+github.com/algolia/algoliasearch-client-go v2.25.0+incompatible h1:FGQr9l++u4uQPDXrW8jM5kNJm3Iw5SxEJJtYXSFmPRY=
+github.com/algolia/algoliasearch-client-go v2.25.0+incompatible/go.mod h1:4NR25U+0vkfx/0J5l+kOHJ1iPnqOTTBxfd3aALKU+aw=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
+github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/generaltso/sadbox v0.0.0-20120828195626-27893f92b8ce h1:aiY8iptoY2drNy2PUYIZStURgj2JKteIYU8h7V7rEgg=
 github.com/generaltso/sadbox v0.0.0-20120828195626-27893f92b8ce/go.mod h1:DupcZL2+pG9TQlH5Jk6pgIfybu1aBVyCwoDm3vYnuds=
 github.com/generaltso/vibrant v0.0.0-20171030211322-563623b97aee h1:zLQzRt4NSE3D/9dOaydfrl54lCJafy0GvM0DGI/MdaE=

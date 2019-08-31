@@ -7,6 +7,9 @@ import (
 
 const SERVER_KEY = "AAAAlpfTUfI:APA91bGDjcKRvVSlPAU25oS8o5XvdoeGODVHFbMMhqZ7-lAhLBrOWSBLKC_e0Bq8s5KOMXxOKwFzDPOQSJCQj9xGKbIv2Dd-3zg7m-w9WG1OR8o-FGbZAaH7Hc8830IPZNoplLMA2U9Fx_L_nBM0iFqp2I4h156mJg"
 
+const Algolia_APPID = "ZZLG5G7KGQ"
+const Algolia_ADMINKEY = "68a3f1f36a3d82841fa61615a46df935"
+
 //Trip type for trips response
 type Trip struct {
 	Image        string        `json:"image" firestore:"image"`

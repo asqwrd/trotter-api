@@ -674,7 +674,17 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 		}
 		var itineraryItem ItineraryItem
 		i10ItemDocs.DataTo(&itineraryItem)
-		itineraryItems = append(itineraryItems, itineraryItem)
+		totalDoc, errTotal := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(i10ItemDocs.Ref.ID).Collection("comments").Doc("total_comments").Get(ctx)
+		if errTotal != nil {
+			fmt.Println(errTotal)
+			itineraryItem.TotalComments = 0
+			itineraryItems = append(itineraryItems, itineraryItem)
+		} else {
+			total := totalDoc.Data()
+			itineraryItem.TotalComments = total["total"].(int64)
+			itineraryItems = append(itineraryItems, itineraryItem)
+		}
+
 	}
 
 	googleClient, err := places.InitGoogle()

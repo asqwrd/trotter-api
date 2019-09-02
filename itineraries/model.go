@@ -47,17 +47,18 @@ type StartLocation struct {
 
 //ItineraryItem struct
 type ItineraryItem struct {
-	Description string                     `json:"description" firestore:"description"`
-	Poi         *triposo.InternalPlace     `json:"poi" firestore:"poi"`
-	Title       string                     `json:"title" firestore:"title"`
-	Time        Time                       `json:"time" firestore:"time"`
-	Image       string                     `json:"image" firestore:"image"`
-	ID          string                     `json:"id" firestore:"id"`
-	PoiID       string                     `json:"poi_id" firestore:"poi_id"`
-	Color       string                     `json:"color" firestore:"color"`
-	Travel      maps.DistanceMatrixElement `json:"travel,omitempty" firestore:"travel,omitempty"`
-	AddedBy     *string                    `json:"added_by,omitempty" firestore:"added_by,omitempty"`
-	AddedByFull *types.User                `json:"added_by_full,omitempty" firestore:"added_by_full,omitempty"`
+	Description   string                     `json:"description" firestore:"description"`
+	Poi           *triposo.InternalPlace     `json:"poi" firestore:"poi"`
+	Title         string                     `json:"title" firestore:"title"`
+	Time          Time                       `json:"time" firestore:"time"`
+	Image         string                     `json:"image" firestore:"image"`
+	ID            string                     `json:"id" firestore:"id"`
+	PoiID         string                     `json:"poi_id" firestore:"poi_id"`
+	Color         string                     `json:"color" firestore:"color"`
+	Travel        maps.DistanceMatrixElement `json:"travel,omitempty" firestore:"travel,omitempty"`
+	AddedBy       *string                    `json:"added_by,omitempty" firestore:"added_by,omitempty"`
+	AddedByFull   *types.User                `json:"added_by_full,omitempty" firestore:"added_by_full,omitempty"`
+	TotalComments int64                      `json:"total_comments"`
 }
 
 type Comment struct {

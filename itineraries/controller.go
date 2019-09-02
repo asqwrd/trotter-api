@@ -360,6 +360,153 @@ func GetItinerary(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+//GetComments function
+func GetComments(w http.ResponseWriter, r *http.Request) {
+	itineraryID := mux.Vars(r)["itineraryId"]
+	dayID := mux.Vars(r)["dayId"]
+	itineraryItemID := mux.Vars(r)["itineraryItemId"]
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
+
+	app, errApp := firebase.NewApp(ctx, nil, sa)
+	if errApp != nil {
+		fmt.Println(errApp)
+		response.WriteErrorResponse(w, errApp)
+		return
+	}
+
+	client, errClient := app.Firestore(ctx)
+	if errClient != nil {
+		fmt.Println(errClient)
+		response.WriteErrorResponse(w, errClient)
+		return
+	}
+
+	defer client.Close()
+	comments := []Comment{}
+	var docs *firestore.DocumentIterator
+	if len(q.Get("last")) > 0 {
+		docs = client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").OrderBy("created_at", firestore.Asc).StartAfter(q.Get("last")).Limit(20).Documents(ctx)
+	} else {
+		docs = client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").OrderBy("created_at", firestore.Asc).Limit(20).Documents(ctx)
+	}
+	for {
+		doc, err := docs.Next()
+		if err == iterator.Done {
+			break
+		}
+		var comment Comment
+		doc.DataTo(&comment)
+		comments = append(comments, comment)
+	}
+
+	totalDoc, errTotal := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").Doc("total_comments").Get(ctx)
+	if errTotal != nil {
+		fmt.Println(errTotal)
+		response.WriteErrorResponse(w, errTotal)
+		return
+	}
+
+	total := totalDoc.Data()
+
+	commentsData := map[string]interface{}{
+		"comments":       comments,
+		"total_comments": total,
+	}
+
+	response.Write(w, commentsData, http.StatusOK)
+	return
+}
+
+//AddComment function
+func AddComment(w http.ResponseWriter, r *http.Request) {
+	itineraryID := mux.Vars(r)["itineraryId"]
+	dayID := mux.Vars(r)["dayId"]
+	itineraryItemID := mux.Vars(r)["itineraryItemId"]
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	decoder := json.NewDecoder(r.Body)
+	var comment Comment
+	err := decoder.Decode(&comment)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	app, errApp := firebase.NewApp(ctx, nil, sa)
+	if errApp != nil {
+		fmt.Println(errApp)
+		response.WriteErrorResponse(w, errApp)
+		return
+	}
+
+	client, errClient := app.Firestore(ctx)
+	if errClient != nil {
+		fmt.Println(errClient)
+		response.WriteErrorResponse(w, errClient)
+		return
+	}
+
+	defer client.Close()
+
+	doc, _, errComment := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").Add(ctx, comment)
+	if errComment != nil {
+		fmt.Println(errComment)
+		response.WriteErrorResponse(w, errComment)
+		return
+	}
+
+	_, errCommentId := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").Doc(doc.ID).Set(ctx, map[string]interface{}{
+		"id": doc.ID,
+	}, firestore.MergeAll)
+	if errCommentId != nil {
+		fmt.Println(errCommentId)
+		response.WriteErrorResponse(w, errCommentId)
+		return
+	}
+
+	_, errTotalUpdate := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").Doc("total_comments").Update(ctx, []firestore.Update{
+		{Path: "total", Value: firestore.Increment(1)},
+	})
+	if errTotalUpdate != nil {
+		fmt.Println(errTotalUpdate)
+		response.WriteErrorResponse(w, errTotalUpdate)
+		return
+	}
+
+	totalDoc, errTotal := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").Doc("total_comments").Get(ctx)
+	if errTotal != nil {
+		fmt.Println(errTotal)
+		response.WriteErrorResponse(w, errTotal)
+		return
+	}
+
+	com, errCommentGet := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").Doc(doc.ID).Get(ctx)
+	if errCommentGet != nil {
+		fmt.Println(errCommentGet)
+		response.WriteErrorResponse(w, errCommentGet)
+		return
+	}
+
+	var commentData Comment
+	com.DataTo(&commentData)
+
+	total := totalDoc.Data()
+
+	commentsData := map[string]interface{}{
+		"comment":        commentData,
+		"total_comments": total,
+	}
+
+	response.Write(w, commentsData, http.StatusOK)
+	return
+}
+
 //ChangeStartLocation function
 func ChangeStartLocation(w http.ResponseWriter, r *http.Request) {
 	itineraryID := mux.Vars(r)["itineraryId"]
@@ -885,6 +1032,16 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 		if errSet != nil {
 			fmt.Println(errSet)
 			response.WriteErrorResponse(w, errSet)
+			return
+		}
+
+		_, errComments := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(doc.ID).Collection("comments").Doc("total_comments").Set(ctx, map[string]interface{}{
+			"total": 0,
+		}, firestore.MergeAll)
+
+		if errComments != nil {
+			fmt.Println(errComments)
+			response.WriteErrorResponse(w, errComments)
 			return
 		}
 

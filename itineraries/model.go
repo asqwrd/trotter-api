@@ -60,6 +60,13 @@ type ItineraryItem struct {
 	AddedByFull *types.User                `json:"added_by_full,omitempty" firestore:"added_by_full,omitempty"`
 }
 
+type Comment struct {
+	Msg       string     `json:"msg" firestore:"msg"`
+	ID        string     `json:"id" firestore:"id"`
+	User      types.User `json:"user" firestore:"user"`
+	CreatedAt int64      `json:"created_at" firestore:"created_at"`
+}
+
 //Time struct
 type Time struct {
 	Unit  string `json:"unit" firestore:"unit"`

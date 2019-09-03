@@ -403,14 +403,21 @@ func GetComments(w http.ResponseWriter, r *http.Request) {
 		comments = append(comments, comment)
 	}
 
+	total := map[string]interface{}{
+		"total": 0,
+	}
 	totalDoc, errTotal := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").Doc("total_comments").Get(ctx)
 	if errTotal != nil {
-		fmt.Println(errTotal)
-		response.WriteErrorResponse(w, errTotal)
-		return
-	}
+		_, errSetTotal := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").Doc("total_comments").Set(ctx, total)
+		if errSetTotal != nil {
+			fmt.Println(errSetTotal)
+			response.WriteErrorResponse(w, errSetTotal)
+			return
+		}
 
-	total := totalDoc.Data()
+	} else {
+		total = totalDoc.Data()
+	}
 
 	commentsData := map[string]interface{}{
 		"comments":       comments,
@@ -428,6 +435,9 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 	itineraryItemID := mux.Vars(r)["itineraryItemId"]
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
 
 	decoder := json.NewDecoder(r.Body)
 	var comment Comment
@@ -453,6 +463,34 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
+
+	var trip types.Trip
+	tripDoc, errTrip := client.Collection("trips").Doc(q.Get("tripId")).Get(ctx)
+	if errTrip != nil {
+		fmt.Println(errTrip)
+		response.WriteErrorResponse(w, errTrip)
+		return
+	}
+	tripDoc.DataTo(&trip)
+
+	var itinerary Itinerary
+	itineraryDoc, errI10 := client.Collection("itineraries").Doc(itineraryID).Get(ctx)
+	if errI10 != nil {
+		fmt.Println(errI10)
+		response.WriteErrorResponse(w, errI10)
+		return
+	}
+	itineraryDoc.DataTo(&itinerary)
+
+	var itineraryItem ItineraryItem
+	item, errItem := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Get(ctx)
+	if errItem != nil {
+		fmt.Println(errItem)
+		response.WriteErrorResponse(w, errItem)
+		return
+	}
+
+	item.DataTo(&itineraryItem)
 
 	doc, _, errComment := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").Add(ctx, comment)
 	if errComment != nil {
@@ -497,6 +535,98 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 	com.DataTo(&commentData)
 
 	total := totalDoc.Data()
+
+	c := fcm.NewFCM(types.SERVER_KEY)
+	var tokens []string
+	navigateData := map[string]interface{}{
+		"itineraryId":       itineraryID,
+		"dayId":             dayID,
+		"itineraryItemId":   itineraryItemID,
+		"tripId":            q.Get("tripId"),
+		"level":             "comments",
+		"startLocation":     itinerary.StartLocation,
+		"itineraryName":     itinerary.Name,
+		"itineraryItemName": itineraryItem.Poi.Name,
+	}
+
+	for _, traveler := range trip.Group {
+		if traveler != comment.User.UID {
+
+			notification := types.Notification{
+				CreateAt: time.Now().UnixNano() / int64(time.Millisecond),
+				Type:     "user_comment",
+				Data:     map[string]interface{}{"navigationData": navigateData, "user": comment.User, "subject": comment.User.DisplayName + " added a comment"},
+				Read:     false,
+			}
+			notificationDoc, _, errNotifySet := client.Collection("users").Doc(traveler).Collection("notifications").Add(ctx, notification)
+			if errNotifySet != nil {
+				fmt.Println(errNotifySet)
+				//response.WriteErrorResponse(w, errNotifySet)
+				return
+			}
+			_, errNotifyID := client.Collection("users").Doc(traveler).Collection("notifications").Doc(notificationDoc.ID).Set(ctx, map[string]interface{}{
+				"id": notificationDoc.ID,
+			}, firestore.MergeAll)
+			if errNotifyID != nil {
+				fmt.Println(errNotifyID)
+				//response.WriteErrorResponse(w, errNotifyID)
+				return
+			}
+
+			iter := client.Collection("users").Doc(traveler).Collection("devices").Documents(ctx)
+			for {
+				doc, err := iter.Next()
+				if err == iterator.Done {
+					break
+				}
+				if err != nil {
+					fmt.Println(err)
+					//response.WriteErrorResponse(w, err)
+					return
+				}
+
+				var token types.Token
+				doc.DataTo(&token)
+				tokens = append(tokens, token.Token)
+
+			}
+		}
+	}
+	if len(tokens) > 0 {
+
+		data := map[string]interface{}{
+			"focus":            "trips",
+			"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+			"type":             "user_comment",
+			"notificationData": navigateData,
+			"user":             comment.User,
+			"msg":              comment.User.DisplayName + " added a comment",
+		}
+
+		notification, err := c.Send(fcm.Message{
+			Data:             data,
+			RegistrationIDs:  tokens,
+			CollapseKey:      "New comment",
+			ContentAvailable: true,
+			Priority:         fcm.PriorityNormal,
+			Notification: fcm.Notification{
+				Title:       "New comment in itinerary for " + trip.Name,
+				Body:        comment.User.DisplayName + " added a comment",
+				ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+				//Badge: user.PhotoURL,
+			},
+		})
+		if err != nil {
+			fmt.Println("Notification send err")
+			fmt.Println(err)
+			//response.WriteErrorResponse(w, err)
+		}
+		fmt.Println("Status Code   :", notification.StatusCode)
+		fmt.Println("Success       :", notification.Success)
+		fmt.Println("Fail          :", notification.Fail)
+		fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+		fmt.Println("Topic MsgId   :", notification.MsgID)
+	}
 
 	commentsData := map[string]interface{}{
 		"comment":        commentData,

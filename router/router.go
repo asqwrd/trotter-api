@@ -153,7 +153,7 @@ var routes = Routes{
 		"GetComments", "GET", "/api/itineraries/get/{itineraryId}/day/{dayId}/itinerary_items/{itineraryItemId}/comments", itineraries.GetComments,
 	},
 	Route{
-		"AddComment", "POST", "/api/itineraries/get/{itineraryId}/day/{dayId}/itinerary_items/{itineraryItemId}/comments", itineraries.AddComment,
+		"AddComment", "POST", "/api/itineraries/{itineraryId}/day/{dayId}/itinerary_items/{itineraryItemId}/comments/add", itineraries.AddComment,
 	},
 	Route{
 		"AddToDay", "POST", "/api/itineraries/add/{itineraryId}/day/{dayId}", itineraries.AddToDay,

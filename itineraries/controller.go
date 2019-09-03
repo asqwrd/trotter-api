@@ -389,7 +389,13 @@ func GetComments(w http.ResponseWriter, r *http.Request) {
 	comments := []Comment{}
 	var docs *firestore.DocumentIterator
 	if len(q.Get("last")) > 0 {
-		docs = client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").OrderBy("created_at", firestore.Asc).StartAfter(q.Get("last")).Limit(20).Documents(ctx)
+		timeStamp, errParse := strconv.ParseInt(q.Get("last"), 10, 64)
+		if errParse != nil {
+			fmt.Println(errParse)
+			response.WriteErrorResponse(w, errParse)
+			return
+		}
+		docs = client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").OrderBy("created_at", firestore.Asc).StartAfter(timeStamp).Limit(20).Documents(ctx)
 	} else {
 		docs = client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").OrderBy("created_at", firestore.Asc).Limit(20).Documents(ctx)
 	}
@@ -405,6 +411,7 @@ func GetComments(w http.ResponseWriter, r *http.Request) {
 
 	total := map[string]interface{}{
 		"total": 0,
+		"id":    "total_comments",
 	}
 	totalDoc, errTotal := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Collection("comments").Doc("total_comments").Get(ctx)
 	if errTotal != nil {
@@ -1177,6 +1184,7 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 
 		_, errComments := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(doc.ID).Collection("comments").Doc("total_comments").Set(ctx, map[string]interface{}{
 			"total": 0,
+			"id":    "total_comments",
 		}, firestore.MergeAll)
 
 		if errComments != nil {

@@ -2574,8 +2574,26 @@ func DeleteTrip(w http.ResponseWriter, r *http.Request) {
 				if err == iterator.Done {
 					break
 				}
+
 				var item itineraries.ItineraryItem
 				doc.DataTo(&item)
+
+				comments := client.Collection("itineraries").Doc(itinerary.ID).Collection("days").Doc(day.ID).Collection("itinerary_items").Doc(item.ID).Collection("comments").Documents(ctx)
+				for {
+					commentDoc, errCom := comments.Next()
+					if errCom == iterator.Done {
+						break
+					}
+					var comment itineraries.Comment
+					commentDoc.DataTo(&comment)
+					_, errComDelete := client.Collection("itineraries").Doc(itinerary.ID).Collection("days").Doc(day.ID).Collection("itinerary_items").Doc(item.ID).Collection("comments").Doc(comment.ID).Delete(ctx)
+					if errComDelete != nil {
+						// Handle any errors in an appropriate way, such as returning them.
+						fmt.Println(errComDelete)
+						response.WriteErrorResponse(w, errComDelete)
+						return
+					}
+				}
 				_, errItem := client.Collection("itineraries").Doc(itinerary.ID).Collection("days").Doc(day.ID).Collection("itinerary_items").Doc(item.ID).Delete(ctx)
 				if errItem != nil {
 					// Handle any errors in an appropriate way, such as returning them.

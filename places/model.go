@@ -345,7 +345,7 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 		if len(thumbnail) > 0 && thumbnail[0] {
 			image = sp.Images[areaIndex].Sizes.Medium.Url
 			image_medium = sp.Images[areaIndex].Sizes.Medium.Url
-			image_hd = sp.Images[areaIndex].Sizes.Original.Url
+			image_hd = sp.Images[areaIndex].Sizes.Medium.Url
 		} else if areaIndex >= 0 {
 			image = sp.Images[areaIndex].Sizes.Original.Url
 			image_medium = sp.Images[areaIndex].Sizes.Medium.Url

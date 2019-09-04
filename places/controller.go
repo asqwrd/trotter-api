@@ -1061,6 +1061,7 @@ func SearchGoogle(w http.ResponseWriter, r *http.Request) {
 	query := mux.Vars(r)["query"]
 	latq := r.URL.Query().Get("lat")
 	lngq := r.URL.Query().Get("lng")
+	pageToken := r.URL.Query().Get("nextPageToken")
 
 	lat, errlat := strconv.ParseFloat(latq, 64)
 	lng, errlng := strconv.ParseFloat(lngq, 64)
@@ -1129,6 +1130,9 @@ func SearchGoogle(w http.ResponseWriter, r *http.Request) {
 		Location: latlng,
 		Radius:   50000,
 	}
+	if len(pageToken) > 0 {
+		p.PageToken = pageToken
+	}
 	places, err := googleClient.TextSearch(ctx, p)
 	if err != nil {
 		fmt.Println(err)
@@ -1156,7 +1160,8 @@ func SearchGoogle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Write(w, map[string]interface{}{
-		"results": triposoResults,
+		"results":       triposoResults,
+		"nextPageToken": places.NextPageToken,
 	}, http.StatusOK)
 	return
 

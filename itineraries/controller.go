@@ -1367,6 +1367,26 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 	var deletedBy types.User
 	userDoc.DataTo(&deletedBy)
 
+	comments := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(place).Collection("comments").Documents(ctx)
+	for {
+		comment, errComment := comments.Next()
+		if errComment == iterator.Done {
+			break
+		}
+		if errComment != nil {
+			fmt.Println(errComment)
+			response.WriteErrorResponse(w, errComment)
+			return
+		}
+
+		_, errComDelete := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(place).Collection("comments").Doc(comment.Ref.ID).Delete(ctx)
+		if errComDelete != nil {
+			fmt.Println(errComDelete)
+			response.WriteErrorResponse(w, errComDelete)
+			return
+		}
+	}
+
 	_, errDelete := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(place).Delete(ctx)
 	if errDelete != nil {
 		// Handle any errors in an appropriate way, such as returning them.

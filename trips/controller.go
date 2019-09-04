@@ -1098,6 +1098,22 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 						var itineraryItem itineraries.ItineraryItem
 						doc.DataTo(&itineraryItem)
 						itineraryItemsData = append(itineraryItemsData, itineraryItem)
+						comments := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Collection("itinerary_items").Doc(itineraryItem.ID).Collection("comments").Documents(ctx)
+						for {
+							commentDoc, errCom := comments.Next()
+							if errCom == iterator.Done {
+								break
+							}
+							var comment itineraries.Comment
+							commentDoc.DataTo(&comment)
+							_, errComDelete := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Collection("itinerary_items").Doc(itineraryItem.ID).Collection("comments").Doc(comment.ID).Delete(ctx)
+							if errComDelete != nil {
+								// Handle any errors in an appropriate way, such as returning them.
+								fmt.Println(errComDelete)
+								response.WriteErrorResponse(w, errComDelete)
+								return
+							}
+						}
 						_, errItems := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(id).Collection("itinerary_items").Doc(itineraryItem.ID).Delete(ctx)
 						if errItems != nil {
 							errorChannel <- errItems
@@ -2316,6 +2332,22 @@ func DeleteDestination(w http.ResponseWriter, r *http.Request) {
 					}
 					var item itineraries.ItineraryItem
 					doc.DataTo(&item)
+					comments := client.Collection("itineraries").Doc(itinerary.ID).Collection("days").Doc(day.ID).Collection("itinerary_items").Doc(item.ID).Collection("comments").Documents(ctx)
+					for {
+						commentDoc, errCom := comments.Next()
+						if errCom == iterator.Done {
+							break
+						}
+						var comment itineraries.Comment
+						commentDoc.DataTo(&comment)
+						_, errComDelete := client.Collection("itineraries").Doc(itinerary.ID).Collection("days").Doc(day.ID).Collection("itinerary_items").Doc(item.ID).Collection("comments").Doc(comment.ID).Delete(ctx)
+						if errComDelete != nil {
+							// Handle any errors in an appropriate way, such as returning them.
+							fmt.Println(errComDelete)
+							response.WriteErrorResponse(w, errComDelete)
+							return
+						}
+					}
 					_, errItem := client.Collection("itineraries").Doc(itinerary.ID).Collection("days").Doc(day.ID).Collection("itinerary_items").Doc(item.ID).Delete(ctx)
 					if errItem != nil {
 						// Handle any errors in an appropriate way, such as returning them.

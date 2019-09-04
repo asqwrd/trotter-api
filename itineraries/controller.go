@@ -862,9 +862,12 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 					itineraryItems[i].AddedByFull = &user
 				}
 				locations = append(locations, location)
+				if itineraryItems[i].Poi != nil && len(itineraryItems[i].Poi.DescriptionShort) > 0 {
+					itineraryItems[i].Description = itineraryItems[i].Poi.DescriptionShort
+				}
 				if itineraryItems[i].Poi != nil && len(itineraryItems[i].Poi.Images) > 0 {
 					itineraryItems[i].Image = itineraryItems[i].Poi.Images[0].Sizes.Medium.Url
-
+					fmt.Println(itineraryItems[i].Image)
 					colors, err := places.GetColor(itineraryItems[i].Image)
 					if err != nil {
 						errorChannel <- err

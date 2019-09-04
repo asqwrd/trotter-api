@@ -867,7 +867,6 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 				}
 				if itineraryItems[i].Poi != nil && len(itineraryItems[i].Poi.Images) > 0 {
 					itineraryItems[i].Image = itineraryItems[i].Poi.Images[0].Sizes.Medium.Url
-					fmt.Println(itineraryItems[i].Image)
 					colors, err := places.GetColor(itineraryItems[i].Image)
 					if err != nil {
 						errorChannel <- err

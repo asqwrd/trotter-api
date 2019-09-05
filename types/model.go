@@ -134,6 +134,7 @@ type Destination struct {
 	Location        triposo.Location `json:"location" firestore:"location"`
 	DestinationID   string           `json:"destination_id" firestore:"destination_id"`
 	DestinationName string           `json:"destination_name" firestore:"destination_name"`
+	ParentName      string           `json:"parent_name" firestore:"parent_name"`
 	Level           string           `json:"level" firestore:"level"`
 	CountryID       string           `json:"country_id" firestore:"country_id"`
 	CountryName     string           `json:"country_name" firestore:"country_name"`

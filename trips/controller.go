@@ -431,6 +431,15 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 	}
 	var updatedBy types.User
 	userDoc.DataTo(&updatedBy)
+	var deviceIds []string
+	devicesItr := client.Collection("users").Doc(q.Get("updatedBy")).Collection("devices").Documents(ctx)
+	for {
+		device, errDevice := devicesItr.Next()
+		if errDevice == iterator.Done {
+			break
+		}
+		deviceIds = append(deviceIds, device.Ref.ID)
+	}
 
 	trip["updated_at"] = firestore.ServerTimestamp
 	_, err2 := client.Collection("trips").Doc(tripID).Set(ctx, trip, firestore.MergeAll)
@@ -503,7 +512,9 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 
 					var token types.Token
 					doc.DataTo(&token)
-					tokens = append(tokens, token.Token)
+					if !utils.Contains(deviceIds, token.DeviceID) {
+						tokens = append(tokens, token.Token)
+					}
 				}
 			}
 		}
@@ -556,6 +567,33 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 		added := trip["added"].([]interface{})
 		if len(deleted) > 0 {
 			for _, uid := range deleted {
+				destIter := client.Collection("trips").Doc(tripID).Collection("destinations").Documents(ctx)
+				for {
+					docDest, err := destIter.Next()
+					if err == iterator.Done {
+						break
+					}
+					deleteTravels := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(docDest.Ref.ID).Collection("flights_accomodations").Where("travelers", "array-contains", uid).Documents(ctx)
+					for {
+						docTraveler, errTrav := deleteTravels.Next()
+						if errTrav == iterator.Done {
+							break
+						}
+						var detail types.FlightsAndAccomodations
+						docTraveler.DataTo(&detail)
+
+						updateTraveler := utils.Filter(detail.Travelers, uid.(string))
+						_, errTravUpdate := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(docDest.Ref.ID).Collection("flights_accomodations").Doc(docTraveler.Ref.ID).Update(ctx, []firestore.Update{
+							{Path: "travelers", Value: updateTraveler},
+						})
+						if errTravUpdate != nil {
+							fmt.Println(errTravUpdate)
+							response.WriteErrorResponse(w, errTravUpdate)
+							return
+						}
+					}
+
+				}
 				_, err3 := client.Collection("trips").Doc(tripID).Collection("travelers").Doc(uid.(string)).Delete(ctx)
 				if err3 != nil {
 					// Handle any errors in an appropriate way, such as returning them.
@@ -748,38 +786,40 @@ func UpdateTrip(w http.ResponseWriter, r *http.Request) {
 
 					var token types.Token
 					doc.DataTo(&token)
-					data := map[string]interface{}{
-						"focus":            "trips",
-						"click_action":     "FLUTTER_NOTIFICATION_CLICK",
-						"type":             notificationType,
-						"notificationData": navigateData,
-						"user":             updatedBy,
-						"msg":              msg,
-					}
+					if !utils.Contains(deviceIds, token.DeviceID) {
+						data := map[string]interface{}{
+							"focus":            "trips",
+							"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+							"type":             notificationType,
+							"notificationData": navigateData,
+							"user":             updatedBy,
+							"msg":              msg,
+						}
 
-					notification, err := c.Send(fcm.Message{
-						Data:             data,
-						To:               token.Token,
-						CollapseKey:      "Change in travelers!",
-						ContentAvailable: true,
-						Priority:         fcm.PriorityNormal,
-						Notification: fcm.Notification{
-							Title:       "Change in travelers!",
-							Body:        msg,
-							ClickAction: "FLUTTER_NOTIFICATION_CLICK",
-							//Badge: user.PhotoURL,
-						},
-					})
-					if err != nil {
-						fmt.Println("Notification send err")
-						fmt.Println(err)
-						//response.WriteErrorResponse(w, err)
+						notification, err := c.Send(fcm.Message{
+							Data:             data,
+							To:               token.Token,
+							CollapseKey:      "Change in travelers!",
+							ContentAvailable: true,
+							Priority:         fcm.PriorityNormal,
+							Notification: fcm.Notification{
+								Title:       "Change in travelers!",
+								Body:        msg,
+								ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+								//Badge: user.PhotoURL,
+							},
+						})
+						if err != nil {
+							fmt.Println("Notification send err")
+							fmt.Println(err)
+							//response.WriteErrorResponse(w, err)
+						}
+						fmt.Println("Status Code   :", notification.StatusCode)
+						fmt.Println("Success       :", notification.Success)
+						fmt.Println("Fail          :", notification.Fail)
+						fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+						fmt.Println("Topic MsgId   :", notification.MsgID)
 					}
-					fmt.Println("Status Code   :", notification.StatusCode)
-					fmt.Println("Success       :", notification.Success)
-					fmt.Println("Fail          :", notification.Fail)
-					fmt.Println("Canonical_ids :", notification.CanonicalIDs)
-					fmt.Println("Topic MsgId   :", notification.MsgID)
 
 				}
 			}
@@ -828,6 +868,15 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 
 	//Check Traveler
 	docSnap, _ := client.Collection("trips").Doc(tripID).Collection("travelers").Doc(trip.User.UID).Get(ctx)
+	var deviceIds []string
+	devicesItr := client.Collection("users").Doc(trip.User.UID).Collection("devices").Documents(ctx)
+	for {
+		device, errDevice := devicesItr.Next()
+		if errDevice == iterator.Done {
+			break
+		}
+		deviceIds = append(deviceIds, device.Ref.ID)
+	}
 
 	if !docSnap.Exists() {
 		tripSnap, errTrip := client.Collection("trips").Doc(tripID).Get(ctx)
@@ -933,7 +982,9 @@ func AddTraveler(w http.ResponseWriter, r *http.Request) {
 
 					var token types.Token
 					doc.DataTo(&token)
-					tokens = append(tokens, token.Token)
+					if !utils.Contains(deviceIds, token.DeviceID) {
+						tokens = append(tokens, token.Token)
+					}
 
 				}
 			}
@@ -1257,6 +1308,15 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 	}
 	var updatedBy types.User
 	userDoc.DataTo(&updatedBy)
+	var deviceIds []string
+	devicesItr := client.Collection("users").Doc(q.Get("updatedBy")).Collection("devices").Documents(ctx)
+	for {
+		device, errDevice := devicesItr.Next()
+		if errDevice == iterator.Done {
+			break
+		}
+		deviceIds = append(deviceIds, device.Ref.ID)
+	}
 
 	//Check Destination
 	iter := client.Collection("trips").Doc(tripID).Collection("destinations").Where("destination_id", "==", destination.DestinationID).Documents(ctx)
@@ -1390,7 +1450,9 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 
 				var token types.Token
 				doc.DataTo(&token)
-				tokens = append(tokens, token.Token)
+				if !utils.Contains(deviceIds, token.DeviceID) {
+					tokens = append(tokens, token.Token)
+				}
 
 			}
 		}
@@ -1538,6 +1600,15 @@ func DeleteFlightsAndAccomodation(w http.ResponseWriter, r *http.Request) {
 	}
 	var deletedBy types.User
 	userDoc.DataTo(&deletedBy)
+	var deviceIds []string
+	devicesItr := client.Collection("users").Doc(q.Get("deletedBy")).Collection("devices").Documents(ctx)
+	for {
+		device, errDevice := devicesItr.Next()
+		if errDevice == iterator.Done {
+			break
+		}
+		deviceIds = append(deviceIds, device.Ref.ID)
+	}
 
 	var trip types.Trip
 	tripDoc, errTrip := client.Collection("trips").Doc(tripID).Get(ctx)
@@ -1598,7 +1669,9 @@ func DeleteFlightsAndAccomodation(w http.ResponseWriter, r *http.Request) {
 
 				var token types.Token
 				doc.DataTo(&token)
-				tokens = append(tokens, token.Token)
+				if !utils.Contains(deviceIds, token.DeviceID) {
+					tokens = append(tokens, token.Token)
+				}
 
 			}
 		}
@@ -1853,12 +1926,33 @@ func UpdateFlightsAndAccomodationTravelers(w http.ResponseWriter, r *http.Reques
 	}
 	var updatedBy types.User
 	userDoc.DataTo(&updatedBy)
+	var deviceIds []string
+	devicesItr := client.Collection("users").Doc(q.Get("updatedBy")).Collection("devices").Documents(ctx)
+	for {
+		device, errDevice := devicesItr.Next()
+		if errDevice == iterator.Done {
+			break
+		}
+		deviceIds = append(deviceIds, device.Ref.ID)
+	}
 	var flightData map[string]interface{}
 	detailTravelers := oldDetail.Travelers
 
 	if len(detail.Added) > 0 {
 
 		for _, added := range detail.Added {
+
+			updateGroup := trip.Group
+			updateGroup = append(updateGroup, added.UID)
+			_, errGroup := client.Collection("trips").Doc(tripID).Set(ctx, map[string]interface{}{
+				"group": updateGroup,
+			})
+
+			if errGroup != nil {
+				fmt.Println(errGroup)
+				response.WriteErrorResponse(w, errGroup)
+				return
+			}
 
 			_, errAdd := client.Collection("trips").Doc(tripID).Collection("travelers").Doc(added.UID).Set(ctx, added)
 			if errAdd != nil {
@@ -1978,39 +2072,40 @@ func UpdateFlightsAndAccomodationTravelers(w http.ResponseWriter, r *http.Reques
 
 					var token types.Token
 					doc.DataTo(&token)
-					data := map[string]interface{}{
-						"focus":            "trips",
-						"click_action":     "FLUTTER_NOTIFICATION_CLICK",
-						"type":             notificationType,
-						"notificationData": navigateData,
-						"user":             updatedBy,
-						"msg":              msg,
-					}
+					if !utils.Contains(deviceIds, token.DeviceID) {
+						data := map[string]interface{}{
+							"focus":            "trips",
+							"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+							"type":             notificationType,
+							"notificationData": navigateData,
+							"user":             updatedBy,
+							"msg":              msg,
+						}
 
-					notification, errSend := c.Send(fcm.Message{
-						Data:             data,
-						To:               token.Token,
-						CollapseKey:      "Travel itinerary update",
-						ContentAvailable: true,
-						Priority:         fcm.PriorityNormal,
-						Notification: fcm.Notification{
-							Title:       "Travel itinerary update",
-							Body:        msg,
-							ClickAction: "FLUTTER_NOTIFICATION_CLICK",
-							//Badge: user.PhotoURL,
-						},
-					})
-					if errSend != nil {
-						fmt.Println("Notification send err")
-						fmt.Println(errSend)
-						//response.WriteErrorResponse(w, errSend)
+						notification, errSend := c.Send(fcm.Message{
+							Data:             data,
+							To:               token.Token,
+							CollapseKey:      "Travel itinerary update",
+							ContentAvailable: true,
+							Priority:         fcm.PriorityNormal,
+							Notification: fcm.Notification{
+								Title:       "Travel itinerary update",
+								Body:        msg,
+								ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+								//Badge: user.PhotoURL,
+							},
+						})
+						if errSend != nil {
+							fmt.Println("Notification send err")
+							fmt.Println(errSend)
+							//response.WriteErrorResponse(w, errSend)
+						}
+						fmt.Println("Status Code   :", notification.StatusCode)
+						fmt.Println("Success       :", notification.Success)
+						fmt.Println("Fail          :", notification.Fail)
+						fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+						fmt.Println("Topic MsgId   :", notification.MsgID)
 					}
-					fmt.Println("Status Code   :", notification.StatusCode)
-					fmt.Println("Success       :", notification.Success)
-					fmt.Println("Fail          :", notification.Fail)
-					fmt.Println("Canonical_ids :", notification.CanonicalIDs)
-					fmt.Println("Topic MsgId   :", notification.MsgID)
-
 				}
 			}
 		}
@@ -2133,39 +2228,40 @@ func UpdateFlightsAndAccomodationTravelers(w http.ResponseWriter, r *http.Reques
 
 					var token types.Token
 					doc.DataTo(&token)
-					data := map[string]interface{}{
-						"focus":            "trips",
-						"click_action":     "FLUTTER_NOTIFICATION_CLICK",
-						"type":             notificationType,
-						"notificationData": navigateData,
-						"user":             updatedBy,
-						"msg":              msg,
-					}
+					if !utils.Contains(deviceIds, token.DeviceID) {
+						data := map[string]interface{}{
+							"focus":            "trips",
+							"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+							"type":             notificationType,
+							"notificationData": navigateData,
+							"user":             updatedBy,
+							"msg":              msg,
+						}
 
-					notification, errSend := c.Send(fcm.Message{
-						Data:             data,
-						To:               token.Token,
-						CollapseKey:      "Travel itinerary update",
-						ContentAvailable: true,
-						Priority:         fcm.PriorityNormal,
-						Notification: fcm.Notification{
-							Title:       "Travel itinerary update",
-							Body:        msg,
-							ClickAction: "FLUTTER_NOTIFICATION_CLICK",
-							//Badge: user.PhotoURL,
-						},
-					})
-					if errSend != nil {
-						fmt.Println("Notification send err")
-						fmt.Println(errSend)
-						//response.WriteErrorResponse(w, errSend)
+						notification, errSend := c.Send(fcm.Message{
+							Data:             data,
+							To:               token.Token,
+							CollapseKey:      "Travel itinerary update",
+							ContentAvailable: true,
+							Priority:         fcm.PriorityNormal,
+							Notification: fcm.Notification{
+								Title:       "Travel itinerary update",
+								Body:        msg,
+								ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+								//Badge: user.PhotoURL,
+							},
+						})
+						if errSend != nil {
+							fmt.Println("Notification send err")
+							fmt.Println(errSend)
+							//response.WriteErrorResponse(w, errSend)
+						}
+						fmt.Println("Status Code   :", notification.StatusCode)
+						fmt.Println("Success       :", notification.Success)
+						fmt.Println("Fail          :", notification.Fail)
+						fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+						fmt.Println("Topic MsgId   :", notification.MsgID)
 					}
-					fmt.Println("Status Code   :", notification.StatusCode)
-					fmt.Println("Success       :", notification.Success)
-					fmt.Println("Fail          :", notification.Fail)
-					fmt.Println("Canonical_ids :", notification.CanonicalIDs)
-					fmt.Println("Topic MsgId   :", notification.MsgID)
-
 				}
 			}
 		}
@@ -2273,6 +2369,15 @@ func DeleteDestination(w http.ResponseWriter, r *http.Request) {
 	}
 	var updatedBy types.User
 	userDoc.DataTo(&updatedBy)
+	var deviceIds []string
+	devicesItr := client.Collection("users").Doc(q.Get("updatedBy")).Collection("devices").Documents(ctx)
+	for {
+		device, errDevice := devicesItr.Next()
+		if errDevice == iterator.Done {
+			break
+		}
+		deviceIds = append(deviceIds, device.Ref.ID)
+	}
 
 	var destination types.Destination
 	destDoc, errDelete := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destinationID).Get(ctx)
@@ -2429,8 +2534,9 @@ func DeleteDestination(w http.ResponseWriter, r *http.Request) {
 
 				var token types.Token
 				doc.DataTo(&token)
-				tokens = append(tokens, token.Token)
-
+				if !utils.Contains(deviceIds, token.DeviceID) {
+					tokens = append(tokens, token.Token)
+				}
 			}
 		}
 	}

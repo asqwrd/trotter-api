@@ -71,6 +71,16 @@ func Contains(s []string, e string) bool {
 	return false
 }
 
+func Filter(s []string, e string) []string {
+	var output []string
+	for _, a := range s {
+		if a != e {
+			output = append(output, a)
+		}
+	}
+	return output
+}
+
 func UniqueUserSlice(userSlice []types.User) []types.User {
 	keys := make(map[string]bool)
 	list := []types.User{}

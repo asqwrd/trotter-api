@@ -480,6 +480,16 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 	}
 	tripDoc.DataTo(&trip)
 
+	var deviceIds []string
+	devicesItr := client.Collection("users").Doc(comment.User.UID).Collection("devices").Documents(ctx)
+	for {
+		device, errDevice := devicesItr.Next()
+		if errDevice == iterator.Done {
+			break
+		}
+		deviceIds = append(deviceIds, device.Ref.ID)
+	}
+
 	var itinerary Itinerary
 	itineraryDoc, errI10 := client.Collection("itineraries").Doc(itineraryID).Get(ctx)
 	if errI10 != nil {
@@ -594,7 +604,9 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 
 				var token types.Token
 				doc.DataTo(&token)
-				tokens = append(tokens, token.Token)
+				if !utils.Contains(deviceIds, token.DeviceID) {
+					tokens = append(tokens, token.Token)
+				}
 
 			}
 		}
@@ -1151,6 +1163,15 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 	}
 	var addedBy types.User
 	userDoc.DataTo(&addedBy)
+	var deviceIds []string
+	devicesItr := client.Collection("users").Doc(*itineraryItem.AddedBy).Collection("devices").Documents(ctx)
+	for {
+		device, errDevice := devicesItr.Next()
+		if errDevice == iterator.Done {
+			break
+		}
+		deviceIds = append(deviceIds, device.Ref.ID)
+	}
 
 	iter := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Where("poi_id", "==", itineraryItem.PoiID).Documents(ctx)
 	for {
@@ -1253,7 +1274,9 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 
 				var token types.Token
 				doc.DataTo(&token)
-				tokens = append(tokens, token.Token)
+				if !utils.Contains(deviceIds, token.DeviceID) {
+					tokens = append(tokens, token.Token)
+				}
 
 			}
 		}
@@ -1368,6 +1391,15 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 	}
 	var deletedBy types.User
 	userDoc.DataTo(&deletedBy)
+	var deviceIds []string
+	devicesItr := client.Collection("users").Doc(q.Get("deletedBy")).Collection("devices").Documents(ctx)
+	for {
+		device, errDevice := devicesItr.Next()
+		if errDevice == iterator.Done {
+			break
+		}
+		deviceIds = append(deviceIds, device.Ref.ID)
+	}
 
 	comments := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(place).Collection("comments").Documents(ctx)
 	for {
@@ -1443,7 +1475,9 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 
 				var token types.Token
 				doc.DataTo(&token)
-				tokens = append(tokens, token.Token)
+				if !utils.Contains(deviceIds, token.DeviceID) {
+					tokens = append(tokens, token.Token)
+				}
 			}
 		}
 	}

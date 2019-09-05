@@ -25,4 +25,5 @@ require (
 	googlemaps.github.io/maps v0.0.0-20190830171616-3c27ef506b1c
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/maddevsio/fcm.v1 v1.0.4
+	robpike.io/filter v0.0.0-20150108201509-2984852a2183
 )

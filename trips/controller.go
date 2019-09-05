@@ -1258,7 +1258,7 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 	tripID := mux.Vars(r)["tripId"]
 	exists := false
 	decoder := json.NewDecoder(r.Body)
-	destinationChannel := make(chan firestore.DocumentRef)
+	destinationChannel := make(chan types.Destination)
 	var destination types.Destination
 	err := decoder.Decode(&destination)
 	if err != nil {
@@ -1391,10 +1391,21 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 			response.WriteErrorResponse(w, errDays)
 		}
 
-		destinationChannel <- *destDoc
+		destSnap, errSnap := client.Collection("trips").Doc(tripID).Collection("destinations").Doc(destDoc.ID).Get(ctx)
+		if errSnap != nil {
+			// Handle any errors in an appropriate way, such as returning them.
+			fmt.Println("here")
+			fmt.Println(errSnap)
+			response.WriteErrorResponse(w, errSnap)
+			return
+		}
+
+		var desti types.Destination
+		destSnap.DataTo(&desti)
+		destinationChannel <- desti
 	}(tripID, destination)
 
-	var dest firestore.DocumentRef
+	var dest types.Destination
 	for i := 0; i < 1; i++ {
 		select {
 		case res := <-destinationChannel:

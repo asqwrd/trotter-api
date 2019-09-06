@@ -1957,7 +1957,7 @@ func UpdateFlightsAndAccomodationTravelers(w http.ResponseWriter, r *http.Reques
 			updateGroup = append(updateGroup, added.UID)
 			_, errGroup := client.Collection("trips").Doc(tripID).Set(ctx, map[string]interface{}{
 				"group": updateGroup,
-			})
+			},firestore.MergeAll)
 
 			if errGroup != nil {
 				fmt.Println(errGroup)

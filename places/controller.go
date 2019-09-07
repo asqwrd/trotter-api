@@ -170,13 +170,13 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 
 func GetDestination(w http.ResponseWriter, r *http.Request) {
 	destinationID := mux.Vars(r)["destinationID"]
-	urlparams := []string{"sightseeing|sight|topattractions",
-		"museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts",
+	urlparams := []string{"sightseeing",
+		"museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts|showstheatresandmusic|musicandshows",
 		"amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos",
 		"beaches|camping|wildlife|fishing|relaxinapark",
-		"eatingout|breakfast|coffeeandcake|lunch|dinner",
-		"do|shopping",
-		"nightlife|comedy|drinks|dancing|pubcrawl|redlight|musicandshows|celebrations|foodexperiences|breweries|showstheatresandmusic"}
+		"eatingout",
+		"shopping",
+		"nightlife"}
 
 	destinationType := r.URL.Query().Get("type")
 

@@ -25,12 +25,21 @@ type Itinerary struct {
 	StartLocation          *StartLocation `json:"start_location" firestore:"start_location"`
 }
 
+//LinkedItinerary
+type LinkedItinerary struct {
+	NumberOfDays int               `json:"number_of_days"`
+	Itinerary    Itinerary         `json:"itinerary"`
+	StartDay     int               `json:"start_day"`
+	Destination  types.Destination `json:"destination"`
+}
+
 //Day struct
 type Day struct {
-	Date           int             `json:"date" firestore:"date"`
-	Day            int             `json:"day" firestore:"day"`
-	ID             string          `json:"id" firestore:"id"`
-	ItineraryItems []ItineraryItem `json:"itinerary_items" firestore:"itinerary_items"`
+	Date            int              `json:"date" firestore:"date"`
+	Day             int              `json:"day" firestore:"day"`
+	ID              string           `json:"id" firestore:"id"`
+	LinkedItinerary *LinkedItinerary `json:"linked_itinerary,omitempty"`
+	ItineraryItems  []ItineraryItem  `json:"itinerary_items" firestore:"itinerary_items"`
 }
 
 //Location struct

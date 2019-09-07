@@ -231,6 +231,46 @@ func getItinerary(itineraryID string) (map[string]interface{}, error) {
 		}
 
 	}(itinerary.Destination)
+	var nestedItineraries []LinkedItinerary
+	nestedItr := client.Collection("itineraries").Where("trip_id", "==", itinerary.TripID).Documents(ctx)
+	for {
+		nestDoc, errNest := nestedItr.Next()
+		if errNest == iterator.Done {
+			break
+		}
+		if errNest != nil {
+			fmt.Println(errNest)
+			return nil, errNest
+		}
+		var nestItinerary Itinerary
+		errConvert := nestDoc.DataTo(&nestItinerary)
+		if errConvert != nil {
+			fmt.Println(errConvert)
+			return nil, errConvert
+
+		}
+		if nestItinerary.ID != itineraryID && nestItinerary.StartDate >= itinerary.StartDate && nestItinerary.EndDate <= itinerary.EndDate {
+
+			var daysCount = 0
+
+			endtm := time.Unix(nestItinerary.EndDate, 0)
+			starttm := time.Unix(nestItinerary.StartDate, 0)
+
+			diff := endtm.Sub(starttm)
+			daysCount = int(diff.Hours()/24) + 1
+			parentStartTime := time.Unix(itinerary.StartDate, 0)
+			startDiff := starttm.Sub(parentStartTime)
+			startDay := int(startDiff.Hours() / 24)
+
+			linkItinerary := LinkedItinerary{
+				NumberOfDays: daysCount,
+				Itinerary:    nestItinerary,
+				StartDay:     startDay,
+			}
+
+			nestedItineraries = append(nestedItineraries, linkItinerary)
+		}
+	}
 
 	var days []Day
 	iter := client.Collection("itineraries").Doc(itineraryID).Collection("days").OrderBy("day", firestore.Asc).Documents(ctx)
@@ -239,6 +279,7 @@ func getItinerary(itineraryID string) (map[string]interface{}, error) {
 		if err == iterator.Done {
 			break
 		}
+
 		var day Day
 		var itineraryItems = make([]ItineraryItem, 0)
 		doc.DataTo(&day)
@@ -259,6 +300,31 @@ func getItinerary(itineraryID string) (map[string]interface{}, error) {
 		day.ItineraryItems = itineraryItems
 		days = append(days, day)
 	}
+
+	for _, link := range nestedItineraries {
+		fmt.Println(link.NumberOfDays)
+		startIndex := link.StartDay
+		var destination types.Destination
+		for i := 0; i < link.NumberOfDays; i++ {
+			iter := client.Collection("trips").Doc(itinerary.TripID).Collection("destinations").Where("destination_id", "==", link.Itinerary.Destination).Documents(ctx)
+			for {
+				destSnap, errDest := iter.Next()
+				if errDest == iterator.Done {
+					break
+				}
+				if errDest != nil {
+					fmt.Println(errDest)
+					return nil, errDest
+				}
+				destSnap.DataTo(&destination)
+				break
+			}
+			link.Destination = destination
+			days[startIndex].LinkedItinerary = &link
+			startIndex++
+		}
+	}
+
 	itinerary.Days = days
 
 	var destination triposo.InternalPlace

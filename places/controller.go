@@ -127,13 +127,13 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 	levelID := q.Get("levelId")
 	offset := q.Get("offset")
 	param := ""
-	urlparams := []string{"sightseeing|sight|topattractions",
-		"museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts",
+	urlparams := []string{"sightseeing",
+		"museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts|showstheatresandmusic|musicandshows",
 		"amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos",
 		"beaches|camping|wildlife|fishing|relaxinapark",
-		"eatingout|breakfast|coffeeandcake|lunch|dinner",
-		"do|shopping",
-		"nightlife|comedy|drinks|dancing|pubcrawl|redlight|musicandshows|celebrations|foodexperiences|breweries|showstheatresandmusic"}
+		"eatingout",
+		"shopping",
+		"nightlife"}
 
 	switch {
 	case placeType == "discover":

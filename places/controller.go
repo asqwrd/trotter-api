@@ -127,13 +127,13 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 	levelID := q.Get("levelId")
 	offset := q.Get("offset")
 	param := ""
-	urlparams := []string{"sightseeing",
-		"museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts|showstheatresandmusic|musicandshows",
-		"amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos",
+	urlparams := []string{"sightseeing|sight|topattractions|hoponhopoff",
+		"museums|tours|walkingtours|transport|private_tours|air|architecture|multiday|touristinfo|forts|showstheatresandmusic",
+		"amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos|celebrations|musicandshows",
 		"beaches|camping|wildlife|fishing|relaxinapark",
-		"eatingout",
-		"shopping",
-		"nightlife"}
+		"eatingout|breakfast|coffeeandcake|lunch|dinner|foodexperiences",
+		"do|shopping",
+		"nightlife|comedy|drinks|dancing|pubcrawl|redlight|breweries"}
 
 	switch {
 	case placeType == "discover":
@@ -170,13 +170,13 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 
 func GetDestination(w http.ResponseWriter, r *http.Request) {
 	destinationID := mux.Vars(r)["destinationID"]
-	urlparams := []string{"sightseeing",
-		"museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts|showstheatresandmusic|musicandshows",
-		"amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos",
+	urlparams := []string{"sightseeing|sight|topattractions|hoponhopoff",
+		"museums|tours|walkingtours|transport|private_tours|air|architecture|multiday|touristinfo|forts|showstheatresandmusic",
+		"amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos|celebrations|musicandshows",
 		"beaches|camping|wildlife|fishing|relaxinapark",
-		"eatingout",
-		"shopping",
-		"nightlife"}
+		"eatingout|breakfast|coffeeandcake|lunch|dinner|foodexperiences",
+		"do|shopping",
+		"nightlife|comedy|drinks|dancing|pubcrawl|redlight|breweries"}
 
 	destinationType := r.URL.Query().Get("type")
 

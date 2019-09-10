@@ -1954,24 +1954,26 @@ func UpdateFlightsAndAccomodationTravelers(w http.ResponseWriter, r *http.Reques
 		for _, added := range detail.Added {
 
 			updateGroup := trip.Group
-			updateGroup = append(updateGroup, added.UID)
-			_, errGroup := client.Collection("trips").Doc(tripID).Set(ctx, map[string]interface{}{
-				"group": updateGroup,
-			},firestore.MergeAll)
+			if !utils.Contains(updateGroup, added.UID) {
+				updateGroup = append(updateGroup, added.UID)
+				_, errGroup := client.Collection("trips").Doc(tripID).Set(ctx, map[string]interface{}{
+					"group": updateGroup,
+				}, firestore.MergeAll)
 
-			if errGroup != nil {
-				fmt.Println(errGroup)
-				response.WriteErrorResponse(w, errGroup)
-				return
+				if errGroup != nil {
+					fmt.Println(errGroup)
+					response.WriteErrorResponse(w, errGroup)
+					return
+				}
+
+				_, errAdd := client.Collection("trips").Doc(tripID).Collection("travelers").Doc(added.UID).Set(ctx, added)
+				if errAdd != nil {
+					fmt.Println(errAdd)
+					response.WriteErrorResponse(w, errAdd)
+					return
+				}
+
 			}
-
-			_, errAdd := client.Collection("trips").Doc(tripID).Collection("travelers").Doc(added.UID).Set(ctx, added)
-			if errAdd != nil {
-				fmt.Println(errAdd)
-				response.WriteErrorResponse(w, errAdd)
-				return
-			}
-
 			detailTravelers = append(detailTravelers, added.UID)
 		}
 
@@ -2196,11 +2198,14 @@ func UpdateFlightsAndAccomodationTravelers(w http.ResponseWriter, r *http.Reques
 
 				var msg string
 				var notificationType string
-				if !utils.Contains(detailTravelers, updatedBy.UID) && utils.Contains(oldDetail.Travelers, updatedBy.UID) {
+				if !utils.Contains(detailTravelersKeep, updatedBy.UID) && utils.Contains(oldDetail.Travelers, updatedBy.UID) {
 					msg = updatedBy.DisplayName + " left one of the travel itineraries for " + trip.Name
 					notificationType = "user_travel_details_remove"
-				} else if !utils.Contains(detailTravelers, traveler.UID) && utils.Contains(oldDetail.Travelers, traveler.UID) {
+				} else if !utils.Contains(detailTravelersKeep, traveler.UID) && utils.Contains(oldDetail.Travelers, traveler.UID) {
 					msg = updatedBy.DisplayName + " removed you from one of the travel itineraries for " + trip.Name
+					notificationType = "user_travel_details_remove"
+				} else {
+					msg = updatedBy.DisplayName + " removed people from one of the travel itineraries for " + trip.Name
 					notificationType = "user_travel_details_remove"
 				}
 

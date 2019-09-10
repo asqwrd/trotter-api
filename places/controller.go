@@ -1095,7 +1095,7 @@ func SearchGoogle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
-	var triposoResults []triposo.InternalPlace
+	triposoResults := []triposo.InternalPlace{}
 
 	go func() {
 		search, err := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Get(ctx)

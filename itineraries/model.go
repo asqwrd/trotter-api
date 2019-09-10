@@ -44,8 +44,8 @@ type Day struct {
 
 //Location struct
 type Location struct {
-	Latitude  float64 `json:"lat"`
-	Longitude float64 `json:"lng"`
+	Latitude  float64 `json:"lat" firestore:"lat"`
+	Longitude float64 `json:"lng" firestore:"lng"`
 }
 
 //StartLocation struct

@@ -627,7 +627,7 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 		"itineraryItemId":   itineraryItemID,
 		"tripId":            q.Get("tripId"),
 		"level":             "comments",
-		"startLocation":     itinerary.StartLocation,
+		"startLocation":     itinerary.StartLocation.Location,
 		"itineraryName":     itinerary.Name,
 		"itineraryItemName": itineraryItem.Poi.Name,
 	}
@@ -1298,7 +1298,7 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 	navigateData := map[string]interface{}{
 		"itineraryId":   itineraryID,
 		"dayId":         dayID,
-		"startLocation": itinerary.StartLocation,
+		"startLocation": itinerary.StartLocation.Location,
 		"level":         "itinerary/day/edit",
 	}
 
@@ -1500,7 +1500,7 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 	navigateData := map[string]interface{}{
 		"itineraryId":   itineraryID,
 		"dayId":         dayID,
-		"startLocation": itinerary.StartLocation,
+		"startLocation": itinerary.StartLocation.Location,
 		"level":         "itinerary/day/edit",
 	}
 
@@ -1636,7 +1636,7 @@ func TestNotification(w http.ResponseWriter, r *http.Request) {
 		navigateData := map[string]interface{}{
 			"itineraryId":   "uRrfmJintOxNVhevP74p",
 			"dayId":         "5lOZSEJz345IJmOZEED7",
-			"startLocation": map[string]interface{}{"lat": 3.143497, "lng": 101.704094},
+			"startLocation": Location{Latitude: 3.143497, Longitude: 101.704094},
 			"level":         "itinerary/day/edit",
 		}
 

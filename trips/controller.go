@@ -236,7 +236,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 				Name:                   trip.Trip.Name,
 				Location:               &itineraries.Location{Latitude: trip.Destinations[index].Location.Lat, Longitude: trip.Destinations[index].Location.Lng},
 				TripID:                 tripID,
-				StartLocation:          &itineraries.StartLocation{Location: &itineraries.Location{Latitude: trip.Destinations[index].Location.Lat, Longitude: trip.Destinations[index].Location.Lng}, Name: "City center"},
+				StartLocation:          &itineraries.StartLocation{Location: &itineraries.LocationSave{Latitude: trip.Destinations[index].Location.Lat, Longitude: trip.Destinations[index].Location.Lng}, Name: "City center"},
 				OwnerID:                trip.Trip.OwnerID,
 				Travelers:              trip.Trip.Group,
 			}

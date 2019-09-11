@@ -208,7 +208,7 @@ func getItinerary(itineraryID string) (map[string]interface{}, error) {
 	snap.DataTo(&itinerary)
 	if itinerary.StartLocation == nil {
 		_, errUpdate := client.Collection("itineraries").Doc(itineraryID).Set(ctx, map[string]interface{}{
-			"start_location": StartLocation{Location: itinerary.Location, Name: "City center"},
+			"start_location": StartLocation{Location: &LocationSave{Latitude: itinerary.Location.Latitude, Longitude: itinerary.Location.Longitude}, Name: "City center"},
 		}, firestore.MergeAll)
 		if errUpdate != nil {
 			fmt.Println(errUpdate)
@@ -922,9 +922,9 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 			//fmt.Println(itinerary)
 			var locations []string
 			var chunks [][]string
-			start := itinerary.(Itinerary).Location
+			start := LocationSave{Latitude: itinerary.(Itinerary).Location.Latitude, Longitude: itinerary.(Itinerary).Location.Longitude}
 			if itinerary.(Itinerary).StartLocation != nil {
-				start = itinerary.(Itinerary).StartLocation.Location
+				start = *itinerary.(Itinerary).StartLocation.Location
 			}
 
 			if len(latlng) > 0 {

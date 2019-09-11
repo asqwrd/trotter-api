@@ -44,14 +44,20 @@ type Day struct {
 
 //Location struct
 type Location struct {
+	Latitude  float64 `json:"lat"`
+	Longitude float64 `json:"lng"`
+}
+
+//LocationSave struct
+type LocationSave struct {
 	Latitude  float64 `json:"lat" firestore:"lat"`
 	Longitude float64 `json:"lng" firestore:"lng"`
 }
 
 //StartLocation struct
 type StartLocation struct {
-	Location *Location `json:"location" firestore:"location"`
-	Name     string    `json:"name" firestore:"name"`
+	Location *LocationSave `json:"location" firestore:"location"`
+	Name     string        `json:"name" firestore:"name"`
 }
 
 //ItineraryItem struct

@@ -143,13 +143,13 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 	case placeType == "play":
 		param = urlparams[2]
 	case placeType == "eat":
-		param = urlparams[3]
-	case placeType == "nightlife":
 		param = urlparams[4]
+	case placeType == "nightlife":
+		param = urlparams[6]
 	case placeType == "shop":
 		param = urlparams[5]
 	case placeType == "relax":
-		param = urlparams[6]
+		param = urlparams[3]
 
 	}
 	places, more, err := triposo.GetPoiFromLocationPagination(levelID, "20", param, offset)

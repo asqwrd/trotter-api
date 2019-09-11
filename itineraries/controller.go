@@ -206,6 +206,15 @@ func getItinerary(itineraryID string) (map[string]interface{}, error) {
 	}
 	var itinerary Itinerary
 	snap.DataTo(&itinerary)
+	if itinerary.StartLocation == nil {
+		_, errUpdate := client.Collection("itineraries").Doc(itineraryID).Set(ctx, map[string]interface{}{
+			"start_location": StartLocation{Location: itinerary.Location, Name: "City center"},
+		}, firestore.MergeAll)
+		if errUpdate != nil {
+			fmt.Println(errUpdate)
+			return nil, err
+		}
+	}
 
 	go func(id string) {
 		parent, err := triposo.GetLocation(id)

@@ -178,7 +178,7 @@ type EmergencyNumbers struct {
 
 func FormatEmergencyNumbers(numbers EmergencyNumbers) (e EmergencyNumbers) {
 	member112 := []string{}
-	if numbers.Member112 == true {
+	if numbers.Member112 {
 		member112 = []string{"112"}
 	}
 	e = EmergencyNumbers{

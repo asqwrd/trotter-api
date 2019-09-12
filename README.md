@@ -35,6 +35,6 @@ API access:
   -e REPO_USER=username \
   -e REPO_PASS=password \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  containrrr/watchtower asqwrd/trotter-api --debug`
+  containrrr/watchtower $(docker ps -a -q --filter ancestor=asqwrd/trotter-api --format="{{.ID}}") --debug`
   
 `docker run -p 3002:3002 -dit --restart unless-stopped asqwrd/trotter-api`

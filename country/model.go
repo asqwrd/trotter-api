@@ -343,7 +343,7 @@ func FormatSafety(rating float64) *string {
 			"Travel to this country should be reduced to a necessary minimum and be conducted with good preparation and high attention. If you are not familiar with the area it is recommended you travel with someone who knows the area well."
 	} else if rating >= 4.5 {
 		advice =
-			"It is unsafe to travel to this country.  Trotter advises against traveling here.  You risk high chance of danger to your health and life."
+			"It is unsafe to travel to this country.  Trotter advises against traveling here.  You risk high chance of danger to yourdok health and life."
 	}
 	return &advice
 }

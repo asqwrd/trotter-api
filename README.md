@@ -29,10 +29,12 @@ API access:
 "username": "VDLQLCbMmugvsOEtihQ9kfc6nQoeGd"
 }
 
-# Skyscanner - For flight info
-
-Using rapidApi for access:
-https://rapidapi.com/skyscanner/api/Skyscanner%20Flight%20Search/functions
-
-Other Docs:
-https://skyscanner.github.io/slate/?_ga=1.104705984.172843296.1446781555
+# Docker
+`docker run -d \
+  --name watchtower \
+  -e REPO_USER=username \
+  -e REPO_PASS=password \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  containrrr/watchtower asqwrd/trotter-api --debug`
+  
+`docker run -p 3002:3002 -dit --restart unless-stopped asqwrd/trotter-api`

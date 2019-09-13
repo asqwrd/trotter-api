@@ -363,3 +363,65 @@ func MarkNotificationRead(w http.ResponseWriter, r *http.Request) {
 	response.Write(w, userData, http.StatusOK)
 	return
 }
+
+// ClearAllNotifications function
+func ClearAllNotifications(w http.ResponseWriter, r *http.Request) {
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+	fmt.Println("Start")
+
+	uid := q.Get("user_id")
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	iter := client.Collection("users").Doc(uid).Collection("notifications").Where("read", "==", false).Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			fmt.Println(err)
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		var notification types.Notification
+		doc.DataTo(&notification)
+		_, errMark := client.Collection("users").Doc(uid).Collection("notifications").Doc(notification.ID).Set(ctx, map[string]interface{}{
+			"read": true,
+		}, firestore.MergeAll)
+
+		if errMark != nil {
+			fmt.Println(errMark)
+			response.WriteErrorResponse(w, errMark)
+			return
+		}
+	}
+
+	fmt.Println("Cleared Notifications")
+
+	userData := map[string]interface{}{
+		"success":       true,
+		"notifications": []interface{}{},
+	}
+
+	response.Write(w, userData, http.StatusOK)
+	return
+}

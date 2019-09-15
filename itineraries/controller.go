@@ -1229,8 +1229,12 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tripDoc.DataTo(&trip)
+	userId := *itineraryItem.AddedBy
+	if len(q.Get("userId")) > 0 {
+		userId = q.Get("userId")
+	}
 
-	userDoc, errUser := client.Collection("users").Doc(*itineraryItem.AddedBy).Get(ctx)
+	userDoc, errUser := client.Collection("users").Doc(userId).Get(ctx)
 	if errUser != nil {
 		fmt.Println(errUser)
 		response.WriteErrorResponse(w, errUser)
@@ -1367,6 +1371,11 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 			"msg":              addedBy.DisplayName + " added " + itineraryItem.Poi.Name + " to " + itinerary.Name,
 		}
 
+		actionText := " added "
+		if len(q.Get("userId")) > 0 {
+			actionText = " moved "
+		}
+
 		notification, err := c.Send(fcm.Message{
 			Data:             data,
 			RegistrationIDs:  tokens,
@@ -1375,7 +1384,7 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 			Priority:         fcm.PriorityNormal,
 			Notification: fcm.Notification{
 				Title:       "New place Added!",
-				Body:        addedBy.DisplayName + " added " + itineraryItem.Poi.Name + " to " + itinerary.Name,
+				Body:        addedBy.DisplayName + actionText + itineraryItem.Poi.Name + " to " + itinerary.Name,
 				ClickAction: "FLUTTER_NOTIFICATION_CLICK",
 				//Badge: user.PhotoURL,
 			},

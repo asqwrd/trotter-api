@@ -1230,7 +1230,7 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 
 	tripDoc.DataTo(&trip)
 	userId := *itineraryItem.AddedBy
-	if len(q.Get("userId")) > 0 {
+	if len(q.Get("userId")) > 0 && q.Get("userId") != "null" {
 		userId = q.Get("userId")
 	}
 

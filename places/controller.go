@@ -1061,7 +1061,11 @@ func SearchGoogle(w http.ResponseWriter, r *http.Request) {
 	query := mux.Vars(r)["query"]
 	latq := r.URL.Query().Get("lat")
 	lngq := r.URL.Query().Get("lng")
+	isNear := r.URL.Query().Get("isNear")
 	pageToken := r.URL.Query().Get("nextPageToken")
+
+	fmt.Println("isNear")
+	fmt.Println(isNear)
 
 	lat, errlat := strconv.ParseFloat(latq, 64)
 	lng, errlng := strconv.ParseFloat(lngq, 64)
@@ -1125,10 +1129,16 @@ func SearchGoogle(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, err)
 	}
 	latlng := &maps.LatLng{Lat: lat, Lng: lng}
+	var radius uint = 50000
+	if len(isNear) > 0 {
+		radius = 5000
+	}
+	fmt.Println("radius")
+	fmt.Println(radius)
 	p := &maps.TextSearchRequest{
 		Query:    query,
 		Location: latlng,
-		Radius:   50000,
+		Radius:   radius,
 	}
 	if len(pageToken) > 0 {
 		p.PageToken = pageToken

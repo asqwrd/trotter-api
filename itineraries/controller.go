@@ -1416,6 +1416,9 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 	args := r.URL.Query()
 	q = &args
 
+	movedPlaceId := q.Get("movedPlaceId")
+	movedDayId := q.Get("movedDayId")
+
 	fmt.Println("Delete Itinerary Item")
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
@@ -1486,9 +1489,9 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 		deviceIds = append(deviceIds, device.Ref.ID)
 	}
 
-	comments := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(place).Collection("comments").Documents(ctx)
+	commentsItr := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(place).Collection("comments").Documents(ctx)
 	for {
-		comment, errComment := comments.Next()
+		commentSnap, errComment := commentsItr.Next()
 		if errComment == iterator.Done {
 			break
 		}
@@ -1498,7 +1501,36 @@ func DeleteItineraryItem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		_, errComDelete := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(place).Collection("comments").Doc(comment.Ref.ID).Delete(ctx)
+		if len(movedDayId) > 0 && len(movedPlaceId) > 0 && commentSnap.Ref.ID != "total_comments" {
+			var comment Comment
+			commentSnap.DataTo(&comment)
+			addDoc, _, errAdd := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(movedDayId).Collection("itinerary_items").Doc(movedPlaceId).Collection("comments").Add(ctx, comment)
+			if errAdd != nil {
+				fmt.Println(errAdd)
+				response.WriteErrorResponse(w, errAdd)
+				return
+			}
+			_, errCommentId := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(movedDayId).Collection("itinerary_items").Doc(movedPlaceId).Collection("comments").Doc(addDoc.ID).Set(ctx, map[string]interface{}{
+				"id": addDoc.ID,
+			}, firestore.MergeAll)
+			if errCommentId != nil {
+				fmt.Println(errCommentId)
+				response.WriteErrorResponse(w, errCommentId)
+				return
+			}
+
+			_, errTotalUpdate := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(movedDayId).Collection("itinerary_items").Doc(movedPlaceId).Collection("comments").Doc("total_comments").Update(ctx, []firestore.Update{
+				{Path: "total", Value: firestore.Increment(1)},
+			})
+			if errTotalUpdate != nil {
+				fmt.Println(errTotalUpdate)
+				response.WriteErrorResponse(w, errTotalUpdate)
+				return
+			}
+
+		}
+
+		_, errComDelete := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(place).Collection("comments").Doc(commentSnap.Ref.ID).Delete(ctx)
 		if errComDelete != nil {
 			fmt.Println(errComDelete)
 			response.WriteErrorResponse(w, errComDelete)

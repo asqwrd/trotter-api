@@ -843,7 +843,60 @@ func optimizeItinerary(itineraryItems []ItineraryItem, matrix maps.DistanceMatri
 
 }
 
-func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize bool) {
+//ToggleVisited function
+func ToggleVisited(w http.ResponseWriter, r *http.Request) {
+	itineraryID := mux.Vars(r)["itineraryId"]
+	dayID := mux.Vars(r)["dayId"]
+	itemID := mux.Vars(r)["itineraryItemId"]
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	decoder := json.NewDecoder(r.Body)
+	var itineraryItem ItineraryItem
+	err := decoder.Decode(&itineraryItem)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	app, errApp := firebase.NewApp(ctx, nil, sa)
+	fmt.Println("toggle visited")
+	if errApp != nil {
+		fmt.Println(errApp)
+		response.WriteErrorResponse(w, errApp)
+		return
+	}
+
+	client, errClient := app.Firestore(ctx)
+	if errClient != nil {
+		fmt.Println(errClient)
+		response.WriteErrorResponse(w, errClient)
+		return
+	}
+	time := Time{Value: "", Unit: ""}
+	if len(itineraryItem.Time.Value) > 0 && len(itineraryItem.Time.Unit) > 0 {
+		time = itineraryItem.Time
+	}
+
+	defer client.Close()
+	_, errUpdate := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itemID).Set(ctx, map[string]interface{}{
+		"visited": !itineraryItem.Visited,
+		"time":    time,
+	}, firestore.MergeAll)
+	if errUpdate != nil {
+		fmt.Println(errUpdate)
+		response.WriteErrorResponse(w, errUpdate)
+		return
+	}
+
+	getDay(w, r, nil, false, true)
+
+	return
+}
+
+func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize bool, filter bool) {
 	itineraryID := mux.Vars(r)["itineraryId"]
 	dayID := mux.Vars(r)["dayId"]
 
@@ -853,6 +906,7 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 	args := r.URL.Query()
 	q = &args
 	latlng := q.Get("latlng")
+	fmt.Println(latlng)
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
@@ -890,6 +944,7 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 	snap.DataTo(&day)
 	day.ItineraryItems = make([]ItineraryItem, 0)
 	var itineraryItems = make([]ItineraryItem, 0)
+	var visitedItineraryItems = make([]ItineraryItem, 0)
 	docs := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Documents(ctx)
 	for {
 		i10ItemDocs, err := docs.Next()
@@ -900,13 +955,20 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 		i10ItemDocs.DataTo(&itineraryItem)
 		totalDoc, errTotal := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(i10ItemDocs.Ref.ID).Collection("comments").Doc("total_comments").Get(ctx)
 		if errTotal != nil {
-			fmt.Println(errTotal)
 			itineraryItem.TotalComments = 0
-			itineraryItems = append(itineraryItems, itineraryItem)
+			if itineraryItem.Visited == true && filter == true {
+				visitedItineraryItems = append(visitedItineraryItems, itineraryItem)
+			} else {
+				itineraryItems = append(itineraryItems, itineraryItem)
+			}
 		} else {
 			total := totalDoc.Data()
 			itineraryItem.TotalComments = total["total"].(int64)
-			itineraryItems = append(itineraryItems, itineraryItem)
+			if itineraryItem.Visited == true && filter == true {
+				visitedItineraryItems = append(visitedItineraryItems, itineraryItem)
+			} else {
+				itineraryItems = append(itineraryItems, itineraryItem)
+			}
 		}
 
 	}
@@ -1046,12 +1108,48 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 			}
 		}
 		day.ItineraryItems = itineraryItems
+
 	}
 
-	dayData := map[string]interface{}{
-		"day":       day,
-		"itinerary": itinerary,
-		"justAdded": justAdded,
+	var dayData map[string]interface{}
+	if filter == false {
+		dayData = map[string]interface{}{
+			"day":       day,
+			"itinerary": itinerary,
+			"justAdded": justAdded,
+		}
+	} else {
+		for i := 0; i < len(visitedItineraryItems); i++ {
+			if visitedItineraryItems[i].Poi != nil && len(visitedItineraryItems[i].Poi.Images) > 0 {
+				visitedItineraryItems[i].Image = visitedItineraryItems[i].Poi.Images[0].Sizes.Medium.Url
+
+				colors, err := places.GetColor(visitedItineraryItems[i].Image)
+				if err != nil {
+					errorChannel <- err
+					return
+				}
+
+				if len(colors.Vibrant) > 0 {
+					visitedItineraryItems[i].Color = colors.Vibrant
+				} else if len(colors.Muted) > 0 {
+					visitedItineraryItems[i].Color = colors.Muted
+				} else if len(colors.LightVibrant) > 0 {
+					visitedItineraryItems[i].Color = colors.LightVibrant
+				} else if len(colors.LightMuted) > 0 {
+					visitedItineraryItems[i].Color = colors.LightMuted
+				} else if len(colors.DarkVibrant) > 0 {
+					visitedItineraryItems[i].Color = colors.DarkVibrant
+				} else if len(colors.DarkMuted) > 0 {
+					visitedItineraryItems[i].Color = colors.DarkMuted
+				}
+			}
+		}
+		dayData = map[string]interface{}{
+			"day":       day,
+			"itinerary": itinerary,
+			"justAdded": justAdded,
+			"visited":   visitedItineraryItems,
+		}
 	}
 
 	response.Write(w, dayData, http.StatusOK)
@@ -1061,7 +1159,15 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 //GetDay func
 func GetDay(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Got day")
-	getDay(w, r, nil, false)
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
+	if len(q.Get("filter")) > 0 {
+		getDay(w, r, nil, false, true)
+	} else {
+		getDay(w, r, nil, false, false)
+	}
+
 	return
 
 }
@@ -1300,10 +1406,10 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 
 	if q.Get("optimize") == "true" {
 		print("optimize \n")
-		getDay(w, r, id, true)
+		getDay(w, r, id, true, true)
 	} else {
 		print("full \n")
-		getDay(w, r, id, false)
+		getDay(w, r, id, false, false)
 	}
 
 	c := fcm.NewFCM(types.SERVER_KEY)

@@ -162,6 +162,9 @@ var routes = Routes{
 		"AddToDay", "POST", "/api/itineraries/add/{itineraryId}/day/{dayId}", itineraries.AddToDay,
 	},
 	Route{
+		"ToggleVisited", "PUT", "/api/itineraries/{itineraryId}/day/{dayId}/itinerary_items/{itineraryItemId}/toggle", itineraries.ToggleVisited,
+	},
+	Route{
 		"CreateItinerary", "POST", "/api/itineraries/create", itineraries.CreateItinerary,
 	},
 	Route{

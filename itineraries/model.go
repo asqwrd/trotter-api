@@ -73,6 +73,7 @@ type ItineraryItem struct {
 	Travel        maps.DistanceMatrixElement `json:"travel,omitempty" firestore:"travel,omitempty"`
 	AddedBy       *string                    `json:"added_by,omitempty" firestore:"added_by,omitempty"`
 	AddedByFull   *types.User                `json:"added_by_full,omitempty" firestore:"added_by_full,omitempty"`
+	Visited       bool                       `json:"visited" firestore:"visited"`
 	TotalComments int64                      `json:"total_comments"`
 }
 

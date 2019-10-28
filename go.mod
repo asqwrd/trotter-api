@@ -27,3 +27,5 @@ require (
 	gopkg.in/maddevsio/fcm.v1 v1.0.4
 	robpike.io/filter v0.0.0-20150108201509-2984852a2183
 )
+
+go 1.13

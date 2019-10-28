@@ -860,6 +860,7 @@ func ToggleVisited(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, err)
 		return
 	}
+	fmt.Println(itineraryItem.Time)
 
 	app, errApp := firebase.NewApp(ctx, nil, sa)
 	fmt.Println("toggle visited")

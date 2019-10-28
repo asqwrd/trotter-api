@@ -1410,7 +1410,7 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 		getDay(w, r, id, true, true)
 	} else {
 		print("full \n")
-		getDay(w, r, id, false, false)
+		getDay(w, r, id, false, true)
 	}
 
 	c := fcm.NewFCM(types.SERVER_KEY)

@@ -303,6 +303,11 @@ func FromGooglePlace(sp maps.PlaceDetailsResult, level string) (p triposo.Intern
 		vicinity = "Near " + sp.Vicinity
 	}
 
+	var reviews = []maps.PlaceReview{}
+	if len(sp.Reviews) > 0 {
+		reviews = sp.Reviews
+	}
+
 	p = triposo.InternalPlace{
 		ID:               sp.PlaceID,
 		Type:             level,
@@ -317,6 +322,7 @@ func FromGooglePlace(sp maps.PlaceDetailsResult, level string) (p triposo.Intern
 		Score:            sp.Rating,
 		OpeningHours:     &triposo.OpeningHours{OpenNow: openNow},
 		Properties:       properties,
+		Reviews:          reviews,
 	}
 
 	return p

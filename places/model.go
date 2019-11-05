@@ -216,7 +216,7 @@ func FromGooglePlaceSearch(sp maps.PlacesSearchResult, level string) (p triposo.
 		Level:            level,
 		Location:         triposo.Location{Lat: sp.Geometry.Location.Lat, Lng: sp.Geometry.Location.Lng},
 		Score:            sp.Rating,
-		OpeningHours:     &triposo.OpeningHours{OpenNow: openNow},
+		OpeningHours:     &triposo.OpeningHours{OpenNow: &openNow},
 		Properties:       properties,
 		GooglePlace:      &gplace,
 	}
@@ -320,7 +320,7 @@ func FromGooglePlace(sp maps.PlaceDetailsResult, level string) (p triposo.Intern
 		Level:            level,
 		Location:         triposo.Location{Lat: sp.Geometry.Location.Lat, Lng: sp.Geometry.Location.Lng},
 		Score:            sp.Rating,
-		OpeningHours:     &triposo.OpeningHours{OpenNow: openNow},
+		OpeningHours:     &triposo.OpeningHours{OpenNow: &openNow},
 		Properties:       properties,
 		Reviews:          reviews,
 	}

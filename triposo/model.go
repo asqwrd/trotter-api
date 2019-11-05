@@ -109,7 +109,7 @@ type BestFor struct {
 //OpeningHours struct
 type OpeningHours struct {
 	Days    *TimeRangesByDay `json:"days,omitempty" firestore:"days,omitempty"`
-	OpenNow bool             `json:"open_now" firestore:"open_now"`
+	OpenNow *bool            `json:"open_now,omitempty" firestore:"open_now,omitempty"`
 }
 
 //TimeRangesByDay struct

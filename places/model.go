@@ -398,6 +398,7 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 		LocationID:       sp.LocationID,
 		Trigram:          sp.Trigram,
 		Tags:             sp.Tags,
+		Color:            sp.Color,
 	}
 
 	return p
@@ -423,6 +424,7 @@ func FromSygicPlaces(sourcePlaces []sygic.Place) (internalPlaces []Place) {
 	return internalPlaces
 }
 
+// GetColor func
 func GetColor(url string) (*Colors, error) {
 
 	res, err := http.Get(url)

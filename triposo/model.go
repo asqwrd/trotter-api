@@ -83,6 +83,7 @@ type Place struct {
 	Trigram       float32       `json:"trigram" firestore:"trigram"`
 	GooglePlace   bool          `json:"google_place" firestore:"googe_place"`
 	Tags          []Tags        `json:"tags" firestore:"tags"`
+	Color         interface{}   `json:"color,omitempty" firestore:"color,omitempty"`
 }
 
 // Tag struct
@@ -198,6 +199,7 @@ type InternalPlace struct {
 	GooglePlace      *bool              `json:"google_place" firestore:"googe_place"`
 	Tags             []Tags             `json:"tags" firestore:"tags"`
 	Reviews          []maps.PlaceReview `json:"reviews" firestore:"reviews"`
+	Color            interface{}        `json:"color,omitempty" firestore:"color,omitempty"`
 }
 
 //PoiInfo struct

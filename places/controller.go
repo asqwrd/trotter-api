@@ -368,15 +368,15 @@ func GetDestination(w http.ResponseWriter, r *http.Request) {
 
 //GetHome
 func GetHome(w http.ResponseWriter, r *http.Request) {
-	typeparams := []string{"island", "city"}
+	typeparams := []string{"city"}
 	fmt.Println("Got Home")
 
 	placeChannel := make(chan PlaceChannel)
 
-	var islands []triposo.InternalPlace
+	//var islands []triposo.InternalPlace
 	var cities []triposo.InternalPlace
 
-	islandChannel := make(chan []triposo.Place)
+	//islandChannel := make(chan []triposo.Place)
 	cityChannel := make(chan []triposo.Place)
 
 	errorChannel := make(chan error)
@@ -384,9 +384,9 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 
 	for i, typeParam := range typeparams {
 		go func(typeParam string, i int) {
-			place, err := triposo.GetLocationType(typeParam, "20")
+			places, err := triposo.GetLocationType(typeParam, "20")
 			res := new(PlaceChannel)
-			res.Places = *place
+			res.Places = *places
 			res.Index = i
 			res.Error = err
 			placeChannel <- *res
@@ -401,9 +401,9 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			switch {
+			// case res.Index == 0:
+			// 	islandChannel <- res.Places.([]triposo.Place)
 			case res.Index == 0:
-				islandChannel <- res.Places.([]triposo.Place)
-			case res.Index == 1:
 				cityChannel <- res.Places.([]triposo.Place)
 			}
 		}
@@ -414,10 +414,10 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 		timeoutChannel <- true
 	}()
 
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 1; i++ {
 		select {
-		case res := <-islandChannel:
-			islands = FromTriposoPlaces(res, "island")
+		// case res := <-islandChannel:
+		// 	islands = FromTriposoPlaces(res, "island")
 		case res := <-cityChannel:
 			cities = FromTriposoPlaces(res, "city")
 		case err := <-errorChannel:
@@ -448,26 +448,44 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 				res.Error = err
 				cityParentChannel <- *res
 			}(i)
+			colors, err := GetColor(cities[i].Image)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+			if len(colors.Vibrant) > 0 {
+				cities[i].Color = colors.Vibrant
+			} else if len(colors.Muted) > 0 {
+				cities[i].Color = colors.Muted
+			} else if len(colors.LightVibrant) > 0 {
+				cities[i].Color = colors.LightVibrant
+			} else if len(colors.LightMuted) > 0 {
+				cities[i].Color = colors.LightMuted
+			} else if len(colors.DarkVibrant) > 0 {
+				cities[i].Color = colors.DarkVibrant
+			} else if len(colors.DarkMuted) > 0 {
+				cities[i].Color = colors.DarkMuted
+			}
 		}
 	}()
 
-	islandParentChannel := make(chan PlaceChannel)
-	go func() {
-		for i := 0; i < len(islands); i++ {
-			go func(index int) {
-				country_id := islands[index].CountryID
-				if country_id == "United_States" {
-					country_id = islands[index].ParentID
-				}
-				country, err := triposo.GetLocation(country_id)
-				res := new(PlaceChannel)
-				res.Places = *country
-				res.Index = index
-				res.Error = err
-				islandParentChannel <- *res
-			}(i)
-		}
-	}()
+	// islandParentChannel := make(chan PlaceChannel)
+	// go func() {
+	// 	for i := 0; i < len(islands); i++ {
+	// 		go func(index int) {
+	// 			country_id := islands[index].CountryID
+	// 			if country_id == "United_States" {
+	// 				country_id = islands[index].ParentID
+	// 			}
+	// 			country, err := triposo.GetLocation(country_id)
+	// 			res := new(PlaceChannel)
+	// 			res.Places = *country
+	// 			res.Index = index
+	// 			res.Error = err
+	// 			islandParentChannel <- *res
+	// 		}(i)
+	// 	}
+	// }()
 
 	for i := 0; i < len(cities); i++ {
 		select {
@@ -485,26 +503,26 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	for i := 0; i < len(islands); i++ {
-		select {
-		case res := <-islandParentChannel:
-			if res.Error != nil {
-				fmt.Println(res.Error)
-				response.WriteErrorResponse(w, res.Error)
-				return
-			}
-			islands[res.Index].CountryName = res.Places.([]triposo.Place)[0].Name
-			if islands[res.Index].CountryID == "United_States" {
-				islands[res.Index].CountryName = "United States"
-			}
-			islands[res.Index].ParentName = res.Places.([]triposo.Place)[0].Name
-		}
-	}
+	// for i := 0; i < len(islands); i++ {
+	// 	select {
+	// 	case res := <-islandParentChannel:
+	// 		if res.Error != nil {
+	// 			fmt.Println(res.Error)
+	// 			response.WriteErrorResponse(w, res.Error)
+	// 			return
+	// 		}
+	// 		islands[res.Index].CountryName = res.Places.([]triposo.Place)[0].Name
+	// 		if islands[res.Index].CountryID == "United_States" {
+	// 			islands[res.Index].CountryName = "United States"
+	// 		}
+	// 		islands[res.Index].ParentName = res.Places.([]triposo.Place)[0].Name
+	// 	}
+	// }
 
 	homeData := map[string]interface{}{
 		"popular_cities": cities,
 
-		"popular_islands": islands,
+		//"popular_islands": islands,
 	}
 
 	response.Write(w, homeData, http.StatusOK)

@@ -60,6 +60,9 @@ var routes = Routes{
 		"GetHome", "GET", "/api/explore/home/", places.GetHome,
 	},
 	Route{
+		"ThingsToDo", "GET", "/api/explore/do/", places.ThingsToDo,
+	},
+	Route{
 		"GetPoi", "GET", "/api/explore/poi/{poiID}/", places.GetPoi,
 	},
 	Route{

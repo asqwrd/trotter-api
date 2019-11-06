@@ -414,6 +414,16 @@ func FromTriposoPlaces(sourcePlaces []triposo.Place, level string) (internalPlac
 	return internalPlaces
 }
 
+//FromGooglePlaces func
+func FromGooglePlaces(sourcePlaces []maps.PlacesSearchResult, level string) (internalPlaces []triposo.InternalPlace) {
+	internalPlaces = []triposo.InternalPlace{}
+	for _, sourcePlace := range sourcePlaces {
+		internalPlaces = append(internalPlaces, FromGooglePlaceSearch(sourcePlace, level))
+	}
+
+	return internalPlaces
+}
+
 // FromSygicPlaces converts a sygic.Place to an internal Place value
 func FromSygicPlaces(sourcePlaces []sygic.Place) (internalPlaces []Place) {
 	internalPlaces = []Place{}

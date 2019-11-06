@@ -15,6 +15,7 @@ import (
 	"github.com/asqwrd/trotter-api/response"
 	"github.com/asqwrd/trotter-api/sygic"
 	"github.com/asqwrd/trotter-api/triposo"
+	"github.com/asqwrd/trotter-api/types"
 	"github.com/gorilla/mux"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
@@ -1072,6 +1073,93 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		}, http.StatusOK)
 		return
 	}
+}
+
+//ThingsToDo function
+func ThingsToDo(w http.ResponseWriter, r *http.Request) {
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	googleClient, err := InitGoogle()
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+	}
+	var radius uint = 50000
+
+	iter := client.Collection("trips").Where("group", "array-contains", q.Get("user_id")).Documents(ctx)
+	currentTime := time.Now().Unix()
+	destinations := []map[string]interface{}{}
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			fmt.Println(err)
+			response.WriteErrorResponse(w, err)
+			return
+		}
+		var trip types.Trip
+		doc.DataTo(&trip)
+
+		iterDestinations := client.Collection("trips").Doc(trip.ID).Collection("destinations").Where("end_date", ">=", currentTime).Documents(ctx)
+		for {
+			destinationsDoc, errDestinations := iterDestinations.Next()
+			if errDestinations == iterator.Done {
+				break
+			}
+			if errDestinations != nil {
+				fmt.Println(errDestinations)
+				response.WriteErrorResponse(w, errDestinations)
+				return
+			}
+			var destination types.Destination
+			destinationsDoc.DataTo(&destination)
+			latlng := &maps.LatLng{Lat: destination.Location.Lat, Lng: destination.Location.Lng}
+			p := &maps.TextSearchRequest{
+				Query:    strings.Replace(destination.DestinationName, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+point+of+interest",
+				Location: latlng,
+				Radius:   radius,
+			}
+
+			places, err := googleClient.TextSearch(ctx, p)
+			if err != nil {
+				fmt.Println(err)
+				response.WriteErrorResponse(w, err)
+			}
+			destinations = append(destinations, map[string]interface{}{
+				"destination": destination,
+				"places":      FromGooglePlaces(places.Results, "poi"),
+			})
+
+		}
+
+	}
+
+	response.Write(w, map[string]interface{}{
+		"destinations": destinations,
+	}, http.StatusOK)
+	return
+
 }
 
 // SearchGoogle function

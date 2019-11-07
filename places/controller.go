@@ -1162,6 +1162,59 @@ func ThingsToDo(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//NearBy function
+func NearBy(w http.ResponseWriter, r *http.Request) {
+	var q *url.Values
+	args := r.URL.Query()
+	q = &args
+	latq := q.Get("lat")
+	lngq := q.Get("lng")
+	placeType := q.Get("type")
+	//keywords := q.Get("keywords")
+	lat, errlat := strconv.ParseFloat(latq, 64)
+	lng, errlng := strconv.ParseFloat(lngq, 64)
+	if errlng != nil {
+		fmt.Println(errlng)
+		response.WriteErrorResponse(w, errlng)
+		return
+	}
+	if errlat != nil {
+		fmt.Println(errlat)
+		response.WriteErrorResponse(w, errlat)
+		return
+	}
+
+	ctx := context.Background()
+
+	googleClient, err := InitGoogle()
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+	}
+	latlng := &maps.LatLng{Lat: lat, Lng: lng}
+	var radius uint = 5000
+
+	p := &maps.TextSearchRequest{
+		Query:    placeType,
+		Location: latlng,
+		Radius:   radius,
+		OpenNow:  true,
+	}
+
+	places, err := googleClient.TextSearch(ctx, p)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+	}
+
+	response.Write(w, map[string]interface{}{
+		"places": FromGooglePlaces(places.Results, "poi"),
+	}, http.StatusOK)
+
+	return
+
+}
+
 // SearchGoogle function
 func SearchGoogle(w http.ResponseWriter, r *http.Request) {
 	query := mux.Vars(r)["query"]

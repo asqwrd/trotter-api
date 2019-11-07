@@ -63,6 +63,9 @@ var routes = Routes{
 		"ThingsToDo", "GET", "/api/explore/do/", places.ThingsToDo,
 	},
 	Route{
+		"NearBy", "GET", "/api/explore/nearby/", places.NearBy,
+	},
+	Route{
 		"GetPoi", "GET", "/api/explore/poi/{poiID}/", places.GetPoi,
 	},
 	Route{

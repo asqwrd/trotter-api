@@ -167,82 +167,81 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 
 }
 
-//Get City
-
+//GetDestination function
 func GetDestination(w http.ResponseWriter, r *http.Request) {
 	destinationID := mux.Vars(r)["destinationID"]
-	urlparams := []string{"sightseeing|sight|topattractions|hoponhopoff",
-		"museums|tours|walkingtours|transport|private_tours|air|architecture|multiday|touristinfo|forts|showstheatresandmusic",
-		"amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos|celebrations|musicandshows",
-		"beaches|camping|wildlife|fishing|relaxinapark",
-		"eatingout|breakfast|coffeeandcake|lunch|dinner|foodexperiences",
-		"do|shopping",
-		"nightlife|comedy|drinks|dancing|pubcrawl|redlight|breweries"}
+	// urlparams := []string{"sightseeing|sight|topattractions|hoponhopoff",
+	// 	"museums|tours|walkingtours|transport|private_tours|air|architecture|multiday|touristinfo|forts|showstheatresandmusic",
+	// 	"amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos|celebrations|musicandshows",
+	// 	"beaches|camping|wildlife|fishing|relaxinapark",
+	// 	"eatingout|breakfast|coffeeandcake|lunch|dinner|foodexperiences",
+	// 	"do|shopping",
+	// 	"nightlife|comedy|drinks|dancing|pubcrawl|redlight|breweries"}
 
 	destinationType := r.URL.Query().Get("type")
 
-	placeChannel := make(chan triposo.TriposoChannel)
+	//placeChannel := make(chan triposo.TriposoChannel)
 	destinationChannel := make(chan triposo.InternalPlace)
 	colorChannel := make(chan Colors)
 	var destination *triposo.InternalPlace
 
-	var placeToSee map[string]interface{}
-	var discoverPlaces map[string]interface{}
-	var playPlaces map[string]interface{}
-	var eatPlaces map[string]interface{}
-	var nightlifePlaces map[string]interface{}
-	var shopPlaces map[string]interface{}
-	var relaxPlaces map[string]interface{}
+	// var placeToSee map[string]interface{}
+	// var discoverPlaces map[string]interface{}
+	// var playPlaces map[string]interface{}
+	// var eatPlaces map[string]interface{}
+	// var nightlifePlaces map[string]interface{}
+	// var shopPlaces map[string]interface{}
+	// var relaxPlaces map[string]interface{}
 
-	seeChannel := make(chan map[string]interface{})
-	eatChannel := make(chan map[string]interface{})
-	discoverChannel := make(chan map[string]interface{})
-	playChannel := make(chan map[string]interface{})
-	nightlifeChannel := make(chan map[string]interface{})
-	shopChannel := make(chan map[string]interface{})
-	relaxChannel := make(chan map[string]interface{})
+	// seeChannel := make(chan map[string]interface{})
+	// eatChannel := make(chan map[string]interface{})
+	// discoverChannel := make(chan map[string]interface{})
+	// playChannel := make(chan map[string]interface{})
+	// nightlifeChannel := make(chan map[string]interface{})
+	// shopChannel := make(chan map[string]interface{})
+	// relaxChannel := make(chan map[string]interface{})
 	errorChannel := make(chan error)
 	//timeoutChannel := make(chan bool)
 	var destinationColor string
 
-	for i, param := range urlparams {
-		go func(param string, i int) {
-			place, more, err := triposo.GetPoiFromLocation(destinationID, "20", param, i)
-			res := new(triposo.TriposoChannel)
-			res.Places = *place
-			res.Index = i
-			res.More = more
-			res.Error = err
-			placeChannel <- *res
-		}(param, i)
+	// for i, param := range urlparams {
+	// 	go func(param string, i int) {
+	// 		place, more, err := triposo.GetPoiFromLocation(destinationID, "20", param, i)
+	// 		res := new(triposo.TriposoChannel)
+	// 		res.Places = *place
+	// 		res.Index = i
+	// 		res.More = more
+	// 		res.Error = err
+	// 		placeChannel <- *res
+	// 	}(param, i)
 
-	}
+	// }
 
-	go func() {
-		for res := range placeChannel {
-			if res.Error != nil {
-				errorChannel <- res.Error
-				return
-			}
-			switch {
-			case res.Index == 0:
-				seeChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
-			case res.Index == 1:
-				discoverChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
-			case res.Index == 2:
-				playChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
-			case res.Index == 4:
-				eatChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
-			case res.Index == 6:
-				nightlifeChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
-			case res.Index == 5:
-				shopChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
-			case res.Index == 3:
-				relaxChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
-			}
-		}
+	// go func() {
+	// 	for res := range placeChannel {
+	// 		if res.Error != nil {
+	// 			errorChannel <- res.Error
+	// 			return
+	// 		}
+	// 		switch {
+	// 		case res.Index == 0:
+	// 			seeChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
+	// 		case res.Index == 1:
+	// 			discoverChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
+	// 		case res.Index == 2:
+	// 			playChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
+	// 		case res.Index == 4:
+	// 			eatChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
+	// 		case res.Index == 6:
+	// 			nightlifeChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
+	// 		case res.Index == 5:
+	// 			shopChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
+	// 		case res.Index == 3:
+	// 			relaxChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
+	// 		}
+	// 	}
 
-	}()
+	// }()
 
 	go func() {
 		destination, err := triposo.GetLocation(destinationID)
@@ -292,22 +291,22 @@ func GetDestination(w http.ResponseWriter, r *http.Request) {
 	// 	timeoutChannel <- true
 	// }()
 
-	for i := 0; i < 9; i++ {
+	for i := 0; i < 2; i++ {
 		select {
-		case see := <-seeChannel:
-			placeToSee = see
-		case eat := <-eatChannel:
-			eatPlaces = eat
-		case discover := <-discoverChannel:
-			discoverPlaces = discover
-		case shop := <-shopChannel:
-			shopPlaces = shop
-		case relax := <-relaxChannel:
-			relaxPlaces = relax
-		case play := <-playChannel:
-			playPlaces = play
-		case nightlife := <-nightlifeChannel:
-			nightlifePlaces = nightlife
+		// case see := <-seeChannel:
+		// 	placeToSee = see
+		// case eat := <-eatChannel:
+		// 	eatPlaces = eat
+		// case discover := <-discoverChannel:
+		// 	discoverPlaces = discover
+		// case shop := <-shopChannel:
+		// 	shopPlaces = shop
+		// case relax := <-relaxChannel:
+		// 	relaxPlaces = relax
+		// case play := <-playChannel:
+		// 	playPlaces = play
+		// case nightlife := <-nightlifeChannel:
+		// 	nightlifePlaces = nightlife
 		case destinationRes := <-destinationChannel:
 			destination = &destinationRes
 		case colorRes := <-colorChannel:
@@ -337,37 +336,96 @@ func GetDestination(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	googleClient, err := InitGoogle()
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+	}
+	var radius uint = 50000
+	ctx := context.Background()
+
+	latlng := &maps.LatLng{Lat: destination.Location.Lat, Lng: destination.Location.Lng}
+	p1 := &maps.TextSearchRequest{
+		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+things+to+do",
+		Location: latlng,
+		Radius:   radius,
+	}
+
+	p2 := &maps.TextSearchRequest{
+		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+shopping",
+		Location: latlng,
+		Radius:   radius,
+	}
+	p3 := &maps.TextSearchRequest{
+		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+night+life",
+		Location: latlng,
+		Radius:   radius,
+	}
+	p4 := &maps.TextSearchRequest{
+		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+top+places+to+eat",
+		Location: latlng,
+		Radius:   radius,
+	}
+
+	requests := []*maps.TextSearchRequest{p1, p2, p3, p4}
+	sections := []map[string]interface{}{}
+	for i, p := range requests {
+		places, err := googleClient.TextSearch(ctx, p)
+		if err != nil {
+			fmt.Println(err)
+			response.WriteErrorResponse(w, err)
+		}
+		key := ""
+		switch i {
+		case 0:
+			key = "do"
+		case 1:
+			key = "shopping"
+		case 2:
+			key = "nightlife"
+		case 3:
+			key = "foodie"
+		}
+
+		sections = append(sections, map[string]interface{}{
+			"places": FromGooglePlaces(places.Results, "poi"),
+			"key":    key,
+		})
+
+	}
+
 	destinationData := map[string]interface{}{
 		"destination": destination,
 		"color":       destinationColor,
+		"sections":    sections,
 
-		"see":           &placeToSee,
-		"see_locations": location.FromTriposoPlaces(placeToSee["places"].([]triposo.InternalPlace)),
+		// "see":           &placeToSee,
+		// "see_locations": location.FromTriposoPlaces(placeToSee["places"].([]triposo.InternalPlace)),
 
-		"discover":           &discoverPlaces,
-		"discover_locations": location.FromTriposoPlaces(discoverPlaces["places"].([]triposo.InternalPlace)),
+		// "discover":           &discoverPlaces,
+		// "discover_locations": location.FromTriposoPlaces(discoverPlaces["places"].([]triposo.InternalPlace)),
 
-		"play":           &playPlaces,
-		"play_locations": location.FromTriposoPlaces(playPlaces["places"].([]triposo.InternalPlace)),
+		// "play":           &playPlaces,
+		// "play_locations": location.FromTriposoPlaces(playPlaces["places"].([]triposo.InternalPlace)),
 
-		"eat":           &eatPlaces,
-		"eat_locations": location.FromTriposoPlaces(eatPlaces["places"].([]triposo.InternalPlace)),
+		// "eat":           &eatPlaces,
+		// "eat_locations": location.FromTriposoPlaces(eatPlaces["places"].([]triposo.InternalPlace)),
 
-		"shop":           &shopPlaces,
-		"shop_locations": location.FromTriposoPlaces(shopPlaces["places"].([]triposo.InternalPlace)),
+		// "shop":           &shopPlaces,
+		// "shop_locations": location.FromTriposoPlaces(shopPlaces["places"].([]triposo.InternalPlace)),
 
-		"nightlife":           &nightlifePlaces,
-		"nightlife_locations": location.FromTriposoPlaces(nightlifePlaces["places"].([]triposo.InternalPlace)),
+		// "nightlife":           &nightlifePlaces,
+		// "nightlife_locations": location.FromTriposoPlaces(nightlifePlaces["places"].([]triposo.InternalPlace)),
 
-		"relax":           &relaxPlaces,
-		"relax_locations": location.FromTriposoPlaces(relaxPlaces["places"].([]triposo.InternalPlace)),
+		// "relax":           &relaxPlaces,
+		// "relax_locations": location.FromTriposoPlaces(relaxPlaces["places"].([]triposo.InternalPlace)),
 	}
 
 	response.Write(w, destinationData, http.StatusOK)
 	return
 }
 
-//GetHome
+//GetHome function
 func GetHome(w http.ResponseWriter, r *http.Request) {
 	typeparams := []string{"city"}
 	fmt.Println("Got Home")
@@ -805,7 +863,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	defer client.Close()
 
 	if len(latq) == 0 && len(lngq) == 0 {
-		typeparams := []string{"island", "city", "city_state", "national_park", "region"}
+		typeparams := []string{"island", "city", "city_state", "region"}
 		placeChannel := make(chan PlaceChannel)
 
 		var triposoResults []triposo.InternalPlace
@@ -813,7 +871,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		islandChannel := make(chan []triposo.Place)
 		cityChannel := make(chan []triposo.Place)
 		cityStateChannel := make(chan []triposo.Place)
-		parkChannel := make(chan []triposo.Place)
+		//parkChannel := make(chan []triposo.Place)
 		regionChannel := make(chan []triposo.Place)
 
 		go func() {
@@ -863,9 +921,9 @@ func Search(w http.ResponseWriter, r *http.Request) {
 					cityChannel <- res.Places.([]triposo.Place)
 				case res.Index == 2:
 					cityStateChannel <- res.Places.([]triposo.Place)
+				// case res.Index == 3:
+				// 	parkChannel <- res.Places.([]triposo.Place)
 				case res.Index == 3:
-					parkChannel <- res.Places.([]triposo.Place)
-				case res.Index == 4:
 					regionChannel <- res.Places.([]triposo.Place)
 				}
 			}
@@ -877,7 +935,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 			timeoutChannel <- true
 		}()
 
-		for i := 0; i < 5; i++ {
+		for i := 0; i < 4; i++ {
 			select {
 			case res := <-islandChannel:
 				triposoResults = append(triposoResults, FromTriposoPlaces(res, "island")...)
@@ -885,8 +943,8 @@ func Search(w http.ResponseWriter, r *http.Request) {
 				triposoResults = append(triposoResults, FromTriposoPlaces(res, "city")...)
 			case res := <-cityStateChannel:
 				triposoResults = append(triposoResults, FromTriposoPlaces(res, "city_state")...)
-			case res := <-parkChannel:
-				triposoResults = append(triposoResults, FromTriposoPlaces(res, "national_park")...)
+			// case res := <-parkChannel:
+			// 	triposoResults = append(triposoResults, FromTriposoPlaces(res, "national_park")...)
 			case res := <-regionChannel:
 				triposoResults = append(triposoResults, FromTriposoPlaces(res, "region")...)
 			case err := <-errorChannel:
@@ -1192,16 +1250,18 @@ func NearBy(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, err)
 	}
 	latlng := &maps.LatLng{Lat: lat, Lng: lng}
-	var radius uint = 5000
+	//var radius uint = 5000
 
-	p := &maps.TextSearchRequest{
-		Query:    placeType,
+	p := &maps.NearbySearchRequest{
+		Type:     maps.PlaceType(placeType),
 		Location: latlng,
-		Radius:   radius,
-		OpenNow:  true,
+		//Radius:   radius,
+		OpenNow: true,
+		//Keyword: keywords,
+		RankBy: maps.RankByDistance,
 	}
 
-	places, err := googleClient.TextSearch(ctx, p)
+	places, err := googleClient.NearbySearch(ctx, p)
 	if err != nil {
 		fmt.Println(err)
 		response.WriteErrorResponse(w, err)

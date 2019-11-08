@@ -59,31 +59,33 @@ type Image struct {
 
 //Place struct
 type Place struct {
-	Name          string        `json:"name" firestore:"name"`
-	ID            string        `json:"id" firestore:"id"`
-	Type          string        `json:"type" firestore:"type"`
-	Coordinates   Coordinates   `json:"coordinates" firestore:"coordinates"`
-	Content       Content       `json:"content" firestore:"content"`
-	Images        []Image       `json:"images" firestore:"images"`
-	Snippet       string        `json:"snippet" firestore:"snippet"`
-	Score         float32       `json:"score" firestore:"score"`
-	LocationID    string        `json:"location_id" firestore:"location_id"`
-	FacebookID    string        `json:"facebook_id" firestore:"facebook_id"`
-	FoursquareID  string        `json:"foursquare_id" firestore:"foursquare_id"`
-	GooglePlaceID string        `json:"google_place_id" firestore:"google_place_id"`
-	TripadvisorID string        `json:"tripadvisor_id" firestore:"tripadvisor_id"`
-	PriceTier     int           `json:"price_tier" firestore:"price_tier"`
-	BookingInfo   *BookingInfo  `json:"booking_info,omitempty" firestore:"booking_info"`
-	BestFor       []BestFor     `json:"best_for,omitempty" firestore:"best_for"`
-	Intro         string        `json:"intro" firestore:"intro"`
-	OpeningHours  *OpeningHours `json:"opening_hours,omitempty" firestore:"opening_hours"`
-	Properties    []Property    `json:"properties,omitempty" firestore:"properties"`
-	ParentID      string        `json:"parent_id,omitempty" firestore:"parent_id"`
-	CountryID     string        `json:"country_id,omitempty" firestore:"country_id"`
-	Trigram       float32       `json:"trigram" firestore:"trigram"`
-	GooglePlace   bool          `json:"google_place" firestore:"googe_place"`
-	Tags          []Tags        `json:"tags" firestore:"tags"`
-	Color         interface{}   `json:"color,omitempty" firestore:"color,omitempty"`
+	Name              string            `json:"name" firestore:"name"`
+	ID                string            `json:"id" firestore:"id"`
+	Type              string            `json:"type" firestore:"type"`
+	Coordinates       Coordinates       `json:"coordinates" firestore:"coordinates"`
+	Content           Content           `json:"content" firestore:"content"`
+	Images            []Image           `json:"images" firestore:"images"`
+	Snippet           string            `json:"snippet" firestore:"snippet"`
+	Score             float32           `json:"score" firestore:"score"`
+	LocationID        string            `json:"location_id" firestore:"location_id"`
+	FacebookID        string            `json:"facebook_id" firestore:"facebook_id"`
+	FoursquareID      string            `json:"foursquare_id" firestore:"foursquare_id"`
+	GooglePlaceID     string            `json:"google_place_id" firestore:"google_place_id"`
+	TripadvisorID     string            `json:"tripadvisor_id" firestore:"tripadvisor_id"`
+	PriceTier         int               `json:"price_tier" firestore:"price_tier"`
+	BookingInfo       *BookingInfo      `json:"booking_info,omitempty" firestore:"booking_info"`
+	BestFor           []BestFor         `json:"best_for,omitempty" firestore:"best_for"`
+	Intro             string            `json:"intro" firestore:"intro"`
+	OpeningHours      *OpeningHours     `json:"opening_hours,omitempty" firestore:"opening_hours"`
+	Properties        []Property        `json:"properties,omitempty" firestore:"properties"`
+	ParentID          string            `json:"parent_id,omitempty" firestore:"parent_id"`
+	CountryID         string            `json:"country_id,omitempty" firestore:"country_id"`
+	Trigram           float32           `json:"trigram" firestore:"trigram"`
+	GooglePlace       bool              `json:"google_place" firestore:"googe_place"`
+	Tags              []Tags            `json:"tags" firestore:"tags"`
+	Color             interface{}       `json:"color,omitempty" firestore:"color,omitempty"`
+	StructuredContent StructuredContent `json:"structured_content,omitempty" firestore:"structured_content,omitempty"`
+	Climate           Climate           `json:"climate,omitempty" firestore:"climate,omitempty"`
 }
 
 // Tag struct
@@ -168,38 +170,70 @@ type poiInfoResponse struct {
 
 //InternalPlace struct
 type InternalPlace struct {
-	ID               string             `json:"id" firestore:"id"`
-	Type             string             `json:"type" firestore:"type"`
-	Image            string             `json:"image,omitempty" firestore:"image,omitempty"`
-	ImageMedium      string             `json:"image_medium,omitempty" firestore:"image_medium,omitempty"`
-	ImageHD          string             `json:"image_hd,omitempty" firestore:"image_hd,omitempty"`
-	Description      string             `json:"description" json:"intro" firestore:"intro" firestore:"description"`
-	DescriptionShort string             `json:"description_short,omitempty" firestore:"description_short,omitempty"`
-	Name             string             `json:"name" firestore:"name"`
-	Level            string             `json:"level" firestore:"level"`
-	Location         Location           `json:"location" firestore:"location"`
-	Coordinates      *Coordinates       `json:"coordinates" firestore:"coordinates"`
-	LocationID       string             `json:"location_id" firestore:"location_id"`
-	FacebookID       string             `json:"facebook_id,omitempty" firestore:"facebook_id,omitempty"`
-	FoursquareID     string             `json:"foursquare_id,omitempty" firestore:"foursquare_id,omitempty"`
-	GooglePlaceID    string             `json:"google_place_id,omitempty" firestore:"google_place_id,omitempty"`
-	TripadvisorID    string             `json:"tripadvisor_id,omitempty" firestore:"tripadvisor_id,omitempty"`
-	PriceTier        int                `json:"price_tier,omitempty" firestore:"price_tier,omitempty"`
-	BookingInfo      *BookingInfo       `json:"booking_info,omitempty" firestore:"booking_info,omitempty"`
-	BestFor          []BestFor          `json:"best_for" firestore:"best_for"`
-	Images           []Image            `json:"images" firestore:"images"`
-	Score            float32            `json:"score" firestore:"score"`
-	OpeningHours     *OpeningHours      `json:"opening_hours,omitempty" firestore:"opening_hours,omitempty"`
-	Properties       []Property         `json:"properties" firestore:"properties"`
-	ParentID         string             `json:"parent_id,omitempty" firestore:"parent_id,omitempty"`
-	ParentName       string             `json:"parent_name,omitempty" firestore:"parent_name,omitempty"`
-	CountryName      string             `json:"country_name,omitempty" firestore:"country_name,omitempty"`
-	CountryID        string             `json:"country_id,omitempty" firestore:"country_id,omitempty"`
-	Trigram          float32            `json:"trigram" firestore:"trigram"`
-	GooglePlace      *bool              `json:"google_place" firestore:"googe_place"`
-	Tags             []Tags             `json:"tags" firestore:"tags"`
-	Reviews          []maps.PlaceReview `json:"reviews" firestore:"reviews"`
-	Color            interface{}        `json:"color,omitempty" firestore:"color,omitempty"`
+	ID                string             `json:"id" firestore:"id"`
+	Type              string             `json:"type" firestore:"type"`
+	Image             string             `json:"image,omitempty" firestore:"image,omitempty"`
+	ImageMedium       string             `json:"image_medium,omitempty" firestore:"image_medium,omitempty"`
+	ImageHD           string             `json:"image_hd,omitempty" firestore:"image_hd,omitempty"`
+	Description       string             `json:"description" json:"intro" firestore:"intro" firestore:"description"`
+	DescriptionShort  string             `json:"description_short,omitempty" firestore:"description_short,omitempty"`
+	Name              string             `json:"name" firestore:"name"`
+	Level             string             `json:"level" firestore:"level"`
+	Location          Location           `json:"location" firestore:"location"`
+	Coordinates       *Coordinates       `json:"coordinates" firestore:"coordinates"`
+	LocationID        string             `json:"location_id" firestore:"location_id"`
+	FacebookID        string             `json:"facebook_id,omitempty" firestore:"facebook_id,omitempty"`
+	FoursquareID      string             `json:"foursquare_id,omitempty" firestore:"foursquare_id,omitempty"`
+	GooglePlaceID     string             `json:"google_place_id,omitempty" firestore:"google_place_id,omitempty"`
+	TripadvisorID     string             `json:"tripadvisor_id,omitempty" firestore:"tripadvisor_id,omitempty"`
+	PriceTier         int                `json:"price_tier,omitempty" firestore:"price_tier,omitempty"`
+	BookingInfo       *BookingInfo       `json:"booking_info,omitempty" firestore:"booking_info,omitempty"`
+	BestFor           []BestFor          `json:"best_for" firestore:"best_for"`
+	Images            []Image            `json:"images" firestore:"images"`
+	Score             float32            `json:"score" firestore:"score"`
+	OpeningHours      *OpeningHours      `json:"opening_hours,omitempty" firestore:"opening_hours,omitempty"`
+	Properties        []Property         `json:"properties" firestore:"properties"`
+	ParentID          string             `json:"parent_id,omitempty" firestore:"parent_id,omitempty"`
+	ParentName        string             `json:"parent_name,omitempty" firestore:"parent_name,omitempty"`
+	CountryName       string             `json:"country_name,omitempty" firestore:"country_name,omitempty"`
+	CountryID         string             `json:"country_id,omitempty" firestore:"country_id,omitempty"`
+	Trigram           float32            `json:"trigram" firestore:"trigram"`
+	GooglePlace       *bool              `json:"google_place" firestore:"googe_place"`
+	Tags              []Tags             `json:"tags" firestore:"tags"`
+	Reviews           []maps.PlaceReview `json:"reviews" firestore:"reviews"`
+	Color             interface{}        `json:"color,omitempty" firestore:"color,omitempty"`
+	StructuredContent StructuredContent  `json:"structured_content,omitempty" firestore:"structured_content,omitempty"`
+	Climate           Climate            `json:"climate,omitempty" firestore:"climate,omitempty"`
+}
+
+type StructuredContent struct {
+	Images      []Image       `json:"images"`
+	Sections    []Section     `json:"sections"`
+	Attribution []Attribution `json:"attribution"`
+}
+
+type Section struct {
+	Body       string  `json:"body"`
+	Title      string  `json:"title"`
+	BodyImages []int64 `json:"body_images"`
+}
+
+type Attribution struct {
+	SourceID string `json:"source_id"`
+	URL      string `json:"url"`
+}
+
+type Climate struct {
+	Temperature Temperature `json:"temperature"`
+}
+
+type Temperature struct {
+	AverageMax TemperatureMonths `json:"average_max"`
+	AverageMin TemperatureMonths `json:"average_min"`
+}
+
+type TemperatureMonths struct {
+	Months []float32 `json:"months"`
 }
 
 //PoiInfo struct
@@ -419,7 +453,7 @@ func GetPoiFromLocationPagination(id string, count string, tag_labels string, of
 func GetLocation(id string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 30}
 
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?id="+id+"&order_by=-score&fields=coordinates,parent_id,country_id,images,content,name,id,snippet,type&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?id="+id+"&order_by=-score&fields=coordinates,parent_id,country_id,images,content,name,id,snippet,type,structured_content,climate,structured_content_language_info&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("Failed to access the Triposo API.")

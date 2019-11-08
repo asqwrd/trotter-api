@@ -29,18 +29,20 @@ type Place struct {
 	Description_short string `json:"description_short,omitempty"`
 
 	// These don't
-	Name          string            `json:"name"`
-	Original_name string            `json:"original_name"`
-	Name_suffix   string            `json:"name_suffix,omitempty"`
-	Parent_ids    []string          `json:"parent_ids,omitempty"`
-	Level         string            `json:"level,omitempty"`
-	Address       string            `json:"address,omitempty"`
-	Phone         string            `json:"phone,omitempty"`
-	Location      sygic.Location    `json:"location"`
-	Bounding_box  sygic.BoundingBox `json:"bounding_box"`
-	Colors        Colors            `json:"colors"`
-	Color         interface{}       `json:"color"`
-	Tags          []triposo.Tags    `json:"tags"`
+	Name              string                    `json:"name"`
+	Original_name     string                    `json:"original_name"`
+	Name_suffix       string                    `json:"name_suffix,omitempty"`
+	Parent_ids        []string                  `json:"parent_ids,omitempty"`
+	Level             string                    `json:"level,omitempty"`
+	Address           string                    `json:"address,omitempty"`
+	Phone             string                    `json:"phone,omitempty"`
+	Location          sygic.Location            `json:"location"`
+	Bounding_box      sygic.BoundingBox         `json:"bounding_box"`
+	Colors            Colors                    `json:"colors"`
+	Color             interface{}               `json:"color"`
+	Tags              []triposo.Tags            `json:"tags"`
+	StructuredContent triposo.StructuredContent `json:"structured_content"`
+	Climate           triposo.Climate           `json:"climate"`
 }
 
 type PlaceChannel struct {
@@ -399,6 +401,7 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 		Trigram:          sp.Trigram,
 		Tags:             sp.Tags,
 		Color:            sp.Color,
+		Climate:          sp.Climate,
 	}
 
 	return p

@@ -15,6 +15,11 @@ type placesResponse struct {
 	More    bool `json:"more" firestore:"more"`
 }
 
+type articlesResponse struct {
+	Results []Article
+	More    bool `json:"more" firestore:"more"`
+}
+
 type Location struct {
 	Lat float64 `json:"lat" firestore:"lat"`
 	Lng float64 `json:"lng" firestore:"lng"`
@@ -55,6 +60,16 @@ type Image struct {
 	OwnerURL string     `json:"owner_url" firestore:"owner_url"`
 	SourceID string     `json:"source_id" firestore:"source_id"`
 	Sizes    ImageSizes `json:"sizes" firestore:"sizes"`
+}
+
+//Article struct
+type Article struct {
+	Name              string            `json:"name" firestore:"name"`
+	ID                string            `json:"id" firestore:"id"`
+	Type              string            `json:"type" firestore:"type"`
+	Intro             string            `json:"intro" firestore:"intro"`
+	Snippet           string            `json:"snippet" firestore:"snippet"`
+	StructuredContent StructuredContent `json:"structured_content,omitempty" firestore:"structured_content,omitempty"`
 }
 
 //Place struct
@@ -469,6 +484,37 @@ func GetLocation(id string) (*[]Place, error) {
 	}
 
 	resp := &placesResponse{}
+	err = json.NewDecoder(res.Body).Decode(resp)
+	if err != nil {
+		log.Println(err)
+		log.Println(req.URL.String())
+		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
+	}
+
+	return &resp.Results, nil
+
+}
+
+//GetLocationArticles function
+func GetLocationArticles(id string) (*[]Article, error) {
+	client := http.Client{Timeout: time.Second * 30}
+
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"article.json?location_ids="+id+"&fields=name,snippet,intro,type,content,structured_content,id&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	q := req.URL.Query()
+	req.URL.RawQuery = q.Encode()
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("Failed to access the Triposo API.")
+	}
+
+	resp := &articlesResponse{}
 	err = json.NewDecoder(res.Body).Decode(resp)
 	if err != nil {
 		log.Println(err)

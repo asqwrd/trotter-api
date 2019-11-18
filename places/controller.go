@@ -336,68 +336,75 @@ func GetDestination(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	googleClient, err := InitGoogle()
+	// 	googleClient, err := InitGoogle()
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 		response.WriteErrorResponse(w, err)
+	// 	}
+	// 	var radius uint = 50000
+	// 	ctx := context.Background()
+
+	// 	latlng := &maps.LatLng{Lat: destination.Location.Lat, Lng: destination.Location.Lng}
+	// 	p1 := &maps.TextSearchRequest{
+	// 		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+things+to+do",
+	// 		Location: latlng,
+	// 		Radius:   radius,
+	// 	}
+
+	// 	p2 := &maps.TextSearchRequest{
+	// 		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+shopping",
+	// 		Location: latlng,
+	// 		Radius:   radius,
+	// 	}
+	// 	p3 := &maps.TextSearchRequest{
+	// 		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+night+life",
+	// 		Location: latlng,
+	// 		Radius:   radius,
+	// 	}
+	// 	p4 := &maps.TextSearchRequest{
+	// 		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+top+places+to+eat",
+	// 		Location: latlng,
+	// 		Radius:   radius,
+	// 	}
+
+	// 	requests := []*maps.TextSearchRequest{p1, p2, p3, p4}
+	// 	sections := []map[string]interface{}{}
+	// 	for i, p := range requests {
+	// 		places, err := googleClient.TextSearch(ctx, p)
+	// 		if err != nil {
+	// 			fmt.Println(err)
+	// 			response.WriteErrorResponse(w, err)
+	// 		}
+	// 		key := ""
+	// 		switch i {
+	// 		case 0:
+	// 			key = "do"
+	// 		case 1:
+	// 			key = "shopping"
+	// 		case 2:
+	// 			key = "nightlife"
+	// 		case 3:
+	// 			key = "foodie"
+	// 		}
+
+	// 		sections = append(sections, map[string]interface{}{
+	// 			"places": FromGooglePlaces(places.Results, "poi"),
+	// 			"key":    key,
+	// 		})
+
+	// 	}
+
+	articles, err := triposo.GetLocationArticles(destinationID)
 	if err != nil {
-		fmt.Println(err)
-		response.WriteErrorResponse(w, err)
-	}
-	var radius uint = 50000
-	ctx := context.Background()
-
-	latlng := &maps.LatLng{Lat: destination.Location.Lat, Lng: destination.Location.Lng}
-	p1 := &maps.TextSearchRequest{
-		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+things+to+do",
-		Location: latlng,
-		Radius:   radius,
-	}
-
-	p2 := &maps.TextSearchRequest{
-		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+shopping",
-		Location: latlng,
-		Radius:   radius,
-	}
-	p3 := &maps.TextSearchRequest{
-		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+night+life",
-		Location: latlng,
-		Radius:   radius,
-	}
-	p4 := &maps.TextSearchRequest{
-		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+top+places+to+eat",
-		Location: latlng,
-		Radius:   radius,
-	}
-
-	requests := []*maps.TextSearchRequest{p1, p2, p3, p4}
-	sections := []map[string]interface{}{}
-	for i, p := range requests {
-		places, err := googleClient.TextSearch(ctx, p)
-		if err != nil {
-			fmt.Println(err)
-			response.WriteErrorResponse(w, err)
-		}
-		key := ""
-		switch i {
-		case 0:
-			key = "do"
-		case 1:
-			key = "shopping"
-		case 2:
-			key = "nightlife"
-		case 3:
-			key = "foodie"
-		}
-
-		sections = append(sections, map[string]interface{}{
-			"places": FromGooglePlaces(places.Results, "poi"),
-			"key":    key,
-		})
-
+		//fmt.Println("here")
+		errorChannel <- err
+		return
 	}
 
 	destinationData := map[string]interface{}{
 		"destination": destination,
 		"color":       destinationColor,
-		"sections":    sections,
+		"articles":    articles,
 
 		// "see":           &placeToSee,
 		// "see_locations": location.FromTriposoPlaces(placeToSee["places"].([]triposo.InternalPlace)),
@@ -1156,12 +1163,12 @@ func ThingsToDo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	googleClient, err := InitGoogle()
-	if err != nil {
-		fmt.Println(err)
-		response.WriteErrorResponse(w, err)
-	}
-	var radius uint = 50000
+	// googleClient, err := InitGoogle()
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	response.WriteErrorResponse(w, err)
+	// }
+	// var radius uint = 50000
 
 	iter := client.Collection("trips").Where("group", "array-contains", q.Get("user_id")).Documents(ctx)
 	currentTime := time.Now().Unix()
@@ -1192,21 +1199,40 @@ func ThingsToDo(w http.ResponseWriter, r *http.Request) {
 			}
 			var destination types.Destination
 			destinationsDoc.DataTo(&destination)
-			latlng := &maps.LatLng{Lat: destination.Location.Lat, Lng: destination.Location.Lng}
-			p := &maps.TextSearchRequest{
-				Query:    strings.Replace(destination.DestinationName, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+point+of+interest",
-				Location: latlng,
-				Radius:   radius,
-			}
+			// latlng := &maps.LatLng{Lat: destination.Location.Lat, Lng: destination.Location.Lng}
+			// p := &maps.TextSearchRequest{
+			// 	Query:    strings.Replace(destination.DestinationName, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+point+of+interest",
+			// 	Location: latlng,
+			// 	Radius:   radius,
+			// }
 
-			places, err := googleClient.TextSearch(ctx, p)
+			// places, err := googleClient.TextSearch(ctx, p)
+			// if err != nil {
+			// 	fmt.Println(err)
+			// 	response.WriteErrorResponse(w, err)
+			// }
+			colorRes, errColor := GetColor(destination.Image)
 			if err != nil {
-				fmt.Println(err)
-				response.WriteErrorResponse(w, err)
+				response.WriteErrorResponse(w, errColor)
+				return
+			}
+			var destinationColor string = ""
+			if len(colorRes.Vibrant) > 0 {
+				destinationColor = colorRes.Vibrant
+			} else if len(colorRes.Muted) > 0 {
+				destinationColor = colorRes.Muted
+			} else if len(colorRes.LightVibrant) > 0 {
+				destinationColor = colorRes.LightVibrant
+			} else if len(colorRes.LightMuted) > 0 {
+				destinationColor = colorRes.LightMuted
+			} else if len(colorRes.DarkVibrant) > 0 {
+				destinationColor = colorRes.DarkVibrant
+			} else if len(colorRes.DarkMuted) > 0 {
+				destinationColor = colorRes.DarkMuted
 			}
 			destinations = append(destinations, map[string]interface{}{
 				"destination": destination,
-				"places":      FromGooglePlaces(places.Results, "poi"),
+				"color":       destinationColor,
 			})
 
 		}

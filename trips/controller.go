@@ -51,6 +51,8 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer client.Close()
+	currentTime := time.Now().Unix()
+	var upcoming bool = false
 
 	iter := client.Collection("trips").Where("group", "array-contains", q.Get("user_id")).Documents(ctx)
 	for {
@@ -65,8 +67,8 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 		}
 		var trip types.Trip
 		doc.DataTo(&trip)
+		upcoming = false
 		trip.Travelers = []types.User{}
-		currentTime := time.Now().Unix()
 		iterTravelers := client.Collection("trips").Doc(trip.ID).Collection("travelers").Documents(ctx)
 		for {
 			travelersDoc, errTravelers := iterTravelers.Next()
@@ -82,8 +84,8 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 			travelersDoc.DataTo(&traveler)
 			trip.Travelers = append(trip.Travelers, traveler)
 		}
-		iterDestinations := client.Collection("trips").Doc(trip.ID).Collection("destinations").Where("end_date", ">=", currentTime).Documents(ctx)
-		var upcoming bool = false
+		iterDestinations := client.Collection("trips").Doc(trip.ID).Collection("destinations").Documents(ctx)
+
 		for {
 			destinationsDoc, errDestinations := iterDestinations.Next()
 			if errDestinations == iterator.Done {
@@ -96,16 +98,16 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 			}
 			var destination types.Destination
 			destinationsDoc.DataTo(&destination)
-			if destination.EndDate > currentTime {
+			if destination.EndDate > currentTime || (destination.EndDate == 0 && destination.NumOfDays != nil) {
 				upcoming = true
 			}
-
 		}
+		fmt.Println(upcoming)
 		if upcoming == true {
 			upcomingTrips = append(upcomingTrips, trip)
 		} else {
 			trip.IsPast = true
-			pastTrips = append(upcomingTrips, trip)
+			pastTrips = append(pastTrips, trip)
 		}
 
 	}
@@ -333,7 +335,7 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 				Travelers:              trip.Trip.Group,
 			}
 
-			_, errDays := itineraries.CreateItineraryHelper(tripID, destDoc.ID, itinerary)
+			_, errDays := itineraries.CreateItineraryHelper(tripID, destDoc.ID, itinerary, trip.Destinations[index].NumOfDays)
 			if errDays != nil {
 				fmt.Println(errDays)
 				response.WriteErrorResponse(w, errDays)
@@ -1477,7 +1479,7 @@ func AddDestination(w http.ResponseWriter, r *http.Request) {
 			OwnerID:                trip.OwnerID,
 			Travelers:              trip.Group,
 		}
-		_, errDays := itineraries.CreateItineraryHelper(tripID, destDoc.ID, itinerary)
+		_, errDays := itineraries.CreateItineraryHelper(tripID, destDoc.ID, itinerary, destination.NumOfDays)
 		if errDays != nil {
 
 			fmt.Println(errDays)

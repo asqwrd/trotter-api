@@ -144,6 +144,7 @@ type Destination struct {
 	ID              string           `json:"id" firestore:"id"`
 	ItineraryID     string           `json:"itinerary_id" firestore:"itinerary_id"`
 	Image           string           `json:"image" firestore:"image"`
+	NumOfDays       *int             `json:"num_of_days" firestore:"num_of_days"`
 }
 
 // DestinationChannel for routines

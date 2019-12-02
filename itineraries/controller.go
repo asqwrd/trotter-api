@@ -1174,7 +1174,7 @@ func GetDay(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateItineraryHelper function
-func CreateItineraryHelper(tripID string, destinationID string, itinerary Itinerary) (map[string]interface{}, error) {
+func CreateItineraryHelper(tripID string, destinationID string, itinerary Itinerary, numOfDays *int) (map[string]interface{}, error) {
 	dayChannel := make(chan string)
 	errorChannel := make(chan error)
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
@@ -1216,13 +1216,18 @@ func CreateItineraryHelper(tripID string, destinationID string, itinerary Itiner
 	}
 
 	//Adding days
-	var daysCount = 0
+	var daysCount int = 0
 
-	endtm := time.Unix(itinerary.EndDate, 0)
-	starttm := time.Unix(itinerary.StartDate, 0)
+	if numOfDays != nil && itinerary.EndDate == 0 && itinerary.StartDate == 0 {
+		daysCount = *numOfDays
+	} else {
 
-	diff := endtm.Sub(starttm)
-	daysCount = int(diff.Hours()/24) + 1 //include first day
+		endtm := time.Unix(itinerary.EndDate, 0)
+		starttm := time.Unix(itinerary.StartDate, 0)
+
+		diff := endtm.Sub(starttm)
+		daysCount = int(diff.Hours()/24) + 1 //include first day
+	}
 
 	for i := 0; i < daysCount; i++ {
 		go func(index int, itineraryID string) {
@@ -1274,7 +1279,7 @@ func CreateItinerary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	itineraryData, err := CreateItineraryHelper(itinerary.Itinerary.TripID, itinerary.TripDestinationID, itinerary.Itinerary)
+	itineraryData, err := CreateItineraryHelper(itinerary.Itinerary.TripID, itinerary.TripDestinationID, itinerary.Itinerary, nil)
 	if err != nil {
 		fmt.Println(err)
 		response.WriteErrorResponse(w, err)
@@ -1423,8 +1428,10 @@ func AddToDay(w http.ResponseWriter, r *http.Request) {
 	}
 
 	actionText := " added "
-	if len(q.Get("userId")) > 0 {
+	if len(q.Get("userId")) > 0 && len(q.Get("copied")) == 0 {
 		actionText = " moved "
+	} else if len(q.Get("copied")) > 0 {
+		actionText = " copied "
 	}
 
 	for _, traveler := range trip.Group {

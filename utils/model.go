@@ -92,3 +92,16 @@ func UniqueUserSlice(userSlice []types.User) []types.User {
 	}
 	return list
 }
+
+func UniqueDestinationsSlice(destinationSlice []map[string]interface{}) []map[string]interface{} {
+	keys := make(map[string]bool)
+	list := []map[string]interface{}{}
+	for _, entry := range destinationSlice {
+		key := entry["destination"].(types.Destination).DestinationID
+		if _, value := keys[key]; !value {
+			keys[key] = true
+			list = append(list, entry)
+		}
+	}
+	return list
+}

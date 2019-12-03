@@ -16,6 +16,7 @@ import (
 	"github.com/asqwrd/trotter-api/sygic"
 	"github.com/asqwrd/trotter-api/triposo"
 	"github.com/asqwrd/trotter-api/types"
+	"github.com/asqwrd/trotter-api/utils"
 	"github.com/gorilla/mux"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
@@ -167,81 +168,92 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// GetPlaceCategory function
+func GetPlaceCategory(w http.ResponseWriter, r *http.Request) {
+	destinationID := mux.Vars(r)["destinationID"]
+	destinationType := r.URL.Query().Get("type")
+	query := r.URL.Query().Get("query")
+	errorChannel := make(chan error)
+	destinationChannel := make(chan triposo.InternalPlace)
+	var destination *triposo.InternalPlace
+	fmt.Println("Get category")
+	go func() {
+		destination, err := triposo.GetLocation(destinationID)
+		if err != nil {
+			//fmt.Println("here")
+			errorChannel <- err
+			return
+		}
+
+		destinationParam := *destination
+		destinationRes := FromTriposoPlace(destinationParam[0], destinationType)
+		country, err := triposo.GetLocation(destinationRes.CountryID)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+
+		countryParam := *country
+		destinationRes.CountryName = countryParam[0].Name
+
+		destinationChannel <- destinationRes
+
+	}()
+
+	for i := 0; i < 1; i++ {
+		select {
+
+		case destinationRes := <-destinationChannel:
+			destination = &destinationRes
+
+		case err := <-errorChannel:
+			fmt.Println(err)
+			response.WriteErrorResponse(w, err)
+			return
+
+		}
+	}
+
+	googleClient, err := InitGoogle()
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+	}
+	var radius uint = 50000
+	ctx := context.Background()
+
+	latlng := &maps.LatLng{Lat: destination.Location.Lat, Lng: destination.Location.Lng}
+	p := &maps.TextSearchRequest{
+		Query:    query,
+		Location: latlng,
+		Radius:   radius,
+	}
+
+	places, err := googleClient.TextSearch(ctx, p)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+	}
+
+	categoryData := map[string]interface{}{
+		"places": FromGooglePlaces(places.Results, "poi"),
+	}
+
+	response.Write(w, categoryData, http.StatusOK)
+	return
+
+}
+
 //GetDestination function
 func GetDestination(w http.ResponseWriter, r *http.Request) {
 	destinationID := mux.Vars(r)["destinationID"]
-	// urlparams := []string{"sightseeing|sight|topattractions|hoponhopoff",
-	// 	"museums|tours|walkingtours|transport|private_tours|air|architecture|multiday|touristinfo|forts|showstheatresandmusic",
-	// 	"amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos|celebrations|musicandshows",
-	// 	"beaches|camping|wildlife|fishing|relaxinapark",
-	// 	"eatingout|breakfast|coffeeandcake|lunch|dinner|foodexperiences",
-	// 	"do|shopping",
-	// 	"nightlife|comedy|drinks|dancing|pubcrawl|redlight|breweries"}
-
 	destinationType := r.URL.Query().Get("type")
 
-	//placeChannel := make(chan triposo.TriposoChannel)
 	destinationChannel := make(chan triposo.InternalPlace)
 	colorChannel := make(chan Colors)
 	var destination *triposo.InternalPlace
-
-	// var placeToSee map[string]interface{}
-	// var discoverPlaces map[string]interface{}
-	// var playPlaces map[string]interface{}
-	// var eatPlaces map[string]interface{}
-	// var nightlifePlaces map[string]interface{}
-	// var shopPlaces map[string]interface{}
-	// var relaxPlaces map[string]interface{}
-
-	// seeChannel := make(chan map[string]interface{})
-	// eatChannel := make(chan map[string]interface{})
-	// discoverChannel := make(chan map[string]interface{})
-	// playChannel := make(chan map[string]interface{})
-	// nightlifeChannel := make(chan map[string]interface{})
-	// shopChannel := make(chan map[string]interface{})
-	// relaxChannel := make(chan map[string]interface{})
 	errorChannel := make(chan error)
-	//timeoutChannel := make(chan bool)
 	var destinationColor string
-
-	// for i, param := range urlparams {
-	// 	go func(param string, i int) {
-	// 		place, more, err := triposo.GetPoiFromLocation(destinationID, "20", param, i)
-	// 		res := new(triposo.TriposoChannel)
-	// 		res.Places = *place
-	// 		res.Index = i
-	// 		res.More = more
-	// 		res.Error = err
-	// 		placeChannel <- *res
-	// 	}(param, i)
-
-	// }
-
-	// go func() {
-	// 	for res := range placeChannel {
-	// 		if res.Error != nil {
-	// 			errorChannel <- res.Error
-	// 			return
-	// 		}
-	// 		switch {
-	// 		case res.Index == 0:
-	// 			seeChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
-	// 		case res.Index == 1:
-	// 			discoverChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
-	// 		case res.Index == 2:
-	// 			playChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
-	// 		case res.Index == 4:
-	// 			eatChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
-	// 		case res.Index == 6:
-	// 			nightlifeChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
-	// 		case res.Index == 5:
-	// 			shopChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
-	// 		case res.Index == 3:
-	// 			relaxChannel <- map[string]interface{}{"places": FromTriposoPlaces(res.Places, "poi"), "more": res.More}
-	// 		}
-	// 	}
-
-	// }()
 
 	go func() {
 		destination, err := triposo.GetLocation(destinationID)
@@ -286,27 +298,9 @@ func GetDestination(w http.ResponseWriter, r *http.Request) {
 
 	}()
 
-	// go func() {
-	// 	time.Sleep(30 * time.Second)
-	// 	timeoutChannel <- true
-	// }()
-
 	for i := 0; i < 2; i++ {
 		select {
-		// case see := <-seeChannel:
-		// 	placeToSee = see
-		// case eat := <-eatChannel:
-		// 	eatPlaces = eat
-		// case discover := <-discoverChannel:
-		// 	discoverPlaces = discover
-		// case shop := <-shopChannel:
-		// 	shopPlaces = shop
-		// case relax := <-relaxChannel:
-		// 	relaxPlaces = relax
-		// case play := <-playChannel:
-		// 	playPlaces = play
-		// case nightlife := <-nightlifeChannel:
-		// 	nightlifePlaces = nightlife
+
 		case destinationRes := <-destinationChannel:
 			destination = &destinationRes
 		case colorRes := <-colorChannel:
@@ -327,72 +321,9 @@ func GetDestination(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err)
 			response.WriteErrorResponse(w, err)
 			return
-			// case timeout := <-timeoutChannel:
-			// 	if timeout == true {
-			// 		fmt.Println("api timeout")
-			// 		response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
-			// 		return
-			// 	}
+
 		}
 	}
-
-	// 	googleClient, err := InitGoogle()
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 		response.WriteErrorResponse(w, err)
-	// 	}
-	// 	var radius uint = 50000
-	// 	ctx := context.Background()
-
-	// 	latlng := &maps.LatLng{Lat: destination.Location.Lat, Lng: destination.Location.Lng}
-	// 	p1 := &maps.TextSearchRequest{
-	// 		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+things+to+do",
-	// 		Location: latlng,
-	// 		Radius:   radius,
-	// 	}
-
-	// 	p2 := &maps.TextSearchRequest{
-	// 		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+shopping",
-	// 		Location: latlng,
-	// 		Radius:   radius,
-	// 	}
-	// 	p3 := &maps.TextSearchRequest{
-	// 		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+night+life",
-	// 		Location: latlng,
-	// 		Radius:   radius,
-	// 	}
-	// 	p4 := &maps.TextSearchRequest{
-	// 		Query:    strings.Replace(destination.Name, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+top+places+to+eat",
-	// 		Location: latlng,
-	// 		Radius:   radius,
-	// 	}
-
-	// 	requests := []*maps.TextSearchRequest{p1, p2, p3, p4}
-	// 	sections := []map[string]interface{}{}
-	// 	for i, p := range requests {
-	// 		places, err := googleClient.TextSearch(ctx, p)
-	// 		if err != nil {
-	// 			fmt.Println(err)
-	// 			response.WriteErrorResponse(w, err)
-	// 		}
-	// 		key := ""
-	// 		switch i {
-	// 		case 0:
-	// 			key = "do"
-	// 		case 1:
-	// 			key = "shopping"
-	// 		case 2:
-	// 			key = "nightlife"
-	// 		case 3:
-	// 			key = "foodie"
-	// 		}
-
-	// 		sections = append(sections, map[string]interface{}{
-	// 			"places": FromGooglePlaces(places.Results, "poi"),
-	// 			"key":    key,
-	// 		})
-
-	// 	}
 
 	articles, err := triposo.GetLocationArticles(destinationID)
 	if err != nil {
@@ -405,27 +336,6 @@ func GetDestination(w http.ResponseWriter, r *http.Request) {
 		"destination": destination,
 		"color":       destinationColor,
 		"articles":    articles,
-
-		// "see":           &placeToSee,
-		// "see_locations": location.FromTriposoPlaces(placeToSee["places"].([]triposo.InternalPlace)),
-
-		// "discover":           &discoverPlaces,
-		// "discover_locations": location.FromTriposoPlaces(discoverPlaces["places"].([]triposo.InternalPlace)),
-
-		// "play":           &playPlaces,
-		// "play_locations": location.FromTriposoPlaces(playPlaces["places"].([]triposo.InternalPlace)),
-
-		// "eat":           &eatPlaces,
-		// "eat_locations": location.FromTriposoPlaces(eatPlaces["places"].([]triposo.InternalPlace)),
-
-		// "shop":           &shopPlaces,
-		// "shop_locations": location.FromTriposoPlaces(shopPlaces["places"].([]triposo.InternalPlace)),
-
-		// "nightlife":           &nightlifePlaces,
-		// "nightlife_locations": location.FromTriposoPlaces(nightlifePlaces["places"].([]triposo.InternalPlace)),
-
-		// "relax":           &relaxPlaces,
-		// "relax_locations": location.FromTriposoPlaces(relaxPlaces["places"].([]triposo.InternalPlace)),
 	}
 
 	response.Write(w, destinationData, http.StatusOK)
@@ -1164,13 +1074,6 @@ func ThingsToDo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// googleClient, err := InitGoogle()
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	response.WriteErrorResponse(w, err)
-	// }
-	// var radius uint = 50000
-
 	iter := client.Collection("trips").Where("group", "array-contains", q.Get("user_id")).Documents(ctx)
 	currentTime := time.Now().Unix()
 	destinations := []map[string]interface{}{}
@@ -1200,18 +1103,47 @@ func ThingsToDo(w http.ResponseWriter, r *http.Request) {
 			}
 			var destination types.Destination
 			destinationsDoc.DataTo(&destination)
-			// latlng := &maps.LatLng{Lat: destination.Location.Lat, Lng: destination.Location.Lng}
-			// p := &maps.TextSearchRequest{
-			// 	Query:    strings.Replace(destination.DestinationName, " ", "+", -1) + "+" + strings.Replace(destination.ParentName, " ", "+", -1) + "+point+of+interest",
-			// 	Location: latlng,
-			// 	Radius:   radius,
-			// }
 
-			// places, err := googleClient.TextSearch(ctx, p)
-			// if err != nil {
-			// 	fmt.Println(err)
-			// 	response.WriteErrorResponse(w, err)
-			// }
+			colorRes, errColor := GetColor(destination.Image)
+			if err != nil {
+				response.WriteErrorResponse(w, errColor)
+				return
+			}
+			var destinationColor string = ""
+			if len(colorRes.Vibrant) > 0 {
+				destinationColor = colorRes.Vibrant
+			} else if len(colorRes.Muted) > 0 {
+				destinationColor = colorRes.Muted
+			} else if len(colorRes.LightVibrant) > 0 {
+				destinationColor = colorRes.LightVibrant
+			} else if len(colorRes.LightMuted) > 0 {
+				destinationColor = colorRes.LightMuted
+			} else if len(colorRes.DarkVibrant) > 0 {
+				destinationColor = colorRes.DarkVibrant
+			} else if len(colorRes.DarkMuted) > 0 {
+				destinationColor = colorRes.DarkMuted
+			}
+			destinations = append(destinations, map[string]interface{}{
+				"destination": destination,
+				"color":       destinationColor,
+			})
+
+		}
+
+		iterDestinationsNum := client.Collection("trips").Doc(trip.ID).Collection("destinations").Where("num_of_days", ">", 0).Documents(ctx)
+		for {
+			destinationsDoc, errDestinations := iterDestinationsNum.Next()
+			if errDestinations == iterator.Done {
+				break
+			}
+			if errDestinations != nil {
+				fmt.Println(errDestinations)
+				response.WriteErrorResponse(w, errDestinations)
+				return
+			}
+			var destination types.Destination
+			destinationsDoc.DataTo(&destination)
+
 			colorRes, errColor := GetColor(destination.Image)
 			if err != nil {
 				response.WriteErrorResponse(w, errColor)
@@ -1241,7 +1173,7 @@ func ThingsToDo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Write(w, map[string]interface{}{
-		"destinations": destinations,
+		"destinations": utils.UniqueDestinationsSlice(destinations),
 	}, http.StatusOK)
 	return
 

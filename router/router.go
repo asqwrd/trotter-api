@@ -51,6 +51,9 @@ var routes = Routes{
 		"GetDestination", "GET", "/api/explore/destinations/{destinationID}/", places.GetDestination,
 	},
 	Route{
+		"GetPlaceCategory", "GET", "/api/explore/destinations/{destinationID}/category", places.GetPlaceCategory,
+	},
+	Route{
 		"GetPlaces", "GET", "/api/explore/places/", places.GetPlaces,
 	},
 	Route{

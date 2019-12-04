@@ -265,10 +265,10 @@ type TriposoChannel struct {
 	Error  error
 }
 
-const baseTriposoAPI = "https://www.triposo.com/api/latest/"
+const baseTriposoAPI = "https://www.triposo.com/api/20190906/"
 
 const TRIPOSO_ACCOUNT = "2ZWR5MHH"
-const TRIPOSO_TOKEN = "yan4ujbhzepr66ttsqxiqwcl38k3lx0w"
+const TRIPOSO_TOKEN = "gk5joiqada7ai97ra286xj7sqw50wrzg"
 
 func GetPlaceByName(name string) (*PoiInfo, error) {
 	client := http.Client{Timeout: time.Second * 30}

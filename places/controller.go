@@ -1059,6 +1059,7 @@ func ThingsToDo(w http.ResponseWriter, r *http.Request) {
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
+	destinationsChannel := make(chan map[string]interface{})
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
@@ -1077,99 +1078,110 @@ func ThingsToDo(w http.ResponseWriter, r *http.Request) {
 	iter := client.Collection("trips").Where("group", "array-contains", q.Get("user_id")).Documents(ctx)
 	currentTime := time.Now().Unix()
 	destinations := []map[string]interface{}{}
-	for {
-		doc, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			fmt.Println(err)
-			response.WriteErrorResponse(w, err)
-			return
-		}
-		var trip types.Trip
-		doc.DataTo(&trip)
-
-		iterDestinations := client.Collection("trips").Doc(trip.ID).Collection("destinations").Where("end_date", ">=", currentTime).Documents(ctx)
+	go func(iter *firestore.DocumentIterator) {
+		defer close(destinationsChannel)
 		for {
-			destinationsDoc, errDestinations := iterDestinations.Next()
-			if errDestinations == iterator.Done {
+			doc, err := iter.Next()
+			if err == iterator.Done {
 				break
 			}
-			if errDestinations != nil {
-				fmt.Println(errDestinations)
-				response.WriteErrorResponse(w, errDestinations)
-				return
-			}
-			var destination types.Destination
-			destinationsDoc.DataTo(&destination)
-
-			colorRes, errColor := GetColor(destination.Image)
 			if err != nil {
-				response.WriteErrorResponse(w, errColor)
+				fmt.Println(err)
+				response.WriteErrorResponse(w, err)
 				return
 			}
-			var destinationColor string = ""
-			if len(colorRes.Vibrant) > 0 {
-				destinationColor = colorRes.Vibrant
-			} else if len(colorRes.Muted) > 0 {
-				destinationColor = colorRes.Muted
-			} else if len(colorRes.LightVibrant) > 0 {
-				destinationColor = colorRes.LightVibrant
-			} else if len(colorRes.LightMuted) > 0 {
-				destinationColor = colorRes.LightMuted
-			} else if len(colorRes.DarkVibrant) > 0 {
-				destinationColor = colorRes.DarkVibrant
-			} else if len(colorRes.DarkMuted) > 0 {
-				destinationColor = colorRes.DarkMuted
+			var trip types.Trip
+			doc.DataTo(&trip)
+
+			iterDestinations := client.Collection("trips").Doc(trip.ID).Collection("destinations").Where("end_date", ">=", currentTime).Documents(ctx)
+			for {
+				destinationsDoc, errDestinations := iterDestinations.Next()
+				if errDestinations == iterator.Done {
+					break
+				}
+				if errDestinations != nil {
+					fmt.Println(errDestinations)
+					response.WriteErrorResponse(w, errDestinations)
+					return
+				}
+				var destination types.Destination
+				destinationsDoc.DataTo(&destination)
+				fmt.Println(destination.Image)
+				colorRes, errColor := GetColor(destination.Image)
+				if errColor != nil {
+					fmt.Println(errColor)
+					response.WriteErrorResponse(w, errColor)
+					return
+				}
+				var destinationColor string = ""
+				if len(colorRes.Vibrant) > 0 {
+					destinationColor = colorRes.Vibrant
+				} else if len(colorRes.Muted) > 0 {
+					destinationColor = colorRes.Muted
+				} else if len(colorRes.LightVibrant) > 0 {
+					destinationColor = colorRes.LightVibrant
+				} else if len(colorRes.LightMuted) > 0 {
+					destinationColor = colorRes.LightMuted
+				} else if len(colorRes.DarkVibrant) > 0 {
+					destinationColor = colorRes.DarkVibrant
+				} else if len(colorRes.DarkMuted) > 0 {
+					destinationColor = colorRes.DarkMuted
+				}
+
+				destinationsChannel <- map[string]interface{}{
+					"destination": destination,
+					"color":       destinationColor,
+				}
+
 			}
-			destinations = append(destinations, map[string]interface{}{
-				"destination": destination,
-				"color":       destinationColor,
-			})
+
+			iterDestinationsNum := client.Collection("trips").Doc(trip.ID).Collection("destinations").Where("num_of_days", ">", 0).Documents(ctx)
+			for {
+				destinationsDoc, errDestinations := iterDestinationsNum.Next()
+				if errDestinations == iterator.Done {
+					break
+				}
+				if errDestinations != nil {
+					fmt.Println(errDestinations)
+					response.WriteErrorResponse(w, errDestinations)
+					return
+				}
+				var destination types.Destination
+				destinationsDoc.DataTo(&destination)
+
+				colorRes, errColor := GetColor(destination.Image)
+				if errColor != nil {
+					fmt.Println(errColor)
+					response.WriteErrorResponse(w, errColor)
+
+					return
+				}
+				var destinationColor string = ""
+				if len(colorRes.Vibrant) > 0 {
+					destinationColor = colorRes.Vibrant
+				} else if len(colorRes.Muted) > 0 {
+					destinationColor = colorRes.Muted
+				} else if len(colorRes.LightVibrant) > 0 {
+					destinationColor = colorRes.LightVibrant
+				} else if len(colorRes.LightMuted) > 0 {
+					destinationColor = colorRes.LightMuted
+				} else if len(colorRes.DarkVibrant) > 0 {
+					destinationColor = colorRes.DarkVibrant
+				} else if len(colorRes.DarkMuted) > 0 {
+					destinationColor = colorRes.DarkMuted
+				}
+
+				destinationsChannel <- map[string]interface{}{
+					"destination": destination,
+					"color":       destinationColor,
+				}
+			}
 
 		}
+	}(iter)
 
-		iterDestinationsNum := client.Collection("trips").Doc(trip.ID).Collection("destinations").Where("num_of_days", ">", 0).Documents(ctx)
-		for {
-			destinationsDoc, errDestinations := iterDestinationsNum.Next()
-			if errDestinations == iterator.Done {
-				break
-			}
-			if errDestinations != nil {
-				fmt.Println(errDestinations)
-				response.WriteErrorResponse(w, errDestinations)
-				return
-			}
-			var destination types.Destination
-			destinationsDoc.DataTo(&destination)
-
-			colorRes, errColor := GetColor(destination.Image)
-			if err != nil {
-				response.WriteErrorResponse(w, errColor)
-				return
-			}
-			var destinationColor string = ""
-			if len(colorRes.Vibrant) > 0 {
-				destinationColor = colorRes.Vibrant
-			} else if len(colorRes.Muted) > 0 {
-				destinationColor = colorRes.Muted
-			} else if len(colorRes.LightVibrant) > 0 {
-				destinationColor = colorRes.LightVibrant
-			} else if len(colorRes.LightMuted) > 0 {
-				destinationColor = colorRes.LightMuted
-			} else if len(colorRes.DarkVibrant) > 0 {
-				destinationColor = colorRes.DarkVibrant
-			} else if len(colorRes.DarkMuted) > 0 {
-				destinationColor = colorRes.DarkMuted
-			}
-			destinations = append(destinations, map[string]interface{}{
-				"destination": destination,
-				"color":       destinationColor,
-			})
-
-		}
-
+	for res := range destinationsChannel {
+		destinations = append(destinations, res)
 	}
 
 	response.Write(w, map[string]interface{}{

@@ -1152,6 +1152,7 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 	var destination map[string]interface{}
 	errorChannel := make(chan error)
 	dayIdsChannel := make(chan string)
+	fmt.Println("UpdateDestination")
 
 	err := decoder.Decode(&destination)
 	if err != nil {
@@ -1189,22 +1190,36 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 	}
 	itineraryID := destination["itinerary_id"].(string)
 	if len(itineraryID) > 0 {
-		_, errUpdateI10 := client.Collection("itineraries").Doc(itineraryID).Set(ctx, map[string]interface{}{
-			"end_date":   destination["end_date"],
-			"start_date": destination["start_date"],
-		}, firestore.MergeAll)
+		var daysCount int = 0
+		if destination["start_date"].(float64) > 0 && destination["end_date"].(float64) > 0 {
+			_, errUpdateI10 := client.Collection("itineraries").Doc(itineraryID).Set(ctx, map[string]interface{}{
+				"end_date":   destination["end_date"],
+				"start_date": destination["start_date"],
+			}, firestore.MergeAll)
 
-		if errUpdateI10 != nil {
-			fmt.Println(err2)
-			response.WriteErrorResponse(w, err2)
-			return
+			if errUpdateI10 != nil {
+				fmt.Println(err2)
+				response.WriteErrorResponse(w, err2)
+				return
+			}
+
+			endtm := time.Unix(int64(destination["end_date"].(float64)), 0)
+			starttm := time.Unix(int64(destination["start_date"].(float64)), 0)
+
+			diff := endtm.Sub(starttm)
+			daysCount = int(diff.Hours()/24) + 1 //include first day
+		} else if destination["num_of_days"] != nil && destination["num_of_days"].(float64) > 0 {
+			_, errUpdateI10 := client.Collection("itineraries").Doc(itineraryID).Set(ctx, map[string]interface{}{
+				"num_of_days": destination["num_of_days"],
+			}, firestore.MergeAll)
+
+			if errUpdateI10 != nil {
+				fmt.Println(err2)
+				response.WriteErrorResponse(w, err2)
+				return
+			}
+			daysCount = int(destination["num_of_days"].(float64))
 		}
-		var daysCount = 0
-		endtm := time.Unix(int64(destination["end_date"].(float64)), 0)
-		starttm := time.Unix(int64(destination["start_date"].(float64)), 0)
-
-		diff := endtm.Sub(starttm)
-		daysCount = int(diff.Hours()/24) + 1 //include first day
 		var itinerariesItems []itineraries.ItineraryItem
 		var days []itineraries.Day
 		iter := client.Collection("itineraries").Doc(itineraryID).Collection("days").OrderBy("day", firestore.Asc).Documents(ctx)

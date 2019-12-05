@@ -11,8 +11,9 @@ import (
 )
 
 type placesResponse struct {
-	Results []Place
-	More    bool `json:"more" firestore:"more"`
+	Results []Place `json:"results" firestore:"results"`
+	Error   *string `json:"error,omitempty" firestore:"error,omitempty"`
+	More    bool    `json:"more" firestore:"more"`
 }
 
 type articlesResponse struct {
@@ -20,35 +21,42 @@ type articlesResponse struct {
 	More    bool `json:"more" firestore:"more"`
 }
 
+//Location stuct
 type Location struct {
 	Lat float64 `json:"lat" firestore:"lat"`
 	Lng float64 `json:"lng" firestore:"lng"`
 }
 
+//Coordinates struct
 type Coordinates struct {
 	Latitude  float64 `json:"latitude" firestore:"latitude"`
 	Longitude float64 `json:"longitude" firestore:"longitude"`
 }
 
+//Object struct
 type Object struct {
 	data interface{}
 }
 
+//Sections struct
 type Sections struct {
 	Body string `json:"body" firestore:"body"`
 }
 
+//Content struct
 type Content struct {
 	Sections []Sections `json:"sections" firestore:"sections"`
 }
 
+//ImageSize struct
 type ImageSize struct {
-	Url    string `json:"url" firestore:"url"`
+	URL    string `json:"url" firestore:"url"`
 	Width  int    `json:"width"`
 	Height int    `json:"height"`
 	Bytes  int    `json:"bytes"`
 }
 
+//ImageSizes struct
 type ImageSizes struct {
 	Medium    ImageSize `json:"medium" firestore:"medium"`
 	Original  ImageSize `json:"original" firestore:"original"`
@@ -221,32 +229,38 @@ type InternalPlace struct {
 	Climate           Climate            `json:"climate,omitempty" firestore:"climate,omitempty"`
 }
 
+//StructuredContent struct
 type StructuredContent struct {
 	Images      []Image       `json:"images"`
 	Sections    []Section     `json:"sections"`
 	Attribution []Attribution `json:"attribution"`
 }
 
+//Section struct
 type Section struct {
 	Body       string  `json:"body"`
 	Title      string  `json:"title"`
 	BodyImages []int64 `json:"body_images"`
 }
 
+//Attribution struct
 type Attribution struct {
 	SourceID string `json:"source_id"`
 	URL      string `json:"url"`
 }
 
+//Climate struct
 type Climate struct {
 	Temperature Temperature `json:"temperature"`
 }
 
+//Temperature struct
 type Temperature struct {
 	AverageMax TemperatureMonths `json:"average_max"`
 	AverageMin TemperatureMonths `json:"average_min"`
 }
 
+//TemperatureMonths struct
 type TemperatureMonths struct {
 	Months []float32 `json:"months"`
 }
@@ -258,25 +272,27 @@ type PoiInfo struct {
 	Trigram   float32 `json:"trigram"`
 }
 
-type TriposoChannel struct {
+//Channel struct
+type Channel struct {
 	Places []Place
 	Index  int
 	More   *bool
 	Error  error
 }
 
-const baseTriposoAPI = "https://www.triposo.com/api/20190906/"
+const baseTriposoAPI = "https://www.triposo.com/api/latest/"
 
-const TRIPOSO_ACCOUNT = "2ZWR5MHH"
-const TRIPOSO_TOKEN = "gk5joiqada7ai97ra286xj7sqw50wrzg"
+const triposoAccount = "2ZWR5MHH"
+const triposoToken = "cno3xmbpnzkgszkpc92lz9owed6qlfi7"
 
+//GetPlaceByName function
 func GetPlaceByName(name string) (*PoiInfo, error) {
 	client := http.Client{Timeout: time.Second * 30}
 
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?type=country&order_by=-trigram&count=1&fields=id,country_id&annotate=trigram:"+name+"&trigram=>=0.3&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?type=country&order_by=-trigram&count=1&fields=id,country_id&annotate=trigram:"+name+"&trigram=>=0.3&account="+triposoAccount+"&token="+triposoToken, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 	//fmt.Println(name)
 
@@ -286,7 +302,7 @@ func GetPlaceByName(name string) (*PoiInfo, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	resp := &poiInfoResponse{}
@@ -294,23 +310,24 @@ func GetPlaceByName(name string) (*PoiInfo, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
+		return nil, errors.New("server experienced an error while parsing triposo api response")
 	}
 	//fmt.Println(resp.Results)
 	return &resp.Results[0], nil
 }
 
-func Search(query string, typeParam string, location_id string) (*[]Place, error) {
+//Search function
+func Search(query string, typeParam string, locationID string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 20}
-	url := baseTriposoAPI + "location.json?type=" + typeParam + "&order_by=-trigram&fields=name,parent_id,score,images,id,type,coordinates,country_id,snippet,content,properties,intro&annotate=trigram:" + query + "&trigram=>=0.3&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
+	url := baseTriposoAPI + "location.json?type=" + typeParam + "&order_by=-trigram&fields=name,parent_id,score,images,id,type,coordinates,country_id,snippet,content,properties,intro&annotate=trigram:" + query + "&trigram=>=0.3&account=" + triposoAccount + "&token=" + triposoToken
 	if typeParam == "poi" {
-		url = baseTriposoAPI + "poi.json?location_id=" + location_id + "&fields=intro,images,location_id,id,content,opening_hours,coordinates,snippet,score,facebook_id,attribution,best_for,tags,properties,price_tier,name,booking_info&annotate=trigram:" + query + "&trigram=>=0.2&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
+		url = baseTriposoAPI + "poi.json?location_id=" + locationID + "&fields=intro,images,location_id,id,content,opening_hours,coordinates,snippet,score,facebook_id,attribution,best_for,tags,properties,price_tier,name,booking_info&annotate=trigram:" + query + "&trigram=>=0.2&account=" + triposoAccount + "&token=" + triposoToken
 	}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	q := req.URL.Query()
@@ -319,7 +336,7 @@ func Search(query string, typeParam string, location_id string) (*[]Place, error
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	resp := &placeResponse{}
@@ -327,18 +344,19 @@ func Search(query string, typeParam string, location_id string) (*[]Place, error
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
+		return nil, errors.New("server experienced an error while parsing triposo api response")
 	}
 	return &resp.Results, nil
 }
 
+//GetDestination function
 func GetDestination(id string, count string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 30}
 
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?part_of="+id+"&order_by=-score&count="+count+"&fields=id,score,parent_id,country_id,intro,name,images,content,coordinates&type=city&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?part_of="+id+"&order_by=-score&count="+count+"&fields=id,score,parent_id,country_id,intro,name,images,content,coordinates&type=city&account="+triposoAccount+"&token="+triposoToken, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	q := req.URL.Query()
@@ -347,7 +365,7 @@ func GetDestination(id string, count string) (*[]Place, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	resp := &placeResponse{}
@@ -355,18 +373,19 @@ func GetDestination(id string, count string) (*[]Place, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
+		return nil, errors.New("server experienced an error while parsing triposo api response")
 	}
 
 	return &resp.Results, nil
 }
 
+//GetPoi struct
 func GetPoi(id string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 10}
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"poi.json?id="+id+"&fields=images,id,name,booking_info,best_for,facebook_id,opening_hours,score,content,price_tier,intro,location_id,snippet,properties,coordinates&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"poi.json?id="+id+"&fields=images,id,name,booking_info,best_for,facebook_id,opening_hours,score,content,price_tier,intro,location_id,snippet,properties,coordinates&account="+triposoAccount+"&token="+triposoToken, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	q := req.URL.Query()
@@ -375,7 +394,7 @@ func GetPoi(id string) (*[]Place, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	resp := &placeResponse{}
@@ -383,27 +402,26 @@ func GetPoi(id string) (*[]Place, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
+		return nil, errors.New("server experienced an error while parsing triposo api response")
 	}
 
 	return &resp.Results, nil
 
 }
 
-func GetPoiFromLocation(id string, count string, tag_labels string, index int) (*[]Place, *bool, error) {
+//GetPoiFromLocation struct
+func GetPoiFromLocation(id string, count string, tagLabels string, index int) (*[]Place, *bool, error) {
 
 	client := http.Client{Timeout: time.Second * 30}
-	url := baseTriposoAPI + "poi.json?location_id=" + id + "&count=" + count + "&fields=id,score,name,coordinates,facebook_id,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
-	if len(tag_labels) > 0 {
-		url = baseTriposoAPI + "poi.json?location_id=" + id + "&tag_labels=" + tag_labels + "&count=" + count + "&fields=id,score,name,coordinates,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
+	url := baseTriposoAPI + "poi.json?location_id=" + id + "&count=" + count + "&fields=id,score,name,coordinates,facebook_id,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + triposoAccount + "&token=" + triposoToken
+	if len(tagLabels) > 0 {
+		url = baseTriposoAPI + "poi.json?location_id=" + id + "&tag_labels=" + tagLabels + "&count=" + count + "&fields=id,score,name,coordinates,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + triposoAccount + "&token=" + triposoToken
 	}
-
-	//fmt.Println(url)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, nil, errors.New("Failed to access the Triposo API.")
+		return nil, nil, errors.New("failed to access the Triposo api")
 	}
 
 	q := req.URL.Query()
@@ -412,7 +430,44 @@ func GetPoiFromLocation(id string, count string, tag_labels string, index int) (
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, nil, errors.New("Failed to access the Triposo API.")
+		return nil, nil, errors.New("failed to access the Triposo api")
+	}
+
+	resp := &placesResponse{}
+	err = json.NewDecoder(res.Body).Decode(resp)
+	if err != nil {
+		log.Println(err)
+		log.Println(req.URL.String())
+		return nil, nil, errors.New("server experienced an error while parsing triposo api response")
+	}
+	if resp.Error != nil {
+		return nil, nil, errors.New(*resp.Error)
+	}
+
+	return &resp.Results, &resp.More, nil
+}
+
+//GetPoiFromLocationPagination struct
+func GetPoiFromLocationPagination(id string, count string, tagLabels string, offset string) (*[]Place, *bool, error) {
+
+	client := http.Client{Timeout: time.Second * 30}
+	url := baseTriposoAPI + "poi.json?location_id=" + id + "&tag_labels=" + tagLabels + "&count=" + count + "&offset=" + offset + "&fields=id,score,name,coordinates,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + triposoAccount + "&token=" + triposoToken
+
+	//fmt.Println(url)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		log.Println(err)
+		return nil, nil, errors.New("failed to access the Triposo api")
+	}
+
+	q := req.URL.Query()
+	req.URL.RawQuery = q.Encode()
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil, nil, errors.New("failed to access the Triposo api")
 	}
 
 	//fmt.Println(res)
@@ -422,56 +477,24 @@ func GetPoiFromLocation(id string, count string, tag_labels string, index int) (
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, nil, errors.New("Server experienced an error while parsing Triposo API response.")
+		return nil, nil, errors.New("server experienced an error while parsing triposo api response")
+	}
+	if resp.Error != nil {
+		return nil, nil, errors.New(*resp.Error)
 	}
 
 	return &resp.Results, &resp.More, nil
 
 }
 
-func GetPoiFromLocationPagination(id string, count string, tag_labels string, offset string) (*[]Place, *bool, error) {
-
-	client := http.Client{Timeout: time.Second * 30}
-	url := baseTriposoAPI + "poi.json?location_id=" + id + "&tag_labels=" + tag_labels + "&count=" + count + "&offset=" + offset + "&fields=id,score,name,coordinates,location_id,opening_hours,snippet,content,best_for,properties,images&account=" + TRIPOSO_ACCOUNT + "&token=" + TRIPOSO_TOKEN
-
-	//fmt.Println(url)
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		log.Println(err)
-		return nil, nil, errors.New("Failed to access the Triposo API.")
-	}
-
-	q := req.URL.Query()
-	req.URL.RawQuery = q.Encode()
-
-	res, err := client.Do(req)
-	if err != nil {
-		log.Println(err)
-		return nil, nil, errors.New("Failed to access the Triposo API.")
-	}
-
-	//fmt.Println(res)
-
-	resp := &placesResponse{}
-	err = json.NewDecoder(res.Body).Decode(resp)
-	if err != nil {
-		log.Println(err)
-		log.Println(req.URL.String())
-		return nil, nil, errors.New("Server experienced an error while parsing Triposo API response.")
-	}
-
-	return &resp.Results, &resp.More, nil
-
-}
-
+//GetLocation function
 func GetLocation(id string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 30}
 
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?id="+id+"&order_by=-score&fields=coordinates,parent_id,country_id,images,content,name,id,snippet,type,structured_content,climate,structured_content_language_info&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?id="+id+"&order_by=-score&fields=coordinates,parent_id,country_id,images,content,name,id,snippet,type,structured_content,climate,structured_content_language_info&account="+triposoAccount+"&token="+triposoToken, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	q := req.URL.Query()
@@ -480,7 +503,7 @@ func GetLocation(id string) (*[]Place, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	resp := &placesResponse{}
@@ -488,7 +511,10 @@ func GetLocation(id string) (*[]Place, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
+		return nil, errors.New("server experienced an error while parsing triposo api response")
+	}
+	if resp.Error != nil {
+		return nil, errors.New(*resp.Error)
 	}
 
 	return &resp.Results, nil
@@ -499,10 +525,10 @@ func GetLocation(id string) (*[]Place, error) {
 func GetLocationArticles(id string) (*[]Article, error) {
 	client := http.Client{Timeout: time.Second * 30}
 
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"article.json?location_ids="+id+"&fields=name,snippet,intro,type,content,structured_content,id&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"article.json?location_ids="+id+"&fields=name,snippet,intro,type,content,structured_content,id&account="+triposoAccount+"&token="+triposoToken, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	q := req.URL.Query()
@@ -511,7 +537,7 @@ func GetLocationArticles(id string) (*[]Article, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	resp := &articlesResponse{}
@@ -519,20 +545,21 @@ func GetLocationArticles(id string) (*[]Article, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
+		return nil, errors.New("server experienced an error while parsing triposo api response")
 	}
 
 	return &resp.Results, nil
 
 }
 
-func GetLocationType(type_id string, count string) (*[]Place, error) {
+//GetLocationType function
+func GetLocationType(typeID string, count string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 30}
-
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?type="+type_id+"&count="+count+"&order_by=-score&fields=coordinates,parent_id,country_id,images,content,name,id,score,snippet&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	url := baseTriposoAPI + "location.json?type=" + typeID + "&count=" + count + "&order_by=-score&fields=coordinates,parent_id,country_id,images,content,name,id,score,snippet&account=" + triposoAccount + "&token=" + triposoToken
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	q := req.URL.Query()
@@ -541,7 +568,7 @@ func GetLocationType(type_id string, count string) (*[]Place, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	resp := &placesResponse{}
@@ -549,19 +576,23 @@ func GetLocationType(type_id string, count string) (*[]Place, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
+		return nil, errors.New("server experienced an error while parsing triposo api response")
+	}
+	if resp.Error != nil {
+		return nil, errors.New(*resp.Error)
 	}
 
 	return &resp.Results, nil
 }
 
+//GetLocations function
 func GetLocations(count string) (*[]Place, error) {
 	client := http.Client{Timeout: time.Second * 30}
 
-	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?count="+count+"&order_by=-score&fields=parent_id,country_id,name,id,score,coordinates,type,images&account="+TRIPOSO_ACCOUNT+"&token="+TRIPOSO_TOKEN, nil)
+	req, err := http.NewRequest(http.MethodGet, baseTriposoAPI+"location.json?count="+count+"&order_by=-score&fields=parent_id,country_id,name,id,score,coordinates,type,images&account="+triposoAccount+"&token="+triposoToken, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	q := req.URL.Query()
@@ -570,7 +601,7 @@ func GetLocations(count string) (*[]Place, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	resp := &placesResponse{}
@@ -578,7 +609,10 @@ func GetLocations(count string) (*[]Place, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Triposo API response.")
+		return nil, errors.New("server experienced an error while parsing triposo api response")
+	}
+	if resp.Error != nil {
+		return nil, errors.New(*resp.Error)
 	}
 
 	return &resp.Results, nil

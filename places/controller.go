@@ -121,7 +121,7 @@ func GetContinent(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// Get Places
+// GetPlaces function
 func GetPlaces(w http.ResponseWriter, r *http.Request) {
 	args := r.URL.Query()
 	q := &args
@@ -344,91 +344,89 @@ func GetDestination(w http.ResponseWriter, r *http.Request) {
 
 //GetHome function
 func GetHome(w http.ResponseWriter, r *http.Request) {
-	typeparams := []string{"city"}
 	fmt.Println("Got Home")
 
 	placeChannel := make(chan PlaceChannel)
 
-	//var islands []triposo.InternalPlace
 	var cities []triposo.InternalPlace
 
-	//islandChannel := make(chan []triposo.Place)
-	cityChannel := make(chan []triposo.Place)
-
 	errorChannel := make(chan error)
-	timeoutChannel := make(chan bool)
-
-	for i, typeParam := range typeparams {
-		go func(typeParam string, i int) {
-			places, err := triposo.GetLocationType(typeParam, "20")
-			res := new(PlaceChannel)
-			res.Places = *places
-			res.Index = i
-			res.Error = err
-			placeChannel <- *res
-		}(typeParam, i)
-
-	}
 
 	go func() {
-		for res := range placeChannel {
-			if res.Error != nil {
-				errorChannel <- res.Error
-				return
-			}
-			switch {
-			// case res.Index == 0:
-			// 	islandChannel <- res.Places.([]triposo.Place)
-			case res.Index == 0:
-				cityChannel <- res.Places.([]triposo.Place)
-			}
-		}
+
+		places, err := triposo.GetLocationType("city", "20")
+		//fmt.Println(places)
+		res := new(PlaceChannel)
+		res.Places = *places
+		res.Index = 0
+		res.Error = err
+		placeChannel <- *res
+		close(placeChannel)
+
 	}()
 
-	go func() {
-		time.Sleep(30 * time.Second)
-		timeoutChannel <- true
-	}()
-
-	for i := 0; i < 1; i++ {
-		select {
-		// case res := <-islandChannel:
-		// 	islands = FromTriposoPlaces(res, "island")
-		case res := <-cityChannel:
-			cities = FromTriposoPlaces(res, "city")
-		case err := <-errorChannel:
-			fmt.Println(err)
-			response.WriteErrorResponse(w, err)
+	for res := range placeChannel {
+		//fmt.Println(res)
+		if res.Error != nil {
+			response.WriteErrorResponse(w, res.Error)
 			return
-		case timeout := <-timeoutChannel:
-			if timeout == true {
-				fmt.Println("api timeout")
-				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
-				return
-			}
 		}
+		cities = FromTriposoPlaces(res.Places.([]triposo.Place), "city")
 	}
 
 	cityParentChannel := make(chan PlaceChannel)
-	go func() {
-		for i := 0; i < len(cities); i++ {
-			go func(index int) {
-				countryID := cities[index].CountryID
-				if countryID == "United_States" {
-					countryID = cities[index].ParentID
-				}
-				country, err := triposo.GetLocation(countryID)
-				res := new(PlaceChannel)
-				res.Places = *country
-				res.Index = index
-				res.Error = err
-				cityParentChannel <- *res
-			}(i)
-			colors, err := GetColor(cities[i].Image)
-			if err != nil {
-				errorChannel <- err
+	colorChannel := make(chan ColorChannel)
+	for i := 0; i < len(cities); i++ {
+		go func(index int) {
+			countryID := cities[index].CountryID
+			if countryID == "United_States" {
+				countryID = cities[index].ParentID
+			}
+			country, err := triposo.GetLocation(countryID)
+			res := new(PlaceChannel)
+			res.Places = *country
+			res.Index = index
+			res.Error = err
+			cityParentChannel <- *res
+		}(i)
+		go func(index int) {
+
+			colors, errColor := GetColor(cities[index].Image)
+			if errColor != nil {
+				errorChannel <- errColor
 				return
 			}
+			res := new(ColorChannel)
+			res.Colors = *colors
+			res.Index = index
+			res.Error = errColor
+
+			colorChannel <- *res
+
+		}(i)
+	}
+
+	for i := 0; i < len(cities)*2; i++ {
+		select {
+		case res := <-cityParentChannel:
+			if res.Error != nil {
+				fmt.Println(res.Error)
+				response.WriteErrorResponse(w, res.Error)
+				return
+			}
+			cities[res.Index].CountryName = res.Places.([]triposo.Place)[0].Name
+			if cities[res.Index].CountryID == "United_States" {
+				cities[res.Index].CountryName = "United States"
+			}
+			cities[res.Index].ParentName = res.Places.([]triposo.Place)[0].Name
+
+		case res := <-colorChannel:
+			if res.Error != nil {
+				response.WriteErrorResponse(w, res.Error)
+				return
+			}
+			colors := res.Colors
+			i := res.Index
 			if len(colors.Vibrant) > 0 {
 				cities[i].Color = colors.Vibrant
 			} else if len(colors.Muted) > 0 {
@@ -442,63 +440,14 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 			} else if len(colors.DarkMuted) > 0 {
 				cities[i].Color = colors.DarkMuted
 			}
-		}
-	}()
-
-	// islandParentChannel := make(chan PlaceChannel)
-	// go func() {
-	// 	for i := 0; i < len(islands); i++ {
-	// 		go func(index int) {
-	// 			country_id := islands[index].CountryID
-	// 			if country_id == "United_States" {
-	// 				country_id = islands[index].ParentID
-	// 			}
-	// 			country, err := triposo.GetLocation(country_id)
-	// 			res := new(PlaceChannel)
-	// 			res.Places = *country
-	// 			res.Index = index
-	// 			res.Error = err
-	// 			islandParentChannel <- *res
-	// 		}(i)
-	// 	}
-	// }()
-
-	for i := 0; i < len(cities); i++ {
-		select {
-		case res := <-cityParentChannel:
-			if res.Error != nil {
-				fmt.Println(res.Error)
-				response.WriteErrorResponse(w, res.Error)
-				return
-			}
-			cities[res.Index].CountryName = res.Places.([]triposo.Place)[0].Name
-			if cities[res.Index].CountryID == "United_States" {
-				cities[res.Index].CountryName = "United States"
-			}
-			cities[res.Index].ParentName = res.Places.([]triposo.Place)[0].Name
+		case err := <-errorChannel:
+			response.WriteErrorResponse(w, err)
+			return
 		}
 	}
 
-	// for i := 0; i < len(islands); i++ {
-	// 	select {
-	// 	case res := <-islandParentChannel:
-	// 		if res.Error != nil {
-	// 			fmt.Println(res.Error)
-	// 			response.WriteErrorResponse(w, res.Error)
-	// 			return
-	// 		}
-	// 		islands[res.Index].CountryName = res.Places.([]triposo.Place)[0].Name
-	// 		if islands[res.Index].CountryID == "United_States" {
-	// 			islands[res.Index].CountryName = "United States"
-	// 		}
-	// 		islands[res.Index].ParentName = res.Places.([]triposo.Place)[0].Name
-	// 	}
-	// }
-
 	homeData := map[string]interface{}{
 		"popular_cities": cities,
-
-		//"popular_islands": islands,
 	}
 
 	response.Write(w, homeData, http.StatusOK)
@@ -510,7 +459,7 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 func GetPoi(w http.ResponseWriter, r *http.Request) {
 	poiID := mux.Vars(r)["poiID"]
 	googlePlace := r.URL.Query().Get("googlePlace")
-	locationId := r.URL.Query().Get("locationId")
+	locationID := r.URL.Query().Get("locationId")
 	poiChannel := make(chan triposo.InternalPlace)
 	colorChannel := make(chan Colors)
 	errorChannel := make(chan error)
@@ -534,7 +483,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 				errorChannel <- err
 				return
 			}
-			photo := "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + place.Photos[0].PhotoReference + "&key=" + GoogleApi
+			photo := "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + place.Photos[0].PhotoReference + "&key=" + googleAPI
 			go func(image string) {
 				if len(image) == 0 {
 					var colors Colors
@@ -598,7 +547,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 		case poiRes := <-poiChannel:
 			poi = &poiRes
 			if googlePlace == "true" {
-				poi.LocationID = locationId
+				poi.LocationID = locationID
 			}
 		case color := <-colorChannel:
 			if len(color.Vibrant) > 0 {
@@ -636,8 +585,7 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-//Get Park
-
+//GetPark function
 func GetPark(w http.ResponseWriter, r *http.Request) {
 	parkID := mux.Vars(r)["parkID"]
 
@@ -647,7 +595,7 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 
 	var pois map[string]interface{}
 
-	poiChannel := make(chan triposo.TriposoChannel)
+	poiChannel := make(chan triposo.Channel)
 	errorChannel := make(chan error)
 	timeoutChannel := make(chan bool)
 	var parkColor string
@@ -658,7 +606,7 @@ func GetPark(w http.ResponseWriter, r *http.Request) {
 			errorChannel <- err
 			return
 		}
-		var res triposo.TriposoChannel
+		var res triposo.Channel
 		res.Places = *places
 		res.More = more
 		poiChannel <- res
@@ -948,107 +896,107 @@ func Search(w http.ResponseWriter, r *http.Request) {
 
 		response.Write(w, searchData, http.StatusOK)
 		return
-	} else {
-		var triposoResults []triposo.InternalPlace
-		//poiChannel := make(chan []triposo.Place)
+	}
+	var triposoResults []triposo.InternalPlace
+	//poiChannel := make(chan []triposo.Place)
 
-		go func() {
-			search, err := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Get(ctx)
-			if err != nil {
-				addQuery <- true
-				return
-			}
-
-			searchData := search.Data()
-			count := searchData["count"].(int64) + 1
-			_, errSearch := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
-				"count": count,
-				"value": query,
-			})
-			if errSearch != nil {
-				// Handle any errors in an appropriate way, such as returning them.
-				fmt.Println(errSearch)
-				response.WriteErrorResponse(w, errSearch)
-			}
-			addQuery <- false
-
-		}()
-
-		googlePlaceChannel := make(chan triposo.InternalPlace)
-		googleClient, err := InitGoogle()
+	go func() {
+		search, err := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Get(ctx)
 		if err != nil {
-			errorChannel <- err
+			addQuery <- true
 			return
 		}
-		latlng := &maps.LatLng{Lat: lat, Lng: lng}
-		r := &maps.PlaceAutocompleteRequest{
-			Input:    query,
-			Location: latlng,
-			Radius:   50000,
-		}
-		places, err := googleClient.PlaceAutocomplete(ctx, r)
-		if err != nil {
-			errorChannel <- err
-			return
-		}
-		for i := 0; i < len(places.Predictions); i++ {
-			go func(placeID string) {
-				r := &maps.PlaceDetailsRequest{
-					PlaceID: placeID,
-				}
-				place, err := googleClient.PlaceDetails(ctx, r)
-				googlePlaceChannel <- FromGooglePlace(place, "poi")
-				if err != nil {
-					errorChannel <- err
-					return
-				}
-			}(places.Predictions[i].PlaceID)
-		}
 
-		go func() {
-			time.Sleep(30 * time.Second)
-			timeoutChannel <- true
-		}()
-
-		for i := 0; i < len(places.Predictions); i++ {
-			select {
-			case res := <-googlePlaceChannel:
-				triposoResults = append(triposoResults, res)
-			case err := <-errorChannel:
-				fmt.Println(err)
-				response.WriteErrorResponse(w, err)
-				return
-			case timeout := <-timeoutChannel:
-				if timeout == true {
-					fmt.Println("api timeout")
-					response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
-					return
-				}
-			}
+		searchData := search.Data()
+		count := searchData["count"].(int64) + 1
+		_, errSearch := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
+			"count": count,
+			"value": query,
+		})
+		if errSearch != nil {
+			// Handle any errors in an appropriate way, such as returning them.
+			fmt.Println(errSearch)
+			response.WriteErrorResponse(w, errSearch)
 		}
+		addQuery <- false
 
-		for i := 0; i < 1; i++ {
-			select {
-			case res := <-addQuery:
-				if res == true && (len(triposoResults) > 0) {
-					_, err := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
-						"count": 1,
-						"value": query,
-					})
-					if err != nil {
-						// Handle any errors in an appropriate way, such as returning them.
-						fmt.Println(err)
-						response.WriteErrorResponse(w, err)
-					}
-				}
-			}
-		}
+	}()
 
-		response.Write(w, map[string]interface{}{
-			"results": triposoResults,
-		}, http.StatusOK)
+	googlePlaceChannel := make(chan triposo.InternalPlace)
+	googleClient, err := InitGoogle()
+	if err != nil {
+		errorChannel <- err
 		return
 	}
+	latlng := &maps.LatLng{Lat: lat, Lng: lng}
+	re := &maps.PlaceAutocompleteRequest{
+		Input:    query,
+		Location: latlng,
+		Radius:   50000,
+	}
+	places, err := googleClient.PlaceAutocomplete(ctx, re)
+	if err != nil {
+		errorChannel <- err
+		return
+	}
+	for i := 0; i < len(places.Predictions); i++ {
+		go func(placeID string) {
+			r := &maps.PlaceDetailsRequest{
+				PlaceID: placeID,
+			}
+			place, err := googleClient.PlaceDetails(ctx, r)
+			googlePlaceChannel <- FromGooglePlace(place, "poi")
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+		}(places.Predictions[i].PlaceID)
+	}
+
+	go func() {
+		time.Sleep(30 * time.Second)
+		timeoutChannel <- true
+	}()
+
+	for i := 0; i < len(places.Predictions); i++ {
+		select {
+		case res := <-googlePlaceChannel:
+			triposoResults = append(triposoResults, res)
+		case err := <-errorChannel:
+			fmt.Println(err)
+			response.WriteErrorResponse(w, err)
+			return
+		case timeout := <-timeoutChannel:
+			if timeout == true {
+				fmt.Println("api timeout")
+				response.WriteErrorResponse(w, fmt.Errorf("api timeout"))
+				return
+			}
+		}
+	}
+
+	for i := 0; i < 1; i++ {
+		select {
+		case res := <-addQuery:
+			if res == true && (len(triposoResults) > 0) {
+				_, err := client.Collection("searches_poi").Doc(strings.ToUpper(query)).Set(ctx, map[string]interface{}{
+					"count": 1,
+					"value": query,
+				})
+				if err != nil {
+					// Handle any errors in an appropriate way, such as returning them.
+					fmt.Println(err)
+					response.WriteErrorResponse(w, err)
+				}
+			}
+		}
+	}
+
+	response.Write(w, map[string]interface{}{
+		"results": triposoResults,
+	}, http.StatusOK)
+	return
+
 }
 
 //ThingsToDo function
@@ -1059,7 +1007,7 @@ func ThingsToDo(w http.ResponseWriter, r *http.Request) {
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
-	destinationsChannel := make(chan map[string]interface{})
+	destinationsChannel := make(chan types.DoChannel)
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
@@ -1095,13 +1043,15 @@ func ThingsToDo(w http.ResponseWriter, r *http.Request) {
 
 			iterDestinations := client.Collection("trips").Doc(trip.ID).Collection("destinations").Where("end_date", ">=", currentTime).Documents(ctx)
 			for {
+				chanRes := types.DoChannel{}
 				destinationsDoc, errDestinations := iterDestinations.Next()
 				if errDestinations == iterator.Done {
 					break
 				}
 				if errDestinations != nil {
 					fmt.Println(errDestinations)
-					response.WriteErrorResponse(w, errDestinations)
+					chanRes.Error = errDestinations
+					destinationsChannel <- chanRes
 					return
 				}
 				var destination types.Destination
@@ -1110,7 +1060,8 @@ func ThingsToDo(w http.ResponseWriter, r *http.Request) {
 				colorRes, errColor := GetColor(destination.Image)
 				if errColor != nil {
 					fmt.Println(errColor)
-					response.WriteErrorResponse(w, errColor)
+					chanRes.Error = errColor
+					destinationsChannel <- chanRes
 					return
 				}
 				var destinationColor string = ""
@@ -1128,22 +1079,26 @@ func ThingsToDo(w http.ResponseWriter, r *http.Request) {
 					destinationColor = colorRes.DarkMuted
 				}
 
-				destinationsChannel <- map[string]interface{}{
+				chanRes.Destination = map[string]interface{}{
 					"destination": destination,
 					"color":       destinationColor,
 				}
+
+				destinationsChannel <- chanRes
 
 			}
 
 			iterDestinationsNum := client.Collection("trips").Doc(trip.ID).Collection("destinations").Where("num_of_days", ">", 0).Documents(ctx)
 			for {
+				chanRes := types.DoChannel{}
 				destinationsDoc, errDestinations := iterDestinationsNum.Next()
 				if errDestinations == iterator.Done {
 					break
 				}
 				if errDestinations != nil {
 					fmt.Println(errDestinations)
-					response.WriteErrorResponse(w, errDestinations)
+					chanRes.Error = errDestinations
+					destinationsChannel <- chanRes
 					return
 				}
 				var destination types.Destination
@@ -1152,9 +1107,10 @@ func ThingsToDo(w http.ResponseWriter, r *http.Request) {
 				colorRes, errColor := GetColor(destination.Image)
 				if errColor != nil {
 					fmt.Println(errColor)
-					response.WriteErrorResponse(w, errColor)
-
+					chanRes.Error = errColor
+					destinationsChannel <- chanRes
 					return
+
 				}
 				var destinationColor string = ""
 				if len(colorRes.Vibrant) > 0 {
@@ -1171,17 +1127,23 @@ func ThingsToDo(w http.ResponseWriter, r *http.Request) {
 					destinationColor = colorRes.DarkMuted
 				}
 
-				destinationsChannel <- map[string]interface{}{
+				chanRes.Destination = map[string]interface{}{
 					"destination": destination,
 					"color":       destinationColor,
 				}
+
+				destinationsChannel <- chanRes
 			}
 
 		}
 	}(iter)
 
 	for res := range destinationsChannel {
-		destinations = append(destinations, res)
+		if res.Error != nil {
+			response.WriteErrorResponse(w, res.Error)
+			return
+		}
+		destinations = append(destinations, res.Destination)
 	}
 
 	response.Write(w, map[string]interface{}{
@@ -1451,8 +1413,7 @@ func RecentSearch(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// Popular Locations
-
+//GetPopularLocations function
 func GetPopularLocations(w http.ResponseWriter, r *http.Request) {
 
 	placeChannel := make(chan []triposo.Place)

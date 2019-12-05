@@ -62,7 +62,7 @@ func collectionHandler(iter *firestore.DocumentIterator, client *firestore.Clien
 					}
 					i10ItemsDoc.DataTo(&itineraryItem)
 					if itineraryItem.Poi != nil && len(itineraryItem.Poi.Images) > 0 {
-						itineraryItem.Image = itineraryItem.Poi.Images[0].Sizes.Medium.Url
+						itineraryItem.Image = itineraryItem.Poi.Images[0].Sizes.Medium.URL
 					}
 					itineraryItems = append(itineraryItems, itineraryItem)
 
@@ -301,7 +301,7 @@ func getItinerary(itineraryID string) (map[string]interface{}, error) {
 			var itineraryItem ItineraryItem
 			i10ItemsDoc.DataTo(&itineraryItem)
 			if itineraryItem.Poi != nil && len(itineraryItem.Poi.Images) > 0 {
-				itineraryItem.Image = itineraryItem.Poi.Images[0].Sizes.Medium.Url
+				itineraryItem.Image = itineraryItem.Poi.Images[0].Sizes.Medium.URL
 			}
 			itineraryItems = append(itineraryItems, itineraryItem)
 
@@ -1016,7 +1016,7 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 					itineraryItems[i].Description = itineraryItems[i].Poi.DescriptionShort
 				}
 				if itineraryItems[i].Poi != nil && len(itineraryItems[i].Poi.Images) > 0 {
-					itineraryItems[i].Image = itineraryItems[i].Poi.Images[0].Sizes.Medium.Url
+					itineraryItems[i].Image = itineraryItems[i].Poi.Images[0].Sizes.Medium.URL
 					colors, err := places.GetColor(itineraryItems[i].Image)
 					if err != nil {
 						errorChannel <- err
@@ -1085,7 +1085,7 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 	} else {
 		for i := 0; i < len(itineraryItems); i++ {
 			if itineraryItems[i].Poi != nil && len(itineraryItems[i].Poi.Images) > 0 {
-				itineraryItems[i].Image = itineraryItems[i].Poi.Images[0].Sizes.Medium.Url
+				itineraryItems[i].Image = itineraryItems[i].Poi.Images[0].Sizes.Medium.URL
 
 				colors, err := places.GetColor(itineraryItems[i].Image)
 				if err != nil {
@@ -1122,7 +1122,7 @@ func getDay(w http.ResponseWriter, r *http.Request, justAdded *string, optimize 
 	} else {
 		for i := 0; i < len(visitedItineraryItems); i++ {
 			if visitedItineraryItems[i].Poi != nil && len(visitedItineraryItems[i].Poi.Images) > 0 {
-				visitedItineraryItems[i].Image = visitedItineraryItems[i].Poi.Images[0].Sizes.Medium.Url
+				visitedItineraryItems[i].Image = visitedItineraryItems[i].Poi.Images[0].Sizes.Medium.URL
 
 				colors, err := places.GetColor(visitedItineraryItems[i].Image)
 				if err != nil {

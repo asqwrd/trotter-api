@@ -3,9 +3,6 @@ package places
 import (
 	"fmt"
 	"image"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
 	"net/http"
 	"regexp"
 	"strings"
@@ -17,27 +14,27 @@ import (
 	"googlemaps.github.io/maps"
 )
 
-var GoogleApi = "AIzaSyDjkQw21rnh9QfJIh2YD-Fl4NEteIBn7L8"
+var googleAPI = "AIzaSyDjkQw21rnh9QfJIh2YD-Fl4NEteIBn7L8"
 
 // Place represents the normalized + filtered data for a sygic.Place
 type Place struct {
 	// These are name overrides
-	Sygic_id          string `json:"sygic_id"`
-	Id                string `json:"id"`
-	Image             string `json:"image"`
-	Description       string `json:"description"`
-	Description_short string `json:"description_short,omitempty"`
+	SygicID          string `json:"sygic_id"`
+	ID               string `json:"id"`
+	Image            string `json:"image"`
+	Description      string `json:"description"`
+	DescriptionShort string `json:"description_short,omitempty"`
 
 	// These don't
 	Name              string                    `json:"name"`
-	Original_name     string                    `json:"original_name"`
-	Name_suffix       string                    `json:"name_suffix,omitempty"`
-	Parent_ids        []string                  `json:"parent_ids,omitempty"`
+	OriginalName      string                    `json:"original_name"`
+	NameSuffix        string                    `json:"name_suffix,omitempty"`
+	ParentIDS         []string                  `json:"parent_ids,omitempty"`
 	Level             string                    `json:"level,omitempty"`
 	Address           string                    `json:"address,omitempty"`
 	Phone             string                    `json:"phone,omitempty"`
 	Location          sygic.Location            `json:"location"`
-	Bounding_box      sygic.BoundingBox         `json:"bounding_box"`
+	BoundingBox       sygic.BoundingBox         `json:"bounding_box"`
 	Colors            Colors                    `json:"colors"`
 	Color             interface{}               `json:"color"`
 	Tags              []triposo.Tags            `json:"tags"`
@@ -45,24 +42,28 @@ type Place struct {
 	Climate           triposo.Climate           `json:"climate"`
 }
 
+//PlaceChannel struct
 type PlaceChannel struct {
 	Places interface{}
 	Index  int
 	Error  error
 }
 
+//ColorChannel struct
 type ColorChannel struct {
 	Colors Colors
 	Index  int
 	Error  error
 }
 
+//InternalPlaceChannel struct
 type InternalPlaceChannel struct {
 	Place triposo.InternalPlace
 	Index int
 	Error error
 }
 
+//Colors struct
 type Colors struct {
 	Vibrant      string
 	Muted        string
@@ -72,6 +73,7 @@ type Colors struct {
 	DarkMuted    string
 }
 
+//FromSygicPlace function
 func FromSygicPlace(sp *sygic.Place) (p *Place) {
 	name := sp.Name
 	if name == "Czechia" {
@@ -82,32 +84,33 @@ func FromSygicPlace(sp *sygic.Place) (p *Place) {
 	}
 	p = &Place{
 		// These have name overrides
-		Sygic_id:    sp.ID,
-		Id:          sp.ID,
+		SygicID:     sp.ID,
+		ID:          sp.ID,
 		Image:       sp.Thumbnail_url,
 		Description: sp.Perex,
 
 		// These don't
-		Name:          name,
-		Original_name: sp.Original_name,
-		Name_suffix:   sp.Name_suffix,
-		Parent_ids:    sp.Parent_ids,
-		Level:         sp.Level,
-		Address:       sp.Address,
-		Phone:         sp.Phone,
-		Location:      sp.Location,
-		Bounding_box:  sp.Bounding_box,
+		Name:         name,
+		OriginalName: sp.Original_name,
+		NameSuffix:   sp.Name_suffix,
+		ParentIDS:    sp.Parent_ids,
+		Level:        sp.Level,
+		Address:      sp.Address,
+		Phone:        sp.Phone,
+		Location:     sp.Location,
+		BoundingBox:  sp.Bounding_box,
 	}
 
 	return p
 }
 
-//Init Google Maps Client
+//InitGoogle Maps Client
 func InitGoogle() (*maps.Client, error) {
-	googleClient, err := maps.NewClient(maps.WithAPIKey(GoogleApi))
+	googleClient, err := maps.NewClient(maps.WithAPIKey(googleAPI))
 	return googleClient, err
 }
 
+//FromSygicPlaceDetail function
 func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 	re := regexp.MustCompile(`\{[^\]]*?\}`)
 	name := sp.Name
@@ -123,28 +126,29 @@ func FromSygicPlaceDetail(sp *sygic.PlaceDetail) (p *Place) {
 	}
 	p = &Place{
 		// These have name overrides
-		Sygic_id:    sp.Id,
-		Id:          sp.Id,
+		SygicID:     sp.Id,
+		ID:          sp.Id,
 		Image:       image,
 		Description: sp.Perex,
 
 		// These don't
-		Name:          name,
-		Original_name: sp.Original_name,
-		Location:      sp.Location,
-		Bounding_box:  sp.Bounding_box,
+		Name:         name,
+		OriginalName: sp.Original_name,
+		Location:     sp.Location,
+		BoundingBox:  sp.Bounding_box,
 	}
 
 	return p
 }
 
+//FromGooglePlaceSearch function
 func FromGooglePlaceSearch(sp maps.PlacesSearchResult, level string) (p triposo.InternalPlace) {
 	length := len(sp.Photos)
 	var image = ""
 	var imageHD = ""
 	if length > 0 {
-		image = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + GoogleApi
-		imageHD = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + GoogleApi
+		image = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + googleAPI
+		imageHD = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + googleAPI
 	}
 	var images []triposo.Image
 
@@ -152,13 +156,13 @@ func FromGooglePlaceSearch(sp maps.PlacesSearchResult, level string) (p triposo.
 		images = append(images, triposo.Image{
 			Sizes: triposo.ImageSizes{
 				Medium: triposo.ImageSize{
-					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
+					URL: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + googleAPI,
 				},
 				Thumbnail: triposo.ImageSize{
-					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
+					URL: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + googleAPI,
 				},
 				Original: triposo.ImageSize{
-					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
+					URL: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + googleAPI,
 				},
 			},
 		})
@@ -226,13 +230,14 @@ func FromGooglePlaceSearch(sp maps.PlacesSearchResult, level string) (p triposo.
 	return p
 }
 
+//FromGooglePlace function
 func FromGooglePlace(sp maps.PlaceDetailsResult, level string) (p triposo.InternalPlace) {
 	length := len(sp.Photos)
 	var image = ""
 	var imageHD = ""
 	if length > 0 {
-		image = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1024&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + GoogleApi
-		imageHD = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + GoogleApi
+		image = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1024&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + googleAPI
+		imageHD = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[0].PhotoReference + "&key=" + googleAPI
 	}
 	var images []triposo.Image
 
@@ -240,13 +245,13 @@ func FromGooglePlace(sp maps.PlaceDetailsResult, level string) (p triposo.Intern
 		images = append(images, triposo.Image{
 			Sizes: triposo.ImageSizes{
 				Medium: triposo.ImageSize{
-					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
+					URL: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + googleAPI,
 				},
 				Original: triposo.ImageSize{
-					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
+					URL: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + googleAPI,
 				},
 				Thumbnail: triposo.ImageSize{
-					Url: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + GoogleApi,
+					URL: "https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=" + sp.Photos[i].PhotoReference + "&key=" + googleAPI,
 				},
 			},
 		})
@@ -334,8 +339,8 @@ func FromGooglePlace(sp maps.PlaceDetailsResult, level string) (p triposo.Intern
 func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p triposo.InternalPlace) {
 	length := len(sp.Images)
 	var image = ""
-	var image_hd = ""
-	var image_medium = ""
+	var imagehd = ""
+	var imageMedium = ""
 	var areaIndex = 0
 	var area = 0
 
@@ -351,17 +356,17 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 		}
 
 		if len(thumbnail) > 0 && thumbnail[0] {
-			image = sp.Images[areaIndex].Sizes.Medium.Url
-			image_medium = sp.Images[areaIndex].Sizes.Medium.Url
-			image_hd = sp.Images[areaIndex].Sizes.Medium.Url
+			image = sp.Images[areaIndex].Sizes.Medium.URL
+			imageMedium = sp.Images[areaIndex].Sizes.Medium.URL
+			imagehd = sp.Images[areaIndex].Sizes.Medium.URL
 		} else if areaIndex >= 0 {
-			image = sp.Images[areaIndex].Sizes.Original.Url
-			image_medium = sp.Images[areaIndex].Sizes.Medium.Url
-			image_hd = sp.Images[areaIndex].Sizes.Original.Url
+			image = sp.Images[areaIndex].Sizes.Original.URL
+			imageMedium = sp.Images[areaIndex].Sizes.Medium.URL
+			imagehd = sp.Images[areaIndex].Sizes.Original.URL
 		} else {
-			image = sp.Images[0].Sizes.Medium.Url
-			image_medium = sp.Images[areaIndex].Sizes.Medium.Url
-			image_hd = sp.Images[0].Sizes.Medium.Url
+			image = sp.Images[0].Sizes.Medium.URL
+			imageMedium = sp.Images[areaIndex].Sizes.Medium.URL
+			imagehd = sp.Images[0].Sizes.Medium.URL
 		}
 	}
 
@@ -377,8 +382,8 @@ func FromTriposoPlace(sp triposo.Place, level string, thumbnail ...bool) (p trip
 		ID:                sp.ID,
 		Type:              sp.Type,
 		Image:             image,
-		ImageHD:           image_hd,
-		ImageMedium:       image_medium,
+		ImageHD:           imagehd,
+		ImageMedium:       imageMedium,
 		Images:            sp.Images,
 		Description:       description,
 		DescriptionShort:  sp.Snippet,

@@ -154,6 +154,11 @@ type DestinationChannel struct {
 	Error        error
 }
 
+type DoChannel struct {
+	Destination map[string]interface{}
+	Error       error
+}
+
 // PriceDetail struct
 type PriceDetail struct {
 	Type  string `json:"type" firestore:"type"`

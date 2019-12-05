@@ -35,6 +35,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 	var q *url.Values
 	args := r.URL.Query()
 	q = &args
+	fmt.Println("Getting Trips")
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
@@ -102,7 +103,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 				upcoming = true
 			}
 		}
-		fmt.Println(upcoming)
+		// fmt.Println(upcoming)
 		if upcoming == true {
 			upcomingTrips = append(upcomingTrips, trip)
 		} else {
@@ -113,16 +114,17 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 	}
 	for i := 0; i < len(upcomingTrips); i++ {
 		go func(index int) {
-
+			res := new(places.ColorChannel)
 			colors, errColor := places.GetColor(upcomingTrips[index].Image)
 			if errColor != nil {
-				fmt.Println(errColor)
-				response.WriteErrorResponse(w, errColor)
+				res.Error = errColor
+				colorChannel <- *res
 				return
+
 			}
 
-			res := new(places.ColorChannel)
 			res.Colors = *colors
+			res.Error = errColor
 			res.Index = index
 			colorChannel <- *res
 
@@ -130,38 +132,37 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 		go func(index int) {
 			var dest []types.Destination
 			iter := client.Collection("trips").Doc(upcomingTrips[index].ID).Collection("destinations").Documents(ctx)
+			res := new(types.DestinationChannel)
 			for {
 				doc, err := iter.Next()
 				if err == iterator.Done {
 					break
 				}
-				if err != nil {
-					fmt.Println(err)
-					response.WriteErrorResponse(w, err)
-					return
-				}
+
 				var destination types.Destination
 				doc.DataTo(&destination)
 				dest = append(dest, destination)
 			}
-			res := new(types.DestinationChannel)
+
 			res.Destinations = dest
+			res.Error = err
 			res.Index = index
 			destinationChannel <- *res
 		}(i)
 	}
 
 	for i := 0; i < len(pastTrips); i++ {
-		go func(index int) {
 
+		go func(index int) {
+			res := new(places.ColorChannel)
 			colors, errColor := places.GetColor(pastTrips[index].Image)
 			if errColor != nil {
-				fmt.Println(errColor)
-				response.WriteErrorResponse(w, errColor)
+				res.Error = errColor
+				colorChannel2 <- *res
 				return
+
 			}
 
-			res := new(places.ColorChannel)
 			res.Colors = *colors
 			res.Index = index
 			colorChannel2 <- *res
@@ -170,22 +171,21 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 		go func(index int) {
 			var dest []types.Destination
 			iter := client.Collection("trips").Doc(pastTrips[index].ID).Collection("destinations").Documents(ctx)
+			res := new(types.DestinationChannel)
 			for {
+
 				doc, err := iter.Next()
 				if err == iterator.Done {
 					break
 				}
-				if err != nil {
-					fmt.Println(err)
-					response.WriteErrorResponse(w, err)
-					return
-				}
+
 				var destination types.Destination
 				doc.DataTo(&destination)
 				dest = append(dest, destination)
 			}
-			res := new(types.DestinationChannel)
+
 			res.Destinations = dest
+			res.Error = err
 			res.Index = index
 			destinationChannel2 <- *res
 		}(i)
@@ -194,6 +194,10 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 	for i := 0; i < len(upcomingTrips)*2; i++ {
 		select {
 		case colors := <-colorChannel:
+			if colors.Error != nil {
+				response.WriteErrorResponse(w, colors.Error)
+				return
+			}
 			if len(colors.Colors.Vibrant) > 0 {
 				upcomingTrips[colors.Index].Color = colors.Colors.Vibrant
 			} else if len(colors.Colors.Muted) > 0 {
@@ -208,6 +212,10 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 				upcomingTrips[colors.Index].Color = colors.Colors.DarkMuted
 			}
 		case des := <-destinationChannel:
+			if des.Error != nil {
+				response.WriteErrorResponse(w, des.Error)
+				return
+			}
 			upcomingTrips[des.Index].Destinations = des.Destinations
 		}
 	}
@@ -215,6 +223,10 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 	for i := 0; i < len(pastTrips)*2; i++ {
 		select {
 		case colors := <-colorChannel2:
+			if colors.Error != nil {
+				response.WriteErrorResponse(w, colors.Error)
+				return
+			}
 			if len(colors.Colors.Vibrant) > 0 {
 				pastTrips[colors.Index].Color = colors.Colors.Vibrant
 			} else if len(colors.Colors.Muted) > 0 {
@@ -229,6 +241,10 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 				pastTrips[colors.Index].Color = colors.Colors.DarkMuted
 			}
 		case des := <-destinationChannel2:
+			if des.Error != nil {
+				response.WriteErrorResponse(w, des.Error)
+				return
+			}
 			pastTrips[des.Index].Destinations = des.Destinations
 		}
 	}
@@ -241,6 +257,7 @@ func GetTrips(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Got trips")
 
 	response.Write(w, tripsData, http.StatusOK)
+	return
 }
 
 // CreateTrip function

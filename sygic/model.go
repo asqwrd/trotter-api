@@ -191,7 +191,7 @@ func GetCountry(count string) (*[]Place, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	resp := &placesResponse{}
@@ -221,7 +221,7 @@ func Search(query string) (*[]Place, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Triposo API.")
+		return nil, errors.New("failed to access the Triposo api")
 	}
 
 	resp := &placesResponse{}

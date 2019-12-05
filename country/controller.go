@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"time"
 
 	firebase "firebase.google.com/go"
-	"github.com/asqwrd/trotter-api/location"
 	"github.com/asqwrd/trotter-api/places"
 	"github.com/asqwrd/trotter-api/response" //"github.com/asqwrd/trotter-api/sygic"
 	"github.com/asqwrd/trotter-api/triposo"
@@ -363,125 +361,4 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	response.Write(w, responseData, http.StatusOK)
 	return
-}
-
-// City State
-
-func getCityState(cityStateID string) (map[string]interface{}, error) {
-	urlparams := []string{"sightseeing|sight|topattractions",
-		"museums|tours|walkingtours|transport|private_tours|celebrations|hoponhopoff|air|architecture|multiday|touristinfo|forts",
-		"amusementparks|golf|iceskating|kayaking|sporttickets|sports|surfing|cinema|zoos",
-		"beaches|camping|wildlife|fishing|relaxinapark",
-		"eatingout|breakfast|coffeeandcake|lunch|dinner",
-		"do|shopping",
-		"nightlife|comedy|drinks|dancing|pubcrawl|redlight|musicandshows|celebrations|foodexperiences|breweries|showstheatresandmusic"}
-
-	placeChannel := make(chan triposo.TriposoChannel)
-
-	var placeToSee []triposo.InternalPlace
-	var discoverPlaces []triposo.InternalPlace
-	var playPlaces []triposo.InternalPlace
-	var eatPlaces []triposo.InternalPlace
-	var nightlifePlaces []triposo.InternalPlace
-	var shopPlaces []triposo.InternalPlace
-	var relaxPlaces []triposo.InternalPlace
-
-	seeChannel := make(chan []triposo.Place)
-	eatChannel := make(chan []triposo.Place)
-	discoverChannel := make(chan []triposo.Place)
-	playChannel := make(chan []triposo.Place)
-	nightlifeChannel := make(chan []triposo.Place)
-	shopChannel := make(chan []triposo.Place)
-	relaxChannel := make(chan []triposo.Place)
-	errorChannel := make(chan error)
-	timeoutChannel := make(chan error)
-
-	for i, param := range urlparams {
-		go func(param string, i int) {
-			place, _, err := triposo.GetPoiFromLocation(cityStateID, "20", param, i)
-			res := new(triposo.TriposoChannel)
-			res.Places = *place
-			res.Index = i
-			res.Error = err
-			placeChannel <- *res
-		}(param, i)
-
-	}
-
-	go func() {
-		for res := range placeChannel {
-			if res.Error != nil {
-				errorChannel <- res.Error
-				return
-			}
-			switch {
-			case res.Index == 0:
-				seeChannel <- res.Places
-			case res.Index == 1:
-				discoverChannel <- res.Places
-			case res.Index == 2:
-				playChannel <- res.Places
-			case res.Index == 4:
-				eatChannel <- res.Places
-			case res.Index == 6:
-				nightlifeChannel <- res.Places
-			case res.Index == 5:
-				shopChannel <- res.Places
-			case res.Index == 3:
-				relaxChannel <- res.Places
-			}
-		}
-
-	}()
-
-	go func() {
-		time.Sleep(30 * time.Second)
-		timeoutChannel <- fmt.Errorf("timeout occured")
-	}()
-
-	for i := 0; i < 7; i++ {
-		select {
-		case see := <-seeChannel:
-			placeToSee = places.FromTriposoPlaces(see, "poi")
-		case eat := <-eatChannel:
-			eatPlaces = places.FromTriposoPlaces(eat, "poi")
-		case discover := <-discoverChannel:
-			discoverPlaces = places.FromTriposoPlaces(discover, "poi")
-		case shop := <-shopChannel:
-			shopPlaces = places.FromTriposoPlaces(shop, "poi")
-		case relax := <-relaxChannel:
-			relaxPlaces = places.FromTriposoPlaces(relax, "poi")
-		case play := <-playChannel:
-			playPlaces = places.FromTriposoPlaces(play, "poi")
-		case nightlife := <-nightlifeChannel:
-			nightlifePlaces = places.FromTriposoPlaces(nightlife, "poi")
-		case err := <-errorChannel:
-			return nil, err
-		case timeout := <-timeoutChannel:
-			return nil, timeout
-		}
-	}
-
-	return map[string]interface{}{
-		"see":           &placeToSee,
-		"see_locations": location.FromTriposoPlaces(placeToSee),
-
-		"discover":           &discoverPlaces,
-		"discover_locations": location.FromTriposoPlaces(discoverPlaces),
-
-		"play":           &playPlaces,
-		"play_locations": location.FromTriposoPlaces(playPlaces),
-
-		"eat":           &eatPlaces,
-		"eat_locations": location.FromTriposoPlaces(eatPlaces),
-
-		"shop":           &shopPlaces,
-		"shop_locations": location.FromTriposoPlaces(shopPlaces),
-
-		"nightlife":           &nightlifePlaces,
-		"nightlife_locations": location.FromTriposoPlaces(nightlifePlaces),
-
-		"relax":           &relaxPlaces,
-		"relax_locations": location.FromTriposoPlaces(relaxPlaces),
-	}, nil
 }

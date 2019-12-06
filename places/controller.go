@@ -728,7 +728,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	defer client.Close()
 
 	if len(latq) == 0 && len(lngq) == 0 {
-		typeparams := []string{"island", "city", "city_state"}
+		typeparams := []string{"island", "city", "city_state", "region"}
 		placeChannel := make(chan PlaceChannel)
 
 		var triposoResults []triposo.InternalPlace
@@ -737,7 +737,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		cityChannel := make(chan []triposo.Place)
 		cityStateChannel := make(chan []triposo.Place)
 		//parkChannel := make(chan []triposo.Place)
-		//regionChannel := make(chan []triposo.Place)
+		regionChannel := make(chan []triposo.Place)
 
 		go func() {
 			search, err := client.Collection("searches").Doc(strings.ToUpper(query)).Get(ctx)
@@ -786,12 +786,12 @@ func Search(w http.ResponseWriter, r *http.Request) {
 					cityChannel <- res.Places.([]triposo.Place)
 				case res.Index == 2:
 					cityStateChannel <- res.Places.([]triposo.Place)
-				}
+
 				// case res.Index == 3:
 				// 	parkChannel <- res.Places.([]triposo.Place)
-				// case res.Index == 3:
-				// 	regionChannel <- res.Places.([]triposo.Place)
-				// }
+				case res.Index == 3:
+					regionChannel <- res.Places.([]triposo.Place)
+				}
 			}
 
 		}()
@@ -811,8 +811,8 @@ func Search(w http.ResponseWriter, r *http.Request) {
 				triposoResults = append(triposoResults, FromTriposoPlaces(res, "city_state")...)
 			// case res := <-parkChannel:
 			// 	triposoResults = append(triposoResults, FromTriposoPlaces(res, "national_park")...)
-			// case res := <-regionChannel:
-			// 	triposoResults = append(triposoResults, FromTriposoPlaces(res, "region")...)
+			case res := <-regionChannel:
+				triposoResults = append(triposoResults, FromTriposoPlaces(res, "region")...)
 			case err := <-errorChannel:
 				fmt.Println(err)
 				response.WriteErrorResponse(w, err)

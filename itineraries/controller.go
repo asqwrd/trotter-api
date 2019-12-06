@@ -241,7 +241,7 @@ func getItinerary(itineraryID string) (map[string]interface{}, error) {
 
 	}(itinerary.Destination)
 	var nestedItineraries []LinkedItinerary
-	nestedItr := client.Collection("itineraries").Where("trip_id", "==", itinerary.TripID).Documents(ctx)
+	nestedItr := client.Collection("itineraries").Where("trip_id", "==", itinerary.TripID).Where("start_date", ">", 0).Documents(ctx)
 	for {
 		nestDoc, errNest := nestedItr.Next()
 		if errNest == iterator.Done {

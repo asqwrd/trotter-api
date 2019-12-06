@@ -18,6 +18,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"googlemaps.github.io/maps"
 	"gopkg.in/maddevsio/fcm.v1"
 )
 
@@ -1646,9 +1647,30 @@ func AddFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, err)
 		return
 	}
-
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
+
+	googleClient, err := places.InitGoogle()
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+	}
+
+	for i, segment := range flight.Segments {
+		if segment.Type == "Hotel" && len(segment.Address1) > 0 && len(segment.Lat) == 0 && len(segment.Lon) == 0 {
+			address := segment.Address1 + " " + segment.CityName + ", " + segment.Country + " " + segment.PostalCode
+			r := &maps.GeocodingRequest{
+				Address: address,
+			}
+
+			resp, err := googleClient.Geocode(ctx, r)
+			if err != nil {
+				response.WriteErrorResponse(w, err)
+			}
+			flight.Segments[i].Lat = fmt.Sprintf("%f",resp[0].Geometry.Location.Lat)
+			flight.Segments[i].Lon = fmt.Sprintf("%f",resp[0].Geometry.Location.Lng)
+		}
+	}
 
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {

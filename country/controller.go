@@ -147,7 +147,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				fmt.Println("color error")
 				fmt.Println(country.Image)
-				colorsBackup, errBackup := GetColor(country.ImageMedium)
+				colorsBackup, errBackup := places.GetColor(country.ImageMedium)
 				if errBackup != nil {
 					fmt.Println("color backup error")
 					fmt.Println(country.ImageMedium)

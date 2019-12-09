@@ -314,19 +314,24 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		case res := <-resultsChannel:
 			switch res["routine"] {
 			case "currency":
+				fmt.Println("currency")
 				currency = res["result"].(interface{})
 			case "visa":
+				fmt.Println("visa")
 				if res["result"] != nil {
 					visa = res["result"].(interface{})
 				} else {
 					visa = res["result"]
 				}
 			case "safety":
+				fmt.Println("safety")
 				score := res["result"].(SafetyData).Advisory.Score
 				safety = Safety{Advice: *FormatSafety(score), Rating: score}
 			case "numbers":
+				fmt.Println("numbers")
 				emergencyNumbers = res["result"].(EmergencyNumbers)
 			case "color":
+				fmt.Println("color")
 				colors := res["result"].(*places.Colors)
 				if len(colors.Vibrant) > 0 {
 					countryColor = colors.Vibrant
@@ -342,6 +347,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 					countryColor = colors.DarkMuted
 				}
 			case "error":
+				fmt.Println("error")
 				fmt.Println(res["result"].(error))
 				response.WriteErrorResponse(w, res["result"].(error))
 				return

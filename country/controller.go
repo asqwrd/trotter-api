@@ -122,12 +122,14 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	res, err := triposo.GetLocation(countryID)
 	if err != nil {
+		fmt.Println(err)
 		resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 		return
 	}
 	place := *res
 	countryRes := places.FromTriposoPlace(place[0], place[0].Type)
 	country = countryRes
+	fmt.Println(country)
 
 	/*
 		*

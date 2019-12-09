@@ -147,7 +147,14 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				fmt.Println("color error")
 				fmt.Println(country.Image)
-				resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
+				colorsBackup, errBackup := GetColor(country.ImageMedium)
+				if errBackup != nil {
+					fmt.Println("color backup error")
+					fmt.Println(country.ImageMedium)
+					resultsChannel <- map[string]interface{}{"result": errBackup, "routine": "error"}
+					return
+				}
+				resultsChannel <- map[string]interface{}{"result": colorsBackup, "routine": "color"}
 				return
 			}
 			resultsChannel <- map[string]interface{}{"result": colors, "routine": "color"}

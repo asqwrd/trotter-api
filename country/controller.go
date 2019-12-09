@@ -129,7 +129,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	place := *res
 	countryRes := places.FromTriposoPlace(place[0], place[0].Type)
 	country = countryRes
-	fmt.Println(country)
+	fmt.Println(country.Name)
 
 	/*
 		*
@@ -140,6 +140,8 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 	routines++
 	go func() {
 		//defer wg.Done()
+		fmt.Println("color")
+		fmt.Println(country.Image)
 		if len(country.Image) > 0 {
 			colors, err := places.GetColor(country.Image)
 			if err != nil {
@@ -155,6 +157,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			resultsChannel <- map[string]interface{}{"result": &colors, "routine": "color"}
 
 		}
+		fmt.Println("color done")
 	}()
 
 	/*
@@ -167,11 +170,13 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 	code, err := client.Collection("countries_code").Doc(country.Name).Get(ctx)
 	if err != nil {
+		fmt.Println(err)
 		resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 		return
 	}
 	countryCodeData := code.Data()
 	countryCode := countryCodeData["abbreviation"].(string)
+	fmt.Println(countryCode)
 	/*
 		*
 		*
@@ -186,10 +191,12 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 
 			visa, err := GetVisa(countryCode, user.Country)
 			if err != nil {
+				fmt.Println(err)
 				resultsChannel <- map[string]interface{}{"result": nil, "routine": "visa"}
 				return
 			}
 			resultsChannel <- map[string]interface{}{"result": FormatVisa(*visa), "routine": "visa"}
+			fmt.Println("visa done")
 
 		}(user)
 	}
@@ -208,11 +215,13 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		var safetyData SafetyData
 		safetyRes, err := client.Collection("safety").Doc(countryCode).Get(ctx)
 		if err != nil {
+			fmt.Println(err)
 			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 			return
 		}
 		safetyRes.DataTo(&safetyData)
 		resultsChannel <- map[string]interface{}{"result": safetyData, "routine": "safety"}
+		fmt.Println("safety done")
 	}()
 
 	/*
@@ -229,9 +238,11 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			//defer wg.Done()
 			currency, err := client.Collection("currencies").Doc(countryCode).Get(ctx)
 			if err != nil {
+				fmt.Println(err)
 				resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 				return
 			}
+			fmt.Println("currency done")
 
 			currencyCodeIdData := currency.Data()
 			currencyCodeId := currencyCodeIdData["id"].(string)
@@ -239,15 +250,18 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			citizenCurrency := currenciesCache[user.Country].(map[string]interface{})
 			var toCurrency map[string]interface{}
 			toCurrency = currenciesCache[currencyCodeId].(map[string]interface{})
+			fmt.Println(citizenCurrency["currencyId"].(string)+"_"+toCurrency["currencyId"].(string))
 
 			currencyData, err := ConvertCurrency(toCurrency["currencyId"].(string), citizenCurrency["currencyId"].(string))
 			if err != nil {
+				fmt.Println(err)
 				result := map[string]interface{}{
 					"converted_currency": "",
 					"converted_unit":     "",
 					"unit":               "",
 				}
 				resultsChannel <- map[string]interface{}{"result": result, "routine": "currency"}
+				fmt.Println("currency done error")
 				return
 			}
 			result := map[string]interface{}{
@@ -256,6 +270,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 				"unit":               citizenCurrency,
 			}
 			resultsChannel <- map[string]interface{}{"result": result, "routine": "currency"}
+			fmt.Println("currency done")
 
 		}(user)
 	}
@@ -273,6 +288,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		//defer wg.Done()
 		numbers, err := client.Collection("emergency_numbers").Doc(countryCode).Get(ctx)
 		if err != nil {
+			fmt.Println(err)
 			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 			return
 		}
@@ -281,6 +297,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		numbers.DataTo(&emNumbers)
 
 		resultsChannel <- map[string]interface{}{"result": FormatEmergencyNumbers(emNumbers), "routine": "numbers"}
+		fmt.Println("numbers done")
 
 	}()
 
@@ -302,12 +319,15 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if err != nil {
+			fmt.Println(err)
 			resultsChannel <- map[string]interface{}{"result": err, "routine": "error"}
 			break
 		}
 
 		plugsData = append(plugsData, doc.Data())
 	}
+	fmt.Println("plugs done")
+	
 
 	var responseData map[string]interface{}
 

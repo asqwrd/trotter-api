@@ -801,7 +801,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 			timeoutChannel <- true
 		}()
 
-		for i := 0; i < 3; i++ {
+		for i := 0; i < 4; i++ {
 			select {
 			case res := <-islandChannel:
 				triposoResults = append(triposoResults, FromTriposoPlaces(res, "island")...)

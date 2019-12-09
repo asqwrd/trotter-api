@@ -154,9 +154,11 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 					resultsChannel <- map[string]interface{}{"result": errBackup, "routine": "error"}
 					return
 				}
+				country.Image = country.ImageMedium
 				resultsChannel <- map[string]interface{}{"result": colorsBackup, "routine": "color"}
 				return
 			}
+			
 			resultsChannel <- map[string]interface{}{"result": colors, "routine": "color"}
 		} else {
 			var colors places.Colors

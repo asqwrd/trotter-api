@@ -34,7 +34,7 @@ func getCurrencies() (map[string]interface{}, error) {
 	var data map[string]interface{}
 
 	go func() {
-		res, err := GetCountriesCurrenciesApi()
+		res, err := GetCountriesCurrenciesAPI()
 		if err != nil {
 			errorChannel <- err
 			return
@@ -55,6 +55,7 @@ func getCurrencies() (map[string]interface{}, error) {
 
 }
 
+//GetCountry function
 func GetCountry(w http.ResponseWriter, r *http.Request) {
 	//runtime.GOMAXPROCS(10)
 	fmt.Println("Get Country started")
@@ -158,7 +159,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 				resultsChannel <- map[string]interface{}{"result": colorsBackup, "routine": "color"}
 				return
 			}
-			
+
 			resultsChannel <- map[string]interface{}{"result": colors, "routine": "color"}
 		} else {
 			var colors places.Colors
@@ -253,13 +254,13 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			}
 			fmt.Println("currency done")
 
-			currencyCodeIdData := currency.Data()
-			currencyCodeId := currencyCodeIdData["id"].(string)
+			currencyCodeIDData := currency.Data()
+			currencyCodeID := currencyCodeIDData["id"].(string)
 
 			citizenCurrency := currenciesCache[user.Country].(map[string]interface{})
 			var toCurrency map[string]interface{}
-			toCurrency = currenciesCache[currencyCodeId].(map[string]interface{})
-			fmt.Println(citizenCurrency["currencyId"].(string)+"_"+toCurrency["currencyId"].(string))
+			toCurrency = currenciesCache[currencyCodeID].(map[string]interface{})
+			fmt.Println(citizenCurrency["currencyId"].(string) + "_" + toCurrency["currencyId"].(string))
 
 			currencyData, err := ConvertCurrency(toCurrency["currencyId"].(string), citizenCurrency["currencyId"].(string))
 			if err != nil {
@@ -302,7 +303,7 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		//	numbersData := numbers.Data()
-		emNumbers := EmergencyNumbers{Dispatch: Numbers{All: []string{}, Fixed: []string{}, GSM: []string{}}, Ambulance: Numbers{All: []string{}, Fixed: []string{}, GSM: []string{}}, Fire: Numbers{All: []string{}, Fixed: []string{}, GSM: []string{}}, Police: Numbers{All: []string{}, Fixed: []string{}, GSM: []string{}}, European_emergency_number: []string{}}
+		emNumbers := EmergencyNumbers{Dispatch: Numbers{All: []string{}, Fixed: []string{}, GSM: []string{}}, Ambulance: Numbers{All: []string{}, Fixed: []string{}, GSM: []string{}}, Fire: Numbers{All: []string{}, Fixed: []string{}, GSM: []string{}}, Police: Numbers{All: []string{}, Fixed: []string{}, GSM: []string{}}, EuropeanEmergencyNumber: []string{}}
 		numbers.DataTo(&emNumbers)
 
 		resultsChannel <- map[string]interface{}{"result": FormatEmergencyNumbers(emNumbers), "routine": "numbers"}
@@ -336,7 +337,6 @@ func GetCountry(w http.ResponseWriter, r *http.Request) {
 		plugsData = append(plugsData, doc.Data())
 	}
 	fmt.Println("plugs done")
-	
 
 	var responseData map[string]interface{}
 

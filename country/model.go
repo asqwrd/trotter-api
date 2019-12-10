@@ -3,16 +3,15 @@ package country
 import (
 	"encoding/json"
 	"errors"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
 	"log"
 	"net/http"
 	"time"
 )
 
-var SHERPA_DOMAIN = "https://requirements-api.joinsherpa.com/v2/entry-requirements"
-var SHERPA_KEY = "AIzaSyDyOs9kPPkE_Dc49IDy49aHdY0y17SaErA"
+var currencyDomain = "https://prepaid.currconv.com/api/v7"
+var currencyAPIKey = "pr_5cfdec6210844621a3ed904824b6e54b"
+var sherpaDomain = "https://requirements-api.joinsherpa.com/v2/entry-requirements"
+var sherpaKey = "AIzaSyDyOs9kPPkE_Dc49IDy49aHdY0y17SaErA"
 
 var passportValidityMap = map[string]string{
 	"DURATION_OF_STAY":                    "Your passport must be valid for the duration of your stay in this country.",
@@ -37,16 +36,17 @@ var passportBlankpagesMap = map[string]string{
 	"TWO_PER_ENTRY":             "You need two blank pages per entry",
 }
 
-type currenciesApiResponse struct {
-	Status_code int
-	Results     map[string]interface{}
+type currenciesAPIResponse struct {
+	StatusCode int
+	Results    map[string]interface{}
 }
 
 type currenciesConvertResponse struct {
-	Status_code int
-	Results     map[string]interface{}
+	StatusCode int
+	Results    map[string]interface{}
 }
 
+//Passport struct
 type Passport struct {
 	BlankPages       string          `json:"blank_pages"`
 	PassportValidity string          `json:"passport_validity"`
@@ -54,54 +54,62 @@ type Passport struct {
 	Currency         Currency        `json:"currency"`
 }
 
+//VaccineType struct
 type VaccineType struct {
 	Type      string `json:"type"`
 	Condition string `json:"condition"`
 }
 
+//Vaccination struct
 type Vaccination struct {
 	Recommended []VaccineType `json:"recommended"`
 	Required    []VaccineType `json:"required"`
 	Risk        []VaccineType `json:"risk"`
 }
 
+//Currency struct
 type Currency struct {
 	Arrival string `json:"arrival"`
 	Exit    string `json:"exit"`
 }
 
+//BlankPages struct
 type BlankPages struct {
-	NOT_REQUIRED              string
-	ONE                       string
-	ONE_PER_ENTRY             string
-	SPACE_FOR_STAMP           string
-	TWO                       string
-	TWO_CONSECUTIVE_PER_ENTRY string
-	TWO_PER_ENTRY             string
+	NotRequired             string
+	ONE                     string
+	OnePerEntry             string
+	SpaceForStamp           string
+	TWO                     string
+	TwoConsecutivePerEntery string
+	TwoPerEntry             string
 }
 
+//PassportValidity struct
 type PassportValidity struct {
-	DURATION_OF_STAY                    string
-	ONE_MONTH_AFTER_ENTRY               string
-	SIX_MONTHS_AFTER_DURATION_OF_STAY   string
-	SIX_MONTHS_AFTER_ENTRY              string
-	SIX_MONTHS_AT_ENTRY                 string
-	THREE_MONTHS_AFTER_DURATION_OF_STAY string
-	THREE_MONTHS_AFTER_ENTRY            string
-	VALID_AT_ENTRY                      string
-	THREE_MONTHS_AFTER_DEPARTURE        string
-	SIX_MONTHS_AFTER_DEPARTURE          string
+	DurationOfStay                 string
+	OneMonthAfterEntry             string
+	SixMonthsAfterDurationOfStay   string
+	SixMonthsAfterEntry            string
+	SixMonthsAtEntry               string
+	ThreeMonthsAfterDurationOfStay string
+	ThreeMonthsAfterEntry          string
+	ValidAtEntry                   string
+	ThreeMonthsAfterDeparture      string
+	SixMonthsAfterDepartureS       string
 }
 
+//Textual struct
 type Textual struct {
 	Class string   `json:"class"`
 	Text  []string `json:"text"`
 }
 
+//PassportValidityTextual struct
 type PassportValidityTextual struct {
 	Textual Textual `json:"textual"`
 }
 
+//TextualPassport struct
 type TextualPassport struct {
 	Class            string                  `json:"class"`
 	Text             []string                `json:"text"`
@@ -109,6 +117,7 @@ type TextualPassport struct {
 	BlankPages       Textual                 `json:"blank_pages"`
 }
 
+//Visa struct
 type Visa struct {
 	AllowedStay string   `json:"allowed_stay"`
 	Notes       []string `json:"notes"`
@@ -117,22 +126,26 @@ type Visa struct {
 	Textual     Textual  `json:"textual"`
 }
 
+//VisaResponse struct
 type VisaResponse struct {
 	Passport    Passport    `json:"passport"`
 	Visa        []Visa      `json:"visa"`
 	Vaccination Vaccination `json:"vaccination"`
 }
 
+//InternalVisa struct
 type InternalVisa struct {
 	Visa        Visa        `json:"visa"`
 	Passport    Passport    `json:"passport"`
 	Vaccination Vaccination `json:"vaccination"`
 }
 
+//safetyResponse struct
 type safetyResponse struct {
 	Data SafetyData
 }
 
+//SafetyData struct
 type SafetyData struct {
 	IsoAlpha2 string         `json:"iso_alpha2" firestore:"iso_alpha2"`
 	Name      string         `json:"name" firestore:"name"`
@@ -140,96 +153,105 @@ type SafetyData struct {
 	Advisory  SafetyAdvisory `json:"advisory" firestore:"advisory"`
 }
 
+//Safety struct
 type Safety struct {
 	Advice string  `json:"advice"`
 	Rating float64 `json:"rating"`
 }
 
+//SafetyCode struct
 type SafetyCode struct {
 	Continent string `json:"continent"`
 	Country   string `json:"country"`
 }
 
+//SafetySituation struct
 type SafetySituation struct {
 	Rating  string `json:"rating"`
 	Sources int    `json:"sources"`
 }
 
+//SafetyAdvisory struct
 type SafetyAdvisory struct {
 	Score         float64 `json:"score" firestore:"score"`
 	Sources       int     `json:"sources"`
 	SourcesActive int     `json:"sources_active" firestore:"sources_active"`
 }
 
+//Numbers struct
 type Numbers struct {
 	All   []string `json:"all" firestore:"all"`
 	Fixed []string `json:"fixed" firestore:"fixed"`
 	GSM   []string `json:"gsm" firestore:"gsm"`
 }
 
+//EmergencyNumbers struct
 type EmergencyNumbers struct {
-	Ambulance                 Numbers  `json:"ambulance" firestore:"ambulance"`
-	Dispatch                  Numbers  `json:"dispatch" firestore:"dispatch"`
-	Fire                      Numbers  `json:"fire" firestore:"fire"`
-	Police                    Numbers  `json:"police" firestore:"police"`
-	European_emergency_number []string `json:"european_emergency_number"`
-	Member112                 bool     `json:"member_112,omitempty" firestore:"member_112"`
+	Ambulance               Numbers  `json:"ambulance" firestore:"ambulance"`
+	Dispatch                Numbers  `json:"dispatch" firestore:"dispatch"`
+	Fire                    Numbers  `json:"fire" firestore:"fire"`
+	Police                  Numbers  `json:"police" firestore:"police"`
+	EuropeanEmergencyNumber []string `json:"european_emergency_number"`
+	Member112               bool     `json:"member_112,omitempty" firestore:"member_112"`
 }
 
+//FormatEmergencyNumbers function
 func FormatEmergencyNumbers(numbers EmergencyNumbers) (e EmergencyNumbers) {
 	member112 := []string{}
 	if numbers.Member112 {
 		member112 = []string{"112"}
 	}
 	e = EmergencyNumbers{
-		Ambulance:                 numbers.Ambulance,
-		Dispatch:                  numbers.Dispatch,
-		Fire:                      numbers.Fire,
-		Police:                    numbers.Police,
-		European_emergency_number: member112,
+		Ambulance:               numbers.Ambulance,
+		Dispatch:                numbers.Dispatch,
+		Fire:                    numbers.Fire,
+		Police:                  numbers.Police,
+		EuropeanEmergencyNumber: member112,
 	}
 
 	return e
 }
 
-func GetCountriesCurrenciesApi() (map[string]interface{}, error) {
+//GetCountriesCurrenciesAPI function
+func GetCountriesCurrenciesAPI() (map[string]interface{}, error) {
 	client := http.Client{Timeout: time.Second * 30}
-	req, err := http.NewRequest(http.MethodGet, "https://free.currencyconverterapi.com/api/v6/countries?apiKey=e2f487a9577429d44774", nil)
+	req, err := http.NewRequest(http.MethodGet, currencyDomain+"/countries?apiKey="+currencyAPIKey, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Currencies API.")
+		return nil, errors.New("failed to access the currencies api")
 	}
 
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Currencies API.")
+		return nil, errors.New("failed to access the currencies api")
 	}
 
-	resp := &currenciesApiResponse{}
+	resp := &currenciesAPIResponse{}
 	err = json.NewDecoder(res.Body).Decode(resp)
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Currencies API response.")
+		return nil, errors.New("server experienced an error while parsing Currencies API response")
 	}
 
 	return resp.Results, nil
 
 }
 
+//ConvertCurrency function
 func ConvertCurrency(to string, from string) (map[string]interface{}, error) {
 	client := http.Client{Timeout: time.Second * 30}
-	req, err := http.NewRequest(http.MethodGet, "https://free.currencyconverterapi.com/api/v6/convert?q="+from+"_"+to+"&compact=n&apiKey=e2f487a9577429d44774", nil)
+	req, err := http.NewRequest(http.MethodGet, currencyDomain+"/convert?q="+from+"_"+to+"&compact=n&apiKey="+currencyAPIKey, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Currency converter API.")
+		return nil, errors.New("failed to access the currency converter API")
 	}
 
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Currency converter API.")
+		return nil, errors.New("failed to access the Currency converter API")
 	}
 
 	resp := &currenciesConvertResponse{}
@@ -237,24 +259,25 @@ func ConvertCurrency(to string, from string) (map[string]interface{}, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Currency converter API response.")
+		return nil, errors.New("server experienced an error while parsing Currency converter API response")
 	}
 	return resp.Results[from+"_"+to].(map[string]interface{}), nil
 
 }
 
+//GetVisa function
 func GetVisa(destination string, citizenship string) (*VisaResponse, error) {
 	client := http.Client{Timeout: time.Second * 30}
-	req, err := http.NewRequest(http.MethodGet, SHERPA_DOMAIN+"?key="+SHERPA_KEY+"&citizenship="+citizenship+"&destination="+destination, nil)
+	req, err := http.NewRequest(http.MethodGet, sherpaDomain+"?key="+sherpaKey+"&citizenship="+citizenship+"&destination="+destination, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Sherpa API.")
+		return nil, errors.New("failed to access the Sherpa API")
 	}
 
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Sherpa API.")
+		return nil, errors.New("failed to access the Sherpa API")
 	}
 
 	resp := &VisaResponse{}
@@ -262,7 +285,7 @@ func GetVisa(destination string, citizenship string) (*VisaResponse, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Sherpa API response.")
+		return nil, errors.New("server experienced an error while parsing Sherpa API response")
 	}
 
 	return resp, nil
@@ -287,6 +310,7 @@ func formatPassport(passport Passport) (p *Passport) {
 	return p
 }
 
+//FormatVisa function
 func FormatVisa(visa VisaResponse) (v *InternalVisa) {
 	var visaData Visa
 	if len(visa.Visa) > 0 {
@@ -302,18 +326,19 @@ func FormatVisa(visa VisaResponse) (v *InternalVisa) {
 
 }
 
+//GetSafety function
 func GetSafety(countryCode string) (*SafetyData, error) {
 	client := http.Client{Timeout: time.Second * 30}
 	req, err := http.NewRequest(http.MethodGet, "https://www.reisewarnung.net/api?country="+countryCode, nil)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Safety API.")
+		return nil, errors.New("failed to access the Safety API")
 	}
 
 	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("Failed to access the Safety API.")
+		return nil, errors.New("failed to access the Safety API")
 	}
 
 	resp := &safetyResponse{}
@@ -321,13 +346,14 @@ func GetSafety(countryCode string) (*SafetyData, error) {
 	if err != nil {
 		log.Println(err)
 		log.Println(req.URL.String())
-		return nil, errors.New("Server experienced an error while parsing Safety API response.")
+		return nil, errors.New("server experienced an error while parsing Safety API response")
 	}
 
 	return &resp.Data, nil
 
 }
 
+//FormatSafety function
 func FormatSafety(rating float64) *string {
 	advice := "No safety information is available for this country."
 	if rating >= 0.0 && rating < 1.0 {

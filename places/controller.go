@@ -731,7 +731,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		typeparams := []string{"island", "city", "city_state", "region"}
 		placeChannel := make(chan PlaceChannel)
 
-		var triposoResults []triposo.InternalPlace
+		triposoResults := []triposo.InternalPlace{}
 
 		islandChannel := make(chan []triposo.Place)
 		cityChannel := make(chan []triposo.Place)
@@ -897,7 +897,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		response.Write(w, searchData, http.StatusOK)
 		return
 	}
-	var triposoResults []triposo.InternalPlace
+	triposoResults := []triposo.InternalPlace{}
 	//poiChannel := make(chan []triposo.Place)
 
 	go func() {

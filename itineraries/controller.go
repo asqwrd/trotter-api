@@ -848,6 +848,7 @@ func ToggleVisited(w http.ResponseWriter, r *http.Request) {
 	itineraryID := mux.Vars(r)["itineraryId"]
 	dayID := mux.Vars(r)["dayId"]
 	itemID := mux.Vars(r)["itineraryItemId"]
+	q := r.URL.Query()
 
 	sa := option.WithCredentialsFile("serviceAccountKey.json")
 	ctx := context.Background()
@@ -876,15 +877,15 @@ func ToggleVisited(w http.ResponseWriter, r *http.Request) {
 		response.WriteErrorResponse(w, errClient)
 		return
 	}
-	time := Time{Value: "", Unit: ""}
+	timeSpent := Time{Value: "", Unit: ""}
 	if len(itineraryItem.Time.Value) > 0 && len(itineraryItem.Time.Unit) > 0 {
-		time = itineraryItem.Time
+		timeSpent = itineraryItem.Time
 	}
 
 	defer client.Close()
 	_, errUpdate := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itemID).Set(ctx, map[string]interface{}{
 		"visited": !itineraryItem.Visited,
-		"time":    time,
+		"time":    timeSpent,
 	}, firestore.MergeAll)
 	if errUpdate != nil {
 		fmt.Println(errUpdate)
@@ -893,6 +894,110 @@ func ToggleVisited(w http.ResponseWriter, r *http.Request) {
 	}
 
 	getDay(w, r, nil, false, true)
+
+	var user types.User
+	fmt.Println("User ID")
+	fmt.Println(q.Get("userId"))
+	userDoc, errUser := client.Collection("users").Doc(q.Get("userId")).Get(ctx)
+	if errUser != nil {
+		fmt.Println(errUser)
+		response.WriteErrorResponse(w, errUser)
+		return
+	}
+	userDoc.DataTo(&user)
+
+	var trip types.Trip
+	tripDoc, errTrip := client.Collection("trips").Doc(q.Get("tripId")).Get(ctx)
+	if errTrip != nil {
+		fmt.Println(errTrip)
+		response.WriteErrorResponse(w, errTrip)
+		return
+	}
+	tripDoc.DataTo(&trip)
+
+	var deviceIds []string
+	devicesItr := client.Collection("users").Doc(user.UID).Collection("devices").Documents(ctx)
+	for {
+		device, errDevice := devicesItr.Next()
+		if errDevice == iterator.Done {
+			break
+		}
+		deviceIds = append(deviceIds, device.Ref.ID)
+	}
+
+	var itinerary Itinerary
+	itineraryDoc, errI10 := client.Collection("itineraries").Doc(itineraryID).Get(ctx)
+	if errI10 != nil {
+		fmt.Println(errI10)
+		response.WriteErrorResponse(w, errI10)
+		return
+	}
+	itineraryDoc.DataTo(&itinerary)
+
+	var tokens []string
+	navigateData := map[string]interface{}{
+		"itineraryId":       itineraryID,
+		"dayId":             dayID,
+		"itineraryItemId":   itemID,
+		"tripId":            q.Get("tripId"),
+		"level":             "itinerary/day/edit",
+		"startLocation":     itinerary.StartLocation.Location,
+		"itineraryName":     itinerary.Name,
+		"itineraryItemName": itineraryItem.Poi.Name,
+	}
+
+	msg := user.DisplayName + " marked " + itineraryItem.Poi.Name + " as visited in " + itinerary.Name
+	if !itineraryItem.Visited == false {
+		msg = user.DisplayName + " changed " + itineraryItem.Poi.Name + " back to not visited in " + itinerary.Name
+	}
+
+	for _, traveler := range trip.Group {
+		if traveler != user.UID {
+
+			notification := types.Notification{
+				CreateAt: time.Now().UnixNano() / int64(time.Millisecond),
+				Type:     "user_visited",
+				Data:     map[string]interface{}{"navigationData": navigateData, "user": user, "subject": msg},
+				Read:     false,
+			}
+			notificationDoc, _, errNotifySet := client.Collection("users").Doc(traveler).Collection("notifications").Add(ctx, notification)
+			if errNotifySet != nil {
+				fmt.Println(errNotifySet)
+				//response.WriteErrorResponse(w, errNotifySet)
+				return
+			}
+			_, errNotifyID := client.Collection("users").Doc(traveler).Collection("notifications").Doc(notificationDoc.ID).Set(ctx, map[string]interface{}{
+				"id": notificationDoc.ID,
+			}, firestore.MergeAll)
+			if errNotifyID != nil {
+				fmt.Println(errNotifyID)
+				//response.WriteErrorResponse(w, errNotifyID)
+				return
+			}
+
+			iter := client.Collection("users").Doc(traveler).Collection("devices").Documents(ctx)
+			for {
+				doc, err := iter.Next()
+				if err == iterator.Done {
+					break
+				}
+				if err != nil {
+					fmt.Println(err)
+					//response.WriteErrorResponse(w, err)
+					return
+				}
+
+				var token types.Token
+				doc.DataTo(&token)
+				if !utils.Contains(deviceIds, token.DeviceID) {
+					tokens = append(tokens, token.Token)
+				}
+
+			}
+		}
+	}
+
+	utils.SendNotification(navigateData, msg, user, "visited", "Toggled visit", tokens)
 
 	return
 }

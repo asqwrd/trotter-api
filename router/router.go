@@ -168,6 +168,9 @@ var routes = Routes{
 		"AddComment", "POST", "/api/itineraries/{itineraryId}/day/{dayId}/itinerary_items/{itineraryItemId}/comments/add", itineraries.AddComment,
 	},
 	Route{
+		"SaveDescription", "POST", "/api/itineraries/{itineraryId}/day/{dayId}/itinerary_items/{itineraryItemId}/description", itineraries.SaveDescription,
+	},
+	Route{
 		"AddToDay", "POST", "/api/itineraries/add/{itineraryId}/day/{dayId}", itineraries.AddToDay,
 	},
 	Route{

@@ -25,7 +25,7 @@ type Itinerary struct {
 	StartLocation          *StartLocation `json:"start_location" firestore:"start_location"`
 }
 
-//LinkedItinerary
+//LinkedItinerary struct
 type LinkedItinerary struct {
 	NumberOfDays int               `json:"number_of_days"`
 	Itinerary    Itinerary         `json:"itinerary"`
@@ -62,21 +62,31 @@ type StartLocation struct {
 
 //ItineraryItem struct
 type ItineraryItem struct {
-	Description   string                     `json:"description" firestore:"description"`
-	Poi           *triposo.InternalPlace     `json:"poi" firestore:"poi"`
-	Title         string                     `json:"title" firestore:"title"`
-	Time          Time                       `json:"time" firestore:"time"`
-	Image         string                     `json:"image" firestore:"image"`
-	ID            string                     `json:"id" firestore:"id"`
-	PoiID         string                     `json:"poi_id" firestore:"poi_id"`
-	Color         string                     `json:"color" firestore:"color"`
-	Travel        maps.DistanceMatrixElement `json:"travel,omitempty" firestore:"travel,omitempty"`
-	AddedBy       *string                    `json:"added_by,omitempty" firestore:"added_by,omitempty"`
-	AddedByFull   *types.User                `json:"added_by_full,omitempty" firestore:"added_by_full,omitempty"`
-	Visited       bool                       `json:"visited" firestore:"visited"`
-	TotalComments int64                      `json:"total_comments"`
+	Description          string                     `json:"description" firestore:"description"`
+	Poi                  *triposo.InternalPlace     `json:"poi" firestore:"poi"`
+	Title                string                     `json:"title" firestore:"title"`
+	Time                 Time                       `json:"time" firestore:"time"`
+	Image                string                     `json:"image" firestore:"image"`
+	ID                   string                     `json:"id" firestore:"id"`
+	PoiID                string                     `json:"poi_id" firestore:"poi_id"`
+	Color                string                     `json:"color" firestore:"color"`
+	Travel               maps.DistanceMatrixElement `json:"travel,omitempty" firestore:"travel,omitempty"`
+	AddedBy              *string                    `json:"added_by,omitempty" firestore:"added_by,omitempty"`
+	AddedByFull          *types.User                `json:"added_by_full,omitempty" firestore:"added_by_full,omitempty"`
+	Visited              bool                       `json:"visited" firestore:"visited"`
+	TravelerDescriptions []TravelerDescription      `json:"traveler_descriptions" firestore:"traveler_descriptions"`
+	TotalComments        int64                      `json:"total_comments"`
 }
 
+//TravelerDescription struct
+type TravelerDescription struct {
+	User        types.User `json:"user" firestore:"user"`
+	Description string     `json:"description" firestore:"description"`
+	CreatedAt   int64      `json:"created_at" firestore:"created_at"`
+	ID          string     `json:"id" firestore:"id"`
+}
+
+//Comment struct
 type Comment struct {
 	Msg       string     `json:"msg" firestore:"msg"`
 	ID        string     `json:"id" firestore:"id"`

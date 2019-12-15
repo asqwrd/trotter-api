@@ -1587,7 +1587,7 @@ func SaveDescription(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	utils.SendNotification(navigateData, msg, travelerDescription.User, "description", "description added", tokens)
+	utils.SendNotification(navigateData, msg, travelerDescription.User, "description", "A new description added", tokens)
 
 	response.Write(w, map[string]interface{}{
 		"descriptions": descriptions,

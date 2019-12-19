@@ -455,6 +455,122 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+//UpdatePoiImage func
+func UpdatePoiImage(w http.ResponseWriter, r *http.Request) {
+	poiID := mux.Vars(r)["poiId"]
+	itineraryItemID := mux.Vars(r)["itineraryItemId"]
+	itineraryID := mux.Vars(r)["itineraryId"]
+	dayID := mux.Vars(r)["dayId"]
+	var poiColor string
+	poiChannel := make(chan InternalPlaceChannel)
+	colorChannel := make(chan ColorChannel)
+
+	ctx := context.Background()
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	googleClient, err := InitGoogle()
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	go func() {
+		defer close(poiChannel)
+		placeDetail := &maps.PlaceDetailsRequest{
+			PlaceID: poiID,
+		}
+		place, err := googleClient.PlaceDetails(ctx, placeDetail)
+		if err != nil {
+			fmt.Println(err)
+			poiChannel <- InternalPlaceChannel{Error: err}
+			return
+		}
+		photo := "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + place.Photos[0].PhotoReference + "&key=" + googleAPI
+		go func(photo string) {
+			defer close(colorChannel)
+			if len(photo) == 0 {
+				var colors Colors
+				colors.Vibrant = "#c27949"
+				colorChannel <- ColorChannel{Colors: colors}
+			} else {
+				colors, err := GetColor(photo)
+				if err != nil {
+					var color Colors
+					color.Vibrant = "#c27949"
+					colorChannel <- ColorChannel{Colors: color}
+					return
+				}
+				colorChannel <- ColorChannel{Colors: *colors}
+
+			}
+		}(photo)
+		poi := FromGooglePlace(place, "poi")
+
+		poiChannel <- InternalPlaceChannel{Place: poi}
+	}()
+
+	var newPoi triposo.InternalPlace
+	fmt.Println(itineraryItemID)
+	for res := range poiChannel {
+		if res.Error != nil {
+			response.WriteErrorResponse(w, res.Error)
+			return
+		}
+		poi := res.Place
+		_, err := client.Collection("itineraries").Doc(itineraryID).Collection("days").Doc(dayID).Collection("itinerary_items").Doc(itineraryItemID).Set(ctx, map[string]interface{}{
+			"poi": poi,
+		}, firestore.MergeAll)
+		if err != nil {
+			response.WriteErrorResponse(w, err)
+			return
+		}
+
+		newPoi = poi
+	}
+
+	for res := range colorChannel {
+		color := res.Colors
+		if len(color.Vibrant) > 0 {
+			poiColor = color.Vibrant
+		} else if len(color.Muted) > 0 {
+			poiColor = color.Muted
+		} else if len(color.LightVibrant) > 0 {
+			poiColor = color.LightVibrant
+		} else if len(color.LightMuted) > 0 {
+			poiColor = color.LightMuted
+		} else if len(color.DarkVibrant) > 0 {
+			poiColor = color.DarkVibrant
+		} else if len(color.DarkMuted) > 0 {
+			poiColor = color.DarkMuted
+		}
+	}
+
+	poiData := map[string]interface{}{
+		"poi":   newPoi,
+		"color": poiColor,
+	}
+
+	response.Write(w, poiData, http.StatusOK)
+	return
+
+}
+
 //GetPoi func
 func GetPoi(w http.ResponseWriter, r *http.Request) {
 	poiID := mux.Vars(r)["poiID"]

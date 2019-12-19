@@ -165,6 +165,9 @@ var routes = Routes{
 		"GetComments", "GET", "/api/itineraries/get/{itineraryId}/day/{dayId}/itinerary_items/{itineraryItemId}/comments", itineraries.GetComments,
 	},
 	Route{
+		"UpdatePoiImage", "PUT", "/api/itineraries/update/{itineraryId}/day/{dayId}/itinerary_items/{itineraryItemId}/poi/{poiId}", places.UpdatePoiImage,
+	},
+	Route{
 		"AddComment", "POST", "/api/itineraries/{itineraryId}/day/{dayId}/itinerary_items/{itineraryItemId}/comments/add", itineraries.AddComment,
 	},
 	Route{

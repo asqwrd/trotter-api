@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var ourDumbAuthToken = "security"
+var ourDumbAuthToken = "UTZi2D2t7rnFyMXGNURF"
 
 // BasicAuthMiddleware validates that the user passed a static token
 //

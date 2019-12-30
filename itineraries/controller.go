@@ -156,8 +156,6 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 	if len(q.Get("user_id")) > 0 {
 		queries = queries.Where("travelers", "array-contains", q.Get("user_id"))
 
-	} else {
-		queries = queries.Where("owner_id", "==", "")
 	}
 
 	notNil := utils.CheckFirestoreQueryResults(ctx, queries)
@@ -840,6 +838,74 @@ func optimizeItinerary(itineraryItems []ItineraryItem, matrix maps.DistanceMatri
 
 	}
 	return output
+
+}
+
+//TogglePublic function
+func TogglePublic(w http.ResponseWriter, r *http.Request) {
+	itineraryID := mux.Vars(r)["itineraryId"]
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+	app, errApp := firebase.NewApp(ctx, nil, sa)
+	fmt.Println("toggle public")
+
+	if errApp != nil {
+		fmt.Println(errApp)
+		response.WriteErrorResponse(w, errApp)
+		return
+	}
+
+	client, errClient := app.Firestore(ctx)
+	if errClient != nil {
+		fmt.Println(errClient)
+		response.WriteErrorResponse(w, errClient)
+		return
+	}
+	defer client.Close()
+
+	doc, errDoc := client.Collection("itineraries").Doc(itineraryID).Get(ctx)
+	if errDoc != nil {
+		fmt.Println(errDoc)
+		response.WriteErrorResponse(w, errDoc)
+		return
+	}
+
+	var itinerary Itinerary
+	doc.DataTo(&itinerary)
+
+	_, errUpdate := client.Collection("itineraries").Doc(itineraryID).Set(ctx, map[string]interface{}{
+		"public": !itinerary.Public,
+	}, firestore.MergeAll)
+	if errUpdate != nil {
+		fmt.Println(errUpdate)
+		response.WriteErrorResponse(w, errUpdate)
+		return
+	}
+
+	if !itinerary.Public == true {
+		_, errTotalUpdate := client.Collection("itineraries").Doc("total_public").Update(ctx, []firestore.Update{
+			{Path: "count", Value: firestore.Increment(1)},
+		})
+		if errTotalUpdate != nil {
+			fmt.Println(errTotalUpdate)
+			response.WriteErrorResponse(w, errTotalUpdate)
+			return
+		}
+	} else {
+		_, errTotalUpdate := client.Collection("itineraries").Doc("total_public").Update(ctx, []firestore.Update{
+			{Path: "count", Value: firestore.Increment(-1)},
+		})
+		if errTotalUpdate != nil {
+			fmt.Println(errTotalUpdate)
+			response.WriteErrorResponse(w, errTotalUpdate)
+			return
+		}
+	}
+
+	response.Write(w, map[string]interface{}{
+		"success": true,
+	}, http.StatusOK)
+	return
 
 }
 

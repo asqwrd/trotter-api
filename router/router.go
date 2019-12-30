@@ -180,6 +180,9 @@ var routes = Routes{
 		"ToggleVisited", "PUT", "/api/itineraries/{itineraryId}/day/{dayId}/itinerary_items/{itineraryItemId}/toggle", itineraries.ToggleVisited,
 	},
 	Route{
+		"TogglePublic", "PUT", "/api/itineraries/{itineraryId}/toggle", itineraries.TogglePublic,
+	},
+	Route{
 		"CreateItinerary", "POST", "/api/itineraries/create", itineraries.CreateItinerary,
 	},
 	Route{

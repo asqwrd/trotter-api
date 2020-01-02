@@ -317,6 +317,9 @@ func CreateTrip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("Destinations count")
+	fmt.Println(len(trip.Destinations))
+
 	//Adding destinations
 
 	for i := 0; i < len(trip.Destinations); i++ {
@@ -1667,8 +1670,8 @@ func AddFlightsAndAccomodations(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				response.WriteErrorResponse(w, err)
 			}
-			flight.Segments[i].Lat = fmt.Sprintf("%f",resp[0].Geometry.Location.Lat)
-			flight.Segments[i].Lon = fmt.Sprintf("%f",resp[0].Geometry.Location.Lng)
+			flight.Segments[i].Lat = fmt.Sprintf("%f", resp[0].Geometry.Location.Lat)
+			flight.Segments[i].Lon = fmt.Sprintf("%f", resp[0].Geometry.Location.Lng)
 		}
 	}
 

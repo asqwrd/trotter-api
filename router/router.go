@@ -150,7 +150,7 @@ var routes = Routes{
 		"GetTrips", "GET", "/api/trips/all/", trips.GetTrips,
 	},
 	Route{
-		"GetItineraries", "GET", "/api/itineraries/all/", itineraries.GetItineraries,
+		"GetItineraries", "GET", "/api/itineraries/home", itineraries.GetItineraries,
 	},
 	Route{
 		"GetItinerary", "GET", "/api/itineraries/get/{itineraryId}", itineraries.GetItinerary,

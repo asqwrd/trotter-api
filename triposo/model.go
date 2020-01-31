@@ -280,7 +280,7 @@ type Channel struct {
 	Error  error
 }
 
-const baseTriposoAPI = "https://www.triposo.com/api/latest/"
+const baseTriposoAPI = "https://www.triposo.com/api/20190906/"
 
 const triposoAccount = "2ZWR5MHH"
 const triposoToken = "cno3xmbpnzkgszkpc92lz9owed6qlfi7"

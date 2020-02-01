@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-var currencyDomain = "https://prepaid.currconv.com/api/v7"
-var currencyAPIKey = "pr_5cfdec6210844621a3ed904824b6e54b"
+var currencyDomain = "https://api.currconv.com/api/v7"
+var currencyAPIKey = "b5f65171182c4fc4bad632047707108d"
 var sherpaDomain = "https://requirements-api.joinsherpa.com/v2/entry-requirements"
 var sherpaKey = "AIzaSyDyOs9kPPkE_Dc49IDy49aHdY0y17SaErA"
 

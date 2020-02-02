@@ -135,7 +135,9 @@ func GetItineraries(w http.ResponseWriter, r *http.Request) {
 	var queries firestore.Query
 	var itr *firestore.DocumentIterator
 
-	queries = itinerariesCollection.Where("public", "==", true)
+	if len(q.Get("public")) > 0 {
+		queries = itinerariesCollection.Where("public", "==", true)
+	}
 
 	if len(q.Get("destination")) > 0 {
 		notNil := utils.CheckFirestoreQueryResults(ctx, queries)

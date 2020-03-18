@@ -156,6 +156,9 @@ var routes = Routes{
 		"GetItinerary", "GET", "/api/itineraries/get/{itineraryId}", itineraries.GetItinerary,
 	},
 	Route{
+		"GetWishlist", "GET", "/api/itineraries/get/{itineraryId}/wishlist", itineraries.GetWishlist,
+	},
+	Route{
 		"ChangeStartLocation", "PUT", "/api/itineraries/update/{itineraryId}/startLocation", itineraries.ChangeStartLocation,
 	},
 	Route{
@@ -175,6 +178,9 @@ var routes = Routes{
 	},
 	Route{
 		"AddToDay", "POST", "/api/itineraries/add/{itineraryId}/day/{dayId}", itineraries.AddToDay,
+	},
+	Route{
+		"AddToList", "POST", "/api/itineraries/add/{itineraryId}/list", itineraries.AddToList,
 	},
 	Route{
 		"ToggleVisited", "PUT", "/api/itineraries/{itineraryId}/day/{dayId}/itinerary_items/{itineraryItemId}/toggle", itineraries.ToggleVisited,

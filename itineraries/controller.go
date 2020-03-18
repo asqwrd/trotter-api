@@ -1377,6 +1377,56 @@ func GetDay(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//GetWishlist func
+func GetWishlist(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Got Wishlist")
+	itineraryID := mux.Vars(r)["itineraryId"]
+	itineraryItems := []ItineraryItem{}
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+
+	iter := client.Collection("itineraries").Doc(itineraryID).Collection("wishlist_items").Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			fmt.Println(err)
+			response.WriteErrorResponse(w, err)
+			return
+		}
+
+		var itineraryItem ItineraryItem
+		doc.DataTo(&itineraryItem)
+		itineraryItems = append(itineraryItems, itineraryItem)
+
+	}
+	response.Write(w, map[string]interface{}{
+		"wishlistItems": itineraryItems,
+		"success":       true,
+	}, http.StatusOK)
+	return
+
+}
+
 // CreateItineraryHelper function
 func CreateItineraryHelper(tripID string, destinationID string, itinerary Itinerary, numOfDays *int) (map[string]interface{}, error) {
 	dayChannel := make(chan string)
@@ -1652,6 +1702,220 @@ func SaveDescription(w http.ResponseWriter, r *http.Request) {
 	response.Write(w, map[string]interface{}{
 		"descriptions": descriptions,
 		"success":      true,
+	}, http.StatusOK)
+	return
+
+}
+
+//AddToList func
+func AddToList(w http.ResponseWriter, r *http.Request) {
+	itineraryID := mux.Vars(r)["itineraryId"]
+	var id *string
+	decoder := json.NewDecoder(r.Body)
+	var itineraryItem ItineraryItem
+	q := r.URL.Query()
+	err := decoder.Decode(&itineraryItem)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	sa := option.WithCredentialsFile("serviceAccountKey.json")
+	ctx := context.Background()
+
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		fmt.Println(err)
+		response.WriteErrorResponse(w, err)
+		return
+	}
+
+	defer client.Close()
+	var itinerary Itinerary
+	itineraryDoc, errItin := client.Collection("itineraries").Doc(itineraryID).Get(ctx)
+	if errItin != nil {
+		fmt.Println(errItin)
+		response.WriteErrorResponse(w, errItin)
+		return
+	}
+
+	itineraryDoc.DataTo(&itinerary)
+
+	var trip types.Trip
+	tripDoc, errTrip := client.Collection("trips").Doc(itinerary.TripID).Get(ctx)
+	if errTrip != nil {
+		fmt.Println(errTrip)
+		response.WriteErrorResponse(w, errTrip)
+		return
+	}
+
+	tripDoc.DataTo(&trip)
+	userID := *itineraryItem.AddedBy
+	if len(q.Get("userId")) > 0 && q.Get("userId") != "null" {
+		userID = q.Get("userId")
+	}
+
+	userDoc, errUser := client.Collection("users").Doc(userID).Get(ctx)
+	if errUser != nil {
+		fmt.Println(errUser)
+		response.WriteErrorResponse(w, errUser)
+		return
+	}
+	var addedBy types.User
+	userDoc.DataTo(&addedBy)
+	var deviceIds []string
+	devicesItr := client.Collection("users").Doc(userID).Collection("devices").Documents(ctx)
+	for {
+		device, errDevice := devicesItr.Next()
+		if errDevice == iterator.Done {
+			break
+		}
+		deviceIds = append(deviceIds, device.Ref.ID)
+	}
+
+	iter := client.Collection("itineraries").Doc(itineraryID).Collection("wishlist_items").Where("poi_id", "==", itineraryItem.PoiID).Documents(ctx)
+	for {
+		docCheck, errCheck := iter.Next()
+		if errCheck == iterator.Done {
+			break
+		}
+		if errCheck != nil {
+			fmt.Println(errCheck)
+			response.WriteErrorResponse(w, errCheck)
+			return
+		}
+		id = &docCheck.Ref.ID
+	}
+
+	if id == nil {
+		doc, _, err2 := client.Collection("itineraries").Doc(itineraryID).Collection("wishlist_items").Add(ctx, itineraryItem)
+		if err2 != nil {
+			// Handle any errors in an appropriate way, such as returning them.
+			fmt.Println(err2)
+			response.WriteErrorResponse(w, err2)
+			return
+		}
+
+		_, errSet := client.Collection("itineraries").Doc(itineraryID).Collection("wishlist_items").Doc(doc.ID).Set(ctx, map[string]interface{}{
+			"id": doc.ID,
+		}, firestore.MergeAll)
+		if errSet != nil {
+			fmt.Println(errSet)
+			response.WriteErrorResponse(w, errSet)
+			return
+		}
+
+		id = &doc.ID
+
+		c := fcm.NewFCM(types.SERVER_KEY)
+		var tokens []string
+		navigateData := map[string]interface{}{
+			"poi_id": itineraryItem.PoiID,
+			"level":  "poi",
+		}
+
+		actionText := " added "
+
+		for _, traveler := range trip.Group {
+			if traveler != addedBy.UID {
+
+				notification := types.Notification{
+					CreateAt: time.Now().UnixNano() / int64(time.Millisecond),
+					Type:     "user_day",
+					Data:     map[string]interface{}{"navigationData": navigateData, "user": addedBy, "subject": addedBy.DisplayName + actionText + itineraryItem.Poi.Name + " to " + itinerary.Name + " wishlist"},
+					Read:     false,
+				}
+				notificationDoc, _, errNotifySet := client.Collection("users").Doc(traveler).Collection("notifications").Add(ctx, notification)
+				if errNotifySet != nil {
+					fmt.Println(errNotifySet)
+					//response.WriteErrorResponse(w, errNotifySet)
+					return
+				}
+				_, errNotifyID := client.Collection("users").Doc(traveler).Collection("notifications").Doc(notificationDoc.ID).Set(ctx, map[string]interface{}{
+					"id": notificationDoc.ID,
+				}, firestore.MergeAll)
+				if errNotifyID != nil {
+					fmt.Println(errNotifyID)
+					//response.WriteErrorResponse(w, errNotifyID)
+					return
+				}
+
+				iter := client.Collection("users").Doc(traveler).Collection("devices").Documents(ctx)
+				for {
+					doc, err := iter.Next()
+					if err == iterator.Done {
+						break
+					}
+					if err != nil {
+						fmt.Println(err)
+						//response.WriteErrorResponse(w, err)
+						return
+					}
+
+					var token types.Token
+					doc.DataTo(&token)
+					if !utils.Contains(deviceIds, token.DeviceID) {
+						tokens = append(tokens, token.Token)
+					}
+
+				}
+			}
+		}
+
+		if len(tokens) > 0 {
+
+			data := map[string]interface{}{
+				"focus":            "trips",
+				"click_action":     "FLUTTER_NOTIFICATION_CLICK",
+				"type":             "user_day",
+				"notificationData": navigateData,
+				"user":             addedBy,
+				"msg":              addedBy.DisplayName + actionText + itineraryItem.Poi.Name + " to " + itinerary.Name,
+			}
+
+			notification, err := c.Send(fcm.Message{
+				Data:             data,
+				RegistrationIDs:  tokens,
+				CollapseKey:      "New place Added!",
+				ContentAvailable: true,
+				Priority:         fcm.PriorityNormal,
+				Notification: fcm.Notification{
+					Title:       "New place Added!",
+					Body:        addedBy.DisplayName + actionText + itineraryItem.Poi.Name + " to " + itinerary.Name,
+					ClickAction: "FLUTTER_NOTIFICATION_CLICK",
+					//Badge: user.PhotoURL,
+				},
+			})
+			if err != nil {
+				fmt.Println("Notification send err")
+				fmt.Println(err)
+				//response.WriteErrorResponse(w, err)
+			}
+			fmt.Println("Status Code   :", notification.StatusCode)
+			fmt.Println("Success       :", notification.Success)
+			fmt.Println("Fail          :", notification.Fail)
+			fmt.Println("Canonical_ids :", notification.CanonicalIDs)
+			fmt.Println("Topic MsgId   :", notification.MsgID)
+		}
+
+		response.Write(w, map[string]interface{}{
+			"success": true,
+			"exist":   false,
+		}, http.StatusOK)
+		return
+	}
+
+	response.Write(w, map[string]interface{}{
+		"success": true,
+		"exist":   true,
 	}, http.StatusOK)
 	return
 

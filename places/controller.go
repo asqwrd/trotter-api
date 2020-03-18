@@ -599,21 +599,27 @@ func GetPoi(w http.ResponseWriter, r *http.Request) {
 				errorChannel <- err
 				return
 			}
-			photo := "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + place.Photos[0].PhotoReference + "&key=" + googleAPI
-			go func(image string) {
-				if len(image) == 0 {
-					var colors Colors
-					colors.Vibrant = "#c27949"
-					colorChannel <- colors
-				} else {
-					colors, err := GetColor(image)
-					if err != nil {
-						errorChannel <- err
-						return
+			if len(place.Photos) > 0 {
+				photo := "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1280&photoreference=" + place.Photos[0].PhotoReference + "&key=" + googleAPI
+				go func(image string) {
+					if len(image) == 0 {
+						var colors Colors
+						colors.Vibrant = "#c27949"
+						colorChannel <- colors
+					} else {
+						colors, err := GetColor(image)
+						if err != nil {
+							errorChannel <- err
+							return
+						}
+						colorChannel <- *colors
 					}
-					colorChannel <- *colors
-				}
-			}(photo)
+				}(photo)
+			} else {
+				var colors Colors
+				colors.Vibrant = "#c27949"
+				colorChannel <- colors
+			}
 			poiChannel <- FromGooglePlace(place, "poi")
 
 		}()

@@ -1232,6 +1232,8 @@ func UpdateDestination(w http.ResponseWriter, r *http.Request) {
 		} else if destination["num_of_days"] != nil && destination["num_of_days"].(float64) > 0 {
 			_, errUpdateI10 := client.Collection("itineraries").Doc(itineraryID).Set(ctx, map[string]interface{}{
 				"num_of_days": destination["num_of_days"],
+				"end_date":    0,
+				"start_date":  0,
 			}, firestore.MergeAll)
 
 			if errUpdateI10 != nil {
